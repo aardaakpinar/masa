@@ -197,7 +197,7 @@ async function displayMessages(messages) {
                         <img src="${userData.pp}" alt="${userData.username}" onclick="profileUidLoad('${message.uid}')"/>
                     </div>
                     <span class="message-author">${userData.username}</span>
-                    <span class="message-timestamp">${timeDisplay}</span>
+                    <span class="message-timestamp">#${message.table} ${timeDisplay}</span>
                 </div>
                 <div class="message-box">
                     <div class="message-icon">
@@ -222,17 +222,39 @@ function startTags() {
         tab.addEventListener("click", () => {
             tabs.forEach((t) => t.classList.remove("active"));
             tab.classList.add("active");
+
             if (tab.innerText == "Özel") {
-                fetchAllMessages([`dm/${localStorage.getItem("username")}`]);
-                selectedTable = "dm/devnar";
-            } else if (tab.innerText == "Genel") {
-                fetchAllMessages(["ortak","duyurular"]);
+                const dmTable = `dm/${localStorage.getItem("username")}`;
+                fetchAllMessages([dmTable]);
+                selectedTable = dmTable;
+                localStorage.setItem("selectedTable", dmTable);
+            } else if (tab.innerText == "MASA") {
+                fetchAllMessages(["ortak", "duyurular"]);
                 selectedTable = "ortak";
+                localStorage.setItem("selectedTable", "ortak");
             }
+
             filter(tab.innerText);
         });
     });
+
+    // Sayfa yüklenince seçimi uygula
+    const storedTable = localStorage.getItem("selectedTable");
+    if (storedTable) {
+        if (storedTable.startsWith("dm/")) {
+            tabs.forEach((tab) => {
+                if (tab.innerText == "Özel") tab.click();
+            });
+        } else {
+            tabs.forEach((tab) => {
+                if (tab.innerText == "MASA") tab.click();
+            });
+        }
+    } else {
+        tabs[0].click(); // Varsayılan MASA
+    }
 }
+
 
 function filter(tableName) {
     const messages = document.querySelectorAll("#feed .message");
@@ -442,7 +464,17 @@ document.addEventListener("click", async function (event) {
             }
 
             await set(messageRef, bookmarks);
-            fetchAllMessages();
+
+            // 🔥 Sadece ilgili mesajı güncelle
+            const [table, msgId] = rawMessageId.split("$");
+            const messageElement = document.getElementById(msgId);
+            if (messageElement) {
+                const bookmarkIcon = messageElement.querySelector(".lucide-bookmark");
+                if (bookmarkIcon) {
+                    bookmarkIcon.setAttribute("fill", bookmarks.includes(user.uid) ? "white" : "none");
+                }
+            }
+
         } catch (error) {
             console.error("Hata:", error);
         }
