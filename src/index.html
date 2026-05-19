@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MASA, Haberleşme, Eğlence ve Paylaşım Topluluğudur. hadi sende bir sandalye çek ve aramıza otur!">
+    <meta property="og:title" content="MASA">
+    <meta property="og:description" content="MASA, Haberleşme, Eğlence ve Paylaşım Topluluğudur. hadi sende bir sandalye çek ve aramıza otur!">
+    <meta property="og:url" content="https://devnar.github.io/masa">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://aardaakpinar.github.io/assets/images/logos/masa.png">
+    <meta property="og:image:alt" content="MASA Logo">
+    <meta property="og:site_name" content="MASA">
+    <link rel="icon" href="https://aardaakpinar.github.io/assets/images/logos/masa.png">
+    <title>MASA</title>
+    <link rel="preconnect" href="https://www.gstatic.com" />
+    <link rel="stylesheet" href="assets/style/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Ana menü">
+        <div class="brand" aria-label="Masa Sosyal">
+          <span class="brand-text">MASA</span>
+          <span class="brand-text-mobile">M</span>
+        </div>
+        <nav class="nav-list">
+          <button class="nav-item button button--ghost" id="feedButton" type="button" aria-label="Anasayfa">
+            <span data-lucide="home"></span>
+            <span class="nav-item-label">Anasayfa</span>
+          </button>
+          <button class="nav-item button button--ghost" id="searchButton" type="button" aria-label="Ara">
+            <span data-lucide="search"></span>
+            <span class="nav-item-label">Ara</span>
+          </button>
+          <button class="nav-item button button--ghost" id="authButton" type="button" aria-label="Giriş">
+            <span data-lucide="user"></span>
+            <span class="nav-item-label">Giriş</span>
+          </button>
+        </nav>
+      </aside>
+
+      <main class="timeline" id="feed">
+        <header class="topbar">
+          <div>
+            <h1>Akış</h1>
+          </div>
+        </header>
+
+        <section class="auth-gate" id="authGate">
+          <strong>Post paylaşmak için giriş yap.</strong>
+          <button class="button button--primary" id="openAuthFromGate" type="button">Giriş yap</button>
+        </section>
+
+        <section class="composer" aria-label="Post oluştur">
+          <textarea class="textarea" id="postText" maxlength="280" placeholder="Neler oluyor?" rows="2"></textarea>
+          <div class="composer-footer">
+            <span id="charCount">0/280</span>
+            <button class="button button--primary" id="sendPost" type="button" disabled>Paylaş</button>
+          </div>
+        </section>
+
+        <section class="feed-list" id="postList" aria-live="polite"></section>
+      </main>
+
+      <main class="timeline hidden" id="settingsPanel">
+        <header class="topbar">
+          <div>
+            <h1>Hesap</h1>
+          </div>
+        </header>
+
+        <section class="panel panel--surface settings-panel">
+          <div class="settings-section section--group">
+            <div class="section-heading">
+              <h3>Profil</h3>
+              <p>Favori avatar renginizi seçin.</p>
+            </div>
+            <label class="form-field settings-field">
+              <div class="color-picker-wrapper">
+                <input id="settingsAvatarInput" type="color" value="#2563eb" aria-label="Avatar rengi"/>
+              </div>
+            </label>
+          </div>
+
+          <div class="settings-section section--group">
+            <div class="section-heading">
+              <h3>Güvenlik</h3>
+              <p>Hesabınızın temel bilgilerini burada yönetin.</p>
+            </div>
+            <div class="settings-actions">
+              <button class="button button--secondary" id="changePasswordButton" type="button">Şifreyi Değiştir</button>
+            </div>
+          </div>
+
+          <div class="settings-section section--group">
+            <div class="section-heading">
+              <h3>Tehlikeli İşlemler</h3>
+              <p>Bu adımlar geri alınamaz ve hesap verilerinizi etkiler.</p>
+            </div>
+            <div class="settings-actions">
+              <button class="button button--secondary" id="logoutButton" type="button">Çıkış Yap</button>
+              <button class="button button--danger" id="deleteAccountButton" type="button">Hesabı Sil</button>
+            </div>
+
+            <p class="error-text" id="settingsError"></p>
+            <p class="success-text" id="settingsSuccess"></p>
+          </div>
+        </section>
+      </main>
+
+      <aside class="right-panel" aria-label="Durum">
+        
+      </aside>
+    </div>
+
+    <dialog class="settings-dialog" id="authDialog">
+      <form method="dialog" class="card card--dialog settings-card">
+        <div class="dialog-heading">
+          <h2 id="authTitle">Giriş yap</h2>
+          <button class="icon-button button button--icon" value="cancel" aria-label="Kapat">×</button>
+        </div>
+        <div class="auth-switch segmented-control" role="tablist" aria-label="Hesap modu">
+          <button class="switch-button segmented-control__item active button button--secondary" id="loginMode" type="button">Giriş</button>
+          <button class="switch-button segmented-control__item button button--secondary" id="registerMode" type="button">Kayıt</button>
+        </div>
+        <label class="form-field auth-field" id="authNameField">
+          <span>Görünen ad</span>
+          <input class="input" id="authName" type="text" autocomplete="name" />
+        </label>
+        <label class="form-field auth-field">
+          <span>E-posta</span>
+          <input class="input" id="authEmail" type="email" autocomplete="email" />
+        </label>
+        <label class="form-field auth-field">
+          <span>Şifre</span>
+          <input class="input" id="authPassword" type="password" minlength="8" autocomplete="current-password" />
+        </label>
+        <p class="password-hint" id="passwordHint">Şifre: 8+ karakter, büyük, küçük, sayı, sembol</p>
+        <button class="button button--primary" id="submitAuth" type="button">Giriş yap</button>
+        <p class="error-text" id="authError"></p>
+      </form>
+    </dialog>
+
+    <script type="module" src="assets/script/app.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+      lucide.createIcons();
+    </script>
+  </body>
+</html>

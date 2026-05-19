@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MASA - Giriş yap veya kayıt ol">
+    <meta property="og:title" content="MASA - Giriş">
+    <meta property="og:url" content="https://devnar.github.io/masa">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://aardaakpinar.github.io/assets/images/logos/masa.png">
+    <link rel="icon" href="https://aardaakpinar.github.io/assets/images/logos/masa.png">
+    <title>MASA - Giriş</title>
+    <link rel="preconnect" href="https://www.gstatic.com" />
+    <link rel="stylesheet" href="assets/style/styles.css" />
+  </head>
+  <body class="auth-page">
+    <div class="auth-page-container">
+      <div class="auth-page-card">
+        <div class="auth-page-header">
+          <h1 class="brand-text">MASA</h1>
+          <span class="brand-text-mobile">M</span>
+        </div>
+
+        <div class="auth-page-content">
+          <form method="post" class="auth-page-form" id="authForm">
+            <div class="auth-switch segmented-control" role="tablist" aria-label="Hesap modu">
+              <button class="switch-button segmented-control__item active button button--secondary" id="loginModeButton" type="button">Giriş</button>
+              <button class="switch-button segmented-control__item button button--secondary" id="registerModeButton" type="button">Kayıt</button>
+            </div>
+
+            <label class="form-field auth-field" id="authNameField">
+              <span>Görünen ad</span>
+              <input class="input" id="authName" type="text" autocomplete="name" />
+            </label>
+
+            <label class="form-field auth-field">
+              <span>E-posta</span>
+              <input class="input" id="authEmail" type="email" autocomplete="email" required />
+            </label>
+
+            <label class="form-field auth-field">
+              <span>Şifre</span>
+              <input class="input" id="authPassword" type="password" minlength="8" autocomplete="current-password" required />
+            </label>
+
+            <p class="password-hint" id="passwordHint">Şifre: 8+ karakter, büyük, küçük, sayı, sembol</p>
+
+            <label class="checkbox-field">
+              <input type="checkbox" id="rememberMe" />
+              <span>Oturumumu hatırla</span>
+            </label>
+
+            <button class="button button--primary button--full" id="submitAuth" type="submit">Giriş yap</button>
+
+            <p class="error-text" id="authError"></p>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="assets/script/login.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+      lucide.createIcons();
+    </script>
+  </body>
+</html>
