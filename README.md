@@ -1,91 +1,91 @@
 ﻿# MASA
 
-MASA, Firebase tabanlı basit bir sosyal paylaşım uygulamasıdır. Kullanıcılar e-posta/şifre ile kayıt olabilir, giriş yapabilir, post paylaşabilir ve kendi hesap ayarlarını yönetebilir.
+MASA, Firebase Realtime Database kullanan, Vite tabanlı basit bir sosyal paylaşım uygulamasıdır.
 
 ## Özellikler
 
 - E-posta/şifre ile kayıt ve giriş
-- Oturum durumuna göre dinamik arayüz
-- Post oluşturma, listeleme ve silme
+- `Beni hatırla` desteği (e-posta localStorage'da saklanır)
+- Post paylaşma, listeleme, silme
 - Post beğenme
-- Profil adı ve avatar rengi yönetimi
-- Şifre değiştirme ve hesap silme
-- Basit istemci tarafı rate-limit ve doğrulama kontrolleri
+- Postlara yorum ekleme ve kendi yorumunu silme
+- Sonsuz kaydırma ile eski postları yükleme
+- Profil avatar rengini güncelleme
+- Şifre değiştirme
+- Hesap ve kullanıcıya ait verileri silme
+- İstemci tarafında temel doğrulama ve giriş deneme sınırlama
+
+## Teknolojiler
+
+- Vite
+- Vanilla JavaScript (ES Modules)
+- Firebase Auth
+- Firebase Realtime Database
+- Lucide Icons
 
 ## Proje Yapısı
 
-- `index.html`: Ana akış ekranı
-- `login.html`: Giriş/kayıt ekranı
-- `assets/script/`: Uygulama JavaScript modülleri
-- `assets/style/`: Stil dosyaları
-- `env.js`: Firebase config
-
-## Gereksinimler
-
-- Modern bir tarayıcı (ES Modules desteği)
-- Firebase projesi (Authentication + Realtime Database)
-- Lokal sunucu (Live Server, `python -m http.server` vb.)
+- `src/index.html`: Ana akış ve hesap paneli
+- `src/login.html`: Giriş/kayıt sayfası
+- `src/assets/script/`: Uygulama modülleri
+- `src/assets/style/styles.css`: Stil dosyası
+- `database.rules.json`: Örnek Realtime Database kuralları
 
 ## Kurulum
 
-1. Depoyu indir.
-2. `env.js` dosyasındaki Firebase bilgilerini kendi projenle güncelle.
-3. Firebase Console'da:
-   - Authentication > Sign-in method: Email/Password etkinleştir.
-   - Realtime Database oluştur.
-4. Projeyi lokal bir sunucu ile çalıştır.
-
-Örnek:
+1. Bağımlılıkları kur:
 
 ```bash
-python -m http.server 5500
+npm install
 ```
 
-Sonra tarayıcıdan `http://localhost:5500/login.html` aç.
+2. Kök dizinde `.env` dosyası oluştur ve Firebase değişkenlerini ekle:
 
-## Firebase Kuralları (Önerilen Başlangıç)
-
-Aşağıdaki kurallar, yalnızca giriş yapan kullanıcıların veri erişimini sağlar ve profil üzerinde kullanıcı sahipliğini korur:
-
-```json
-{
-  "rules": {
-    "users": {
-      "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid"
-      }
-    },
-    "posts": {
-      ".read": "auth != null",
-      "$postId": {
-        ".write": "auth != null",
-        "authorId": {
-          ".validate": "newData.val() === auth.uid"
-        },
-        "text": {
-          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 280"
-        }
-      }
-    }
-  }
-}
+```env
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_DATABASE_URL=...
+VITE_FIREBASE_PROJECT_ID=...
 ```
 
-Not: Hesap silme sırasında kullanıcının kendi postlarını silme ihtiyacı olduğu için `posts` altında yazma kurallarını ürün ihtiyaçlarına göre daha da daraltmak isteyebilirsin.
+3. Firebase Console ayarları:
+- Authentication > Sign-in method > Email/Password etkin olsun.
+- Realtime Database oluşturulmuş olsun.
 
-## Güvenlik Notları
+4. Geliştirme sunucusunu başlat:
 
-- Güçlü şifre kontrolü kayıt ve şifre değiştirme akışında zorunludur.
-- Kullanıcı görünen adı normalize edilir ve uzunluğu sınırlandırılır.
-- İstemci tarafı kontroller tek başına yeterli değildir; asıl güvenlik Firebase Rules ile sağlanır.
+```bash
+npm run dev
+```
 
-## Geliştirme Notları
+5. Tarayıcıda aç:
+- Giriş ekranı: `/login.html`
+- Uygulama: `/index.html`
 
-- Uygulama modüler JS yapısı kullanır (`type="module"`).
-- Firebase scriptleri doğrudan CDN üzerinden yüklenir.
-- `localStorage` yalnızca hatırla seçeneği için e-posta saklar.
+## Build
+
+```bash
+npm run build
+```
+
+Build çıktısı `dist/` klasörüne yazılır.
+
+## Preview
+
+```bash
+npm run preview
+```
+
+## Scriptler
+
+- `npm run dev`: Vite geliştirme sunucusu
+- `npm run build`: Prod build
+- `npm run preview`: Build önizleme
+
+## Güvenlik Notu
+
+İstemci tarafı kontroller tek başına yeterli değildir. Üretimde mutlaka Firebase Database Rules ve Auth kurallarını sıkılaştırın.
 
 ## Lisans
 
-Bu proje depo içindeki `LICENSE` dosyasındaki koşullarla lisanslanmıştır.
+Bu proje depo içindeki [LICENSE](LICENSE) dosyasındaki koşullarla lisanslanmıştır.
