@@ -9,6 +9,7 @@ let oldestLoadedKey = null;
 let hasMorePosts = true;
 let isLoadingMore = false;
 let activeCommentPostId = null;
+let liveWindowPostIds = new Set();
 
 export function subscribeToPosts() {
   if (!state.db) return;
@@ -18,13 +19,24 @@ export function subscribeToPosts() {
   oldestLoadedKey = null;
   hasMorePosts = true;
   isLoadingMore = false;
+  liveWindowPostIds = new Set();
 
   state.postsRef = query(ref(state.db, "posts"), orderByKey(), limitToLast(POSTS_PAGE_SIZE));
   onValue(
     state.postsRef,
     (snapshot) => {
       const incomingPosts = snapshot.val() || {};
+      const incomingIds = new Set(Object.keys(incomingPosts));
+
+      // Remove posts that disappeared from the live window (e.g. deleted).
+      liveWindowPostIds.forEach((id) => {
+        if (!incomingIds.has(id)) {
+          delete state.posts[id];
+        }
+      });
+
       state.posts = { ...state.posts, ...incomingPosts };
+      liveWindowPostIds = incomingIds;
       const keys = Object.keys(state.posts);
       if (keys.length) {
         oldestLoadedKey = keys.sort()[0];
