@@ -164,7 +164,7 @@ function createPostElement(post) {
     const deleteButton = document.createElement("button");
     deleteButton.className = "action-button";
     deleteButton.type = "button";
-    deleteButton.textContent = "Sil";
+    deleteButton.innerHTML = `<span data-lucide="trash-2"></span>`;
     deleteButton.addEventListener("click", () => remove(ref(state.db, `posts/${post.id}`)));
     actions.append(deleteButton);
   }
@@ -226,19 +226,61 @@ function createCommentsSection(post) {
       content.className = "post-text";
       content.textContent = comment.text || "";
 
-      contentWrap.append(meta, content);
+      // LIKE SİSTEMİ
+      const actions = document.createElement("div");
+      actions.className = "post-actions";
 
+      const likes = comment.likes || {};
+      const liked = Boolean(
+        state.authUser && likes[state.authUser.uid]
+      );
+
+      const likeButton = document.createElement("button");
+      likeButton.className = `action-button${liked ? " liked" : ""}`;
+      likeButton.type = "button";
+      likeButton.innerHTML = `
+        <span data-lucide="heart"></span>
+        <span>${Object.keys(likes).length}</span>
+      `;
+
+      likeButton.disabled = !state.authUser;
+
+      likeButton.addEventListener("click", async () => {
+        if (!state.authUser) return;
+
+        const likeRef = ref(
+          state.db,
+          `posts/${post.id}/comments/${comment.id}/likes/${state.authUser.uid}`
+        );
+
+        try {
+          if (liked) {
+            await remove(likeRef);
+          } else {
+            await set(likeRef, true);
+          }
+        } catch (err) {
+          console.error("Yorum beğenilemedi:", err);
+        }
+      });
+
+      actions.append(likeButton);
+
+      // SİLME
       if (state.authUser && comment.authorId === state.authUser.uid) {
         const del = document.createElement("button");
         del.className = "action-button";
         del.type = "button";
-        del.textContent = "Yorumu sil";
+        del.innerHTML = `<span data-lucide="trash-2"></span>`;
+
         del.addEventListener("click", () =>
           remove(ref(state.db, `posts/${post.id}/comments/${comment.id}`))
         );
 
-        contentWrap.append(del);
+        actions.append(del);
       }
+
+      contentWrap.append(meta, content, actions);
 
       item.append(avatar, contentWrap);
 
