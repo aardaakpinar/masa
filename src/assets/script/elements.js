@@ -1,5 +1,7 @@
 export const elements = {
   feedButton: document.querySelector("#feedButton"),
+  searchButton: document.querySelector("#searchButton"),
+  discoverPanel: document.querySelector("#discover"),
   settingsPanel: document.querySelector("#settingsPanel"),
   settingsAvatarInput: document.querySelector("#settingsAvatarInput"),
   settingsAvatarPreview: document.querySelector("#settingsAvatarPreview"),
@@ -13,6 +15,8 @@ export const elements = {
   sendPost: document.querySelector("#sendPost"),
   charCount: document.querySelector("#charCount"),
   postList: document.querySelector("#postList"),
+  searchInput: document.querySelector("#searchInput"),
+  searchResults: document.querySelector("#searchResults"),
   authButton: document.querySelector("#authButton"),
   mobileAuthButton: document.querySelector("#mobileAuthButton"),
   panelAuthButton: document.querySelector("#panelAuthButton"),

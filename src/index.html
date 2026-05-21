@@ -24,9 +24,9 @@
           <span class="brand-text-mobile">M</span>
         </div>
         <nav class="nav-list">
-          <button class="nav-item button button--ghost" id="feedButton" type="button" aria-label="Anasayfa">
+          <button class="nav-item button button--ghost" id="feedButton" type="button" aria-label="Masaüstü">
             <span data-lucide="home"></span>
-            <span class="nav-item-label">Anasayfa</span>
+            <span class="nav-item-label">Masaüstü</span>
           </button>
           <button class="nav-item button button--ghost" id="searchButton" type="button" aria-label="Ara">
             <span data-lucide="search"></span>
@@ -60,6 +60,21 @@
         </section>
 
         <section class="feed-list" id="postList" aria-live="polite"></section>
+      </main>
+
+      <main class="timeline hidden" id="discover">
+        <header class="topbar">
+          <div>
+            <h1>Ara</h1>
+          </div>
+        </header>
+
+        
+        <section class="discover" id="discoverPanel" aria-label="Arama">
+          <div class="discover-search">
+            <input class="input" id="searchInput" type="search" placeholder="Post, kisi veya etiket ara..." />
+          </div>
+          <div id="searchResults" class="discover-list"></div>        </section>
       </main>
 
       <main class="timeline hidden" id="settingsPanel">
@@ -148,3 +163,5 @@
     </script>
   </body>
 </html>
+
+

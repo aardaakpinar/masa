@@ -2,12 +2,14 @@
 import { elements } from "./elements.js";
 import { connectToFirebase } from "./firebase.js";
 import { submitAuth, saveSettingsAvatar, openChangePasswordDialog, confirmDeleteAccount, setAuthMode, logout } from "./auth.js";
-import { syncAuthMode, syncAuthUi, syncComposer, openAuth, closeSettings } from "./ui.js";
+import { syncAuthMode, syncAuthUi, syncComposer, openAuth, closeSettings, openSearch } from "./ui.js";
 import { submitComposerText, loadMorePosts, closeComments } from "./posts.js";
+import { setupDiscover } from "./discover.js";
 
 syncAuthMode();
 syncAuthUi();
 syncComposer();
+setupDiscover();
 
 const storedConfig = localStorage.getItem(storageKeys.config);
 if (storedConfig) {
@@ -18,6 +20,7 @@ if (storedConfig) {
 }
 
 elements.authButton.addEventListener("click", openAuth);
+elements.searchButton.addEventListener("click", openSearch);
 elements.openAuthFromGate.addEventListener("click", openAuth);
 elements.changePasswordButton.addEventListener("click", openChangePasswordDialog);
 elements.deleteAccountButton.addEventListener("click", confirmDeleteAccount);
@@ -28,9 +31,7 @@ elements.logoutButton.addEventListener("click", () => {
 elements.settingsAvatarInput.addEventListener("change", saveSettingsAvatar);
 elements.feedButton.addEventListener("click", () => {
   closeComments();
-  if (!elements.settingsPanel.classList.contains("hidden")) {
-    closeSettings();
-  }
+  closeSettings();
 });
 
 elements.loginMode.addEventListener("click", () => setAuthMode("login"));

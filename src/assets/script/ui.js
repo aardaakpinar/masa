@@ -95,6 +95,23 @@ export function openAuth() {
   window.location.href = "login.html";
 }
 
+function setMainView(view) {
+  elements.feed?.classList.toggle("hidden", view !== "feed");
+  elements.discoverPanel?.classList.toggle("hidden", view !== "search");
+  elements.settingsPanel?.classList.toggle("hidden", view !== "settings");
+
+  elements.feedButton?.classList.toggle("active", view === "feed");
+  elements.searchButton?.classList.toggle("active", view === "search");
+}
+
+export function openFeed() {
+  setMainView("feed");
+}
+
+export function openSearch() {
+  setMainView("search");
+}
+
 export function openSettings() {
   if (!state.authUser) {
     openAuth();
@@ -103,19 +120,9 @@ export function openSettings() {
 
   if (elements.settingsError) elements.settingsError.textContent = "";
   if (elements.settingsSuccess) elements.settingsSuccess.textContent = "";
-  if (elements.settingsPanel) {
-    elements.settingsPanel.classList.remove("hidden");
-  }
-  if (elements.feed) {
-    elements.feed.classList.add("hidden");
-  }
+  setMainView("settings");
 }
 
 export function closeSettings() {
-  if (elements.settingsPanel) {
-    elements.settingsPanel.classList.add("hidden");
-  }
-  if (elements.feed) {
-    elements.feed.classList.remove("hidden");
-  }
+  openFeed();
 }

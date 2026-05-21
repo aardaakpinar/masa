@@ -111,6 +111,7 @@ export function renderPosts() {
 
   elements.postList.replaceChildren(...posts.map(createPostElement));
   refreshIcons();
+  window.dispatchEvent(new Event("posts:updated"));
 }
 
 function createPostElement(post) {
