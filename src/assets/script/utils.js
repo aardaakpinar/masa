@@ -44,3 +44,48 @@ export function authMessage(code) {
 
   return messages[code] || "İşlem tamamlanamadı. Firebase ayarlarını kontrol et.";
 }
+
+const TOKEN_REGEX = /(https?:\/\/[^\s]+|#[\p{L}\p{N}_]+)/gu;
+
+export function createRichTextFragment(text) {
+  const fragment = document.createDocumentFragment();
+  const value = String(text || "");
+  let lastIndex = 0;
+
+  for (const match of value.matchAll(TOKEN_REGEX)) {
+    const token = match[0];
+    const index = match.index ?? 0;
+
+    if (index > lastIndex) {
+      fragment.append(value.slice(lastIndex, index));
+    }
+
+    if (token.startsWith("http://") || token.startsWith("https://")) {
+      const link = document.createElement("a");
+      link.href = token;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = token;
+      fragment.append(link);
+    } else if (token.startsWith("#")) {
+      const hashtag = document.createElement("button");
+      hashtag.type = "button";
+      hashtag.className = "inline-hashtag";
+      hashtag.textContent = token;
+      hashtag.addEventListener("click", () => {
+        window.dispatchEvent(
+          new CustomEvent("search:query", { detail: { query: token } })
+        );
+      });
+      fragment.append(hashtag);
+    }
+
+    lastIndex = index + token.length;
+  }
+
+  if (lastIndex < value.length) {
+    fragment.append(value.slice(lastIndex));
+  }
+
+  return fragment;
+}

@@ -382,11 +382,11 @@ button {
   min-height: 240px;
 }
 
-.discover-search {
+.search-box {
   margin: 14px;
 }
 
-.discover-search .input {
+.search-box .input {
   width: 100%;
   min-height: 42px;
   border: 1px solid var(--line);
@@ -396,26 +396,26 @@ button {
   color: var(--text);
 }
 
-.discover-content {
+.search-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
-.discover-list {
+.search-list {
   display: grid;
   gap: 8px;
   border-top: 1px solid var(--line);
 }
 
-.discover-item {
+.search-item {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 10px;
   background: var(--bg-alt);
 }
 
-.discover-item p {
+.search-item p {
   margin: 6px 0 0;
   color: var(--muted);
   font-size: 13px;
@@ -456,6 +456,19 @@ button {
   overflow-wrap: anywhere;
   line-height: 1.48;
   white-space: pre-wrap;
+}
+
+.post-text a,
+.inline-hashtag {
+  color: var(--accent-dark);
+}
+
+.inline-hashtag {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
 }
 
 .post-actions {
@@ -524,11 +537,13 @@ button {
 .settings-panel {
   background: transparent;
   margin-top: 20px;
+  overflow: hidden;
 }
 
 .settings-section.section--group {
   padding: 20px;
   border-top: 1px solid var(--line);
+  background: var(--bg);
 }
 
 .settings-section.section--group:first-child {
@@ -559,6 +574,14 @@ button {
 
 .settings-actions .button {
   min-width: 170px;
+}
+
+#saveProfileButton {
+  min-width: 200px;
+}
+
+.settings-section:last-child {
+  background: color-mix(in srgb, var(--danger-soft) 30%, var(--bg));
 }
 
 .timeline.settings-open .composer,
@@ -715,6 +738,40 @@ button {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--focus-ring);
   outline: none;
+}
+
+.settings-profile-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.settings-avatar-button {
+  border: 0;
+  flex: 0 0 auto;
+}
+
+.settings-profile-meta {
+  display: grid;
+  gap: 2px;
+}
+
+.settings-profile-meta strong {
+  font-size: 15px;
+}
+
+.settings-profile-meta span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.settings-color-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
 }
 
 .color-picker-wrapper {

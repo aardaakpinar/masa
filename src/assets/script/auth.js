@@ -146,6 +146,74 @@ export async function saveSettingsAvatar() {
   }
 }
 
+export async function saveProfileSettings() {
+  if (!state.authUser || !state.db) {
+    elements.settingsError.textContent = "Giriş yapılmalıdır.";
+    return;
+  }
+
+  const name = cleanName(elements.settingsNameInput?.value || state.profile.name);
+  const color = elements.settingsAvatarInput?.value || state.profile.color;
+
+  try {
+    await update(ref(state.db, `users/${state.authUser.uid}`), {
+      name,
+      color,
+      updatedAt: serverTimestamp(),
+    });
+
+    // Keep historical posts/comments in sync with latest profile display.
+    const userPostsQuery = query(
+      ref(state.db, "posts"),
+      orderByChild("authorId"),
+      equalTo(state.authUser.uid)
+    );
+    let postsSnapshot;
+    try {
+      postsSnapshot = await get(userPostsQuery);
+    } catch (error) {
+      // Fallback for projects without indexOn authorId in RTDB rules.
+      if (String(error?.message || "").includes("Index not defined")) {
+        postsSnapshot = await get(ref(state.db, "posts"));
+      } else {
+        throw error;
+      }
+    }
+    if (postsSnapshot.exists()) {
+      const updates = {};
+      const userPosts = postsSnapshot.val();
+      for (const [postId, post] of Object.entries(userPosts)) {
+        if (post?.authorId === state.authUser.uid) {
+          updates[`posts/${postId}/authorName`] = name;
+          updates[`posts/${postId}/authorColor`] = color;
+        }
+
+        const comments = post?.comments || {};
+        for (const [commentId, comment] of Object.entries(comments)) {
+          if (comment?.authorId === state.authUser.uid) {
+            updates[`posts/${postId}/comments/${commentId}/authorName`] = name;
+            updates[`posts/${postId}/comments/${commentId}/authorColor`] = color;
+          }
+        }
+      }
+      if (Object.keys(updates).length) {
+        await update(ref(state.db), updates);
+      }
+    }
+
+    state.profile.name = name;
+    state.profile.color = color;
+    elements.settingsError.textContent = "";
+    elements.settingsSuccess.textContent = "Profil güncellendi.";
+    syncAuthUi();
+    setTimeout(() => {
+      elements.settingsSuccess.textContent = "";
+    }, 2000);
+  } catch (error) {
+    elements.settingsError.textContent = "Profil güncellenemedi: " + error.message;
+  }
+}
+
 export function setAuthMode(mode) {
   state.authMode = mode;
   syncAuthMode();

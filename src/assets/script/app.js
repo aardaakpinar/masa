@@ -1,10 +1,11 @@
 ﻿import { storageKeys, firebaseConfig } from "./state.js";
 import { elements } from "./elements.js";
 import { connectToFirebase } from "./firebase.js";
-import { submitAuth, saveSettingsAvatar, openChangePasswordDialog, confirmDeleteAccount, setAuthMode, logout } from "./auth.js";
+import { submitAuth, saveSettingsAvatar, saveProfileSettings, openChangePasswordDialog, confirmDeleteAccount, setAuthMode, logout } from "./auth.js";
 import { syncAuthMode, syncAuthUi, syncComposer, openAuth, closeSettings, openSearch } from "./ui.js";
 import { submitComposerText, loadMorePosts, closeComments } from "./posts.js";
 import { setupDiscover } from "./discover.js";
+import { initials } from "./utils.js";
 
 syncAuthMode();
 syncAuthUi();
@@ -29,6 +30,20 @@ elements.logoutButton.addEventListener("click", () => {
   window.location.href = "login.html";
 });
 elements.settingsAvatarInput.addEventListener("change", saveSettingsAvatar);
+elements.saveProfileButton.addEventListener("click", saveProfileSettings);
+elements.settingsAvatarButton?.addEventListener("click", () => {
+  elements.settingsAvatarInput?.click();
+});
+elements.settingsNameInput?.addEventListener("input", (event) => {
+  const value = event.target.value || "User";
+  if (elements.settingsProfileName) elements.settingsProfileName.textContent = value;
+  if (elements.settingsAvatarButton) elements.settingsAvatarButton.textContent = initials(value);
+});
+elements.settingsAvatarInput?.addEventListener("input", (event) => {
+  if (elements.settingsAvatarButton) {
+    elements.settingsAvatarButton.style.background = event.target.value;
+  }
+});
 elements.feedButton.addEventListener("click", () => {
   closeComments();
   closeSettings();

@@ -1,6 +1,6 @@
 import { state } from "./state.js";
 import { elements } from "./elements.js";
-import { initials, formatTime } from "./utils.js";
+import { initials, formatTime, createRichTextFragment } from "./utils.js";
 import { ref, push, set, update, remove, onValue, off, serverTimestamp, query, orderByKey, limitToLast, endAt, get } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 import { openAuth } from "./ui.js";
 
@@ -105,7 +105,10 @@ export function renderPosts() {
     .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
   if (!posts.length) {
-    elements.postList.innerHTML = `<div class="empty-state">İlk postu paylaşarak akışı başlat.</div>`;
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = "İlk postu paylaşarak akışı başlat.";
+    elements.postList.replaceChildren(empty);
     return;
   }
 
@@ -126,7 +129,7 @@ export function renderPosts() {
   window.dispatchEvent(new Event("posts:updated"));
 }
 
-function createPostElement(post) {
+export function createPostElement(post) {
   const article = document.createElement("article");
   article.className = "post";
 
@@ -149,7 +152,7 @@ function createPostElement(post) {
 
   const text = document.createElement("p");
   text.className = "post-text";
-  text.textContent = post.text || "";
+  text.append(createRichTextFragment(post.text || ""));
 
   const actions = document.createElement("div");
   actions.className = "post-actions";
@@ -159,7 +162,9 @@ function createPostElement(post) {
   const likeButton = document.createElement("button");
   likeButton.className = `action-button${liked ? " liked" : ""}`;
   likeButton.type = "button";
-  likeButton.innerHTML = `<span data-lucide="heart"></span> ${Object.keys(likes).length}`;
+  const likeIcon = document.createElement("span");
+  likeIcon.setAttribute("data-lucide", "heart");
+  likeButton.append(likeIcon, ` ${Object.keys(likes).length}`);
   likeButton.disabled = !state.authUser;
   likeButton.addEventListener("click", () => toggleLike(post.id, liked));
 
@@ -167,16 +172,24 @@ function createPostElement(post) {
   const commentButton = document.createElement("button");
   commentButton.className = "action-button";
   commentButton.type = "button";
-  commentButton.innerHTML = `<span data-lucide="message-circle"></span> ${commentCount}`;
+  const commentIcon = document.createElement("span");
+  commentIcon.setAttribute("data-lucide", "message-circle");
+  commentButton.append(commentIcon, ` ${commentCount}`);
   commentButton.addEventListener("click", () => openComments(post.id));
 
-  actions.append(likeButton, commentButton);
+  if (!post.__fromDiscover) {
+    actions.append(likeButton, commentButton);
+  } else {
+    actions.append(likeButton);
+  }
 
   if (state.authUser && post.authorId === state.authUser.uid) {
     const deleteButton = document.createElement("button");
     deleteButton.className = "action-button";
     deleteButton.type = "button";
-    deleteButton.innerHTML = `<span data-lucide="trash-2"></span>`;
+    const deleteIcon = document.createElement("span");
+    deleteIcon.setAttribute("data-lucide", "trash-2");
+    deleteButton.append(deleteIcon);
     deleteButton.addEventListener("click", () => remove(ref(state.db, `posts/${post.id}`)));
     actions.append(deleteButton);
   }
@@ -236,7 +249,7 @@ function createCommentsSection(post) {
 
       const content = document.createElement("p");
       content.className = "post-text";
-      content.textContent = comment.text || "";
+      content.append(createRichTextFragment(comment.text || ""));
 
       // LIKE SİSTEMİ
       const actions = document.createElement("div");
@@ -250,10 +263,11 @@ function createCommentsSection(post) {
       const likeButton = document.createElement("button");
       likeButton.className = `action-button${liked ? " liked" : ""}`;
       likeButton.type = "button";
-      likeButton.innerHTML = `
-        <span data-lucide="heart"></span>
-        <span>${Object.keys(likes).length}</span>
-      `;
+      const commentLikeIcon = document.createElement("span");
+      commentLikeIcon.setAttribute("data-lucide", "heart");
+      const commentLikeCount = document.createElement("span");
+      commentLikeCount.textContent = String(Object.keys(likes).length);
+      likeButton.append(commentLikeIcon, commentLikeCount);
 
       likeButton.disabled = !state.authUser;
 
@@ -283,7 +297,9 @@ function createCommentsSection(post) {
         const del = document.createElement("button");
         del.className = "action-button";
         del.type = "button";
-        del.innerHTML = `<span data-lucide="trash-2"></span>`;
+        const commentDeleteIcon = document.createElement("span");
+        commentDeleteIcon.setAttribute("data-lucide", "trash-2");
+        del.append(commentDeleteIcon);
 
         del.addEventListener("click", () =>
           remove(ref(state.db, `posts/${post.id}/comments/${comment.id}`))

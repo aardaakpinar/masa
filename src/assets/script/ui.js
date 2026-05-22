@@ -1,5 +1,6 @@
 import { state } from "./state.js";
 import { elements } from "./elements.js";
+import { initials } from "./utils.js";
 
 export function syncComposer() {
   if (!elements.postText || !elements.charCount || !elements.sendPost) return;
@@ -61,6 +62,21 @@ export function syncAuthUi() {
   if (elements.settingsEmail) {
     setValue(elements.settingsEmail, isSignedIn ? state.authUser?.email || "" : "");
   }
+  if (elements.settingsNameInput) {
+    setValue(elements.settingsNameInput, isSignedIn ? state.profile.name || "" : "");
+  }
+  if (elements.settingsAvatarInput) {
+    setValue(elements.settingsAvatarInput, isSignedIn ? state.profile.color || "#2563eb" : "#2563eb");
+  }
+  if (elements.settingsAvatarButton) {
+    const name = isSignedIn ? state.profile.name || "User" : "User";
+    const color = isSignedIn ? state.profile.color || "#2563eb" : "#2563eb";
+    elements.settingsAvatarButton.textContent = initials(name);
+    elements.settingsAvatarButton.style.background = color;
+  }
+  if (elements.settingsProfileName) {
+    setText(elements.settingsProfileName, isSignedIn ? state.profile.name || "User" : "User");
+  }
   syncComposer();
 }
 
@@ -97,7 +113,7 @@ export function openAuth() {
 
 function setMainView(view) {
   elements.feed?.classList.toggle("hidden", view !== "feed");
-  elements.discoverPanel?.classList.toggle("hidden", view !== "search");
+  elements.searchPanel?.classList.toggle("hidden", view !== "search");
   elements.settingsPanel?.classList.toggle("hidden", view !== "settings");
 
   elements.feedButton?.classList.toggle("active", view === "feed");

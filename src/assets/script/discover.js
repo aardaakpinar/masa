@@ -1,5 +1,7 @@
 import { elements } from "./elements.js";
 import { state } from "./state.js";
+import { createPostElement } from "./posts.js";
+import { openSearch } from "./ui.js";
 
 let queryText = "";
 
@@ -11,20 +13,70 @@ function getPosts() {
 
 export function renderDiscover() {
   if (!elements.searchResults) return;
+
   const posts = getPosts();
   const q = queryText.trim().toLowerCase();
-  const filtered = q
-    ? posts.filter((post) => `${post.text || ""} ${post.authorName || ""}`.toLowerCase().includes(q))
-    : posts.slice(0, 8);
+  const qWithoutHash = q.startsWith("#") ? q.slice(1) : q;
 
-  elements.searchResults.innerHTML = filtered.length
-    ? filtered
-        .map(
-          (post) =>
-            `<article class="post"><div class="avatar" style="background:${post.authorColor || "#2563eb"}">${(post.authorName || "A").slice(0, 1).toUpperCase()}</div><div><div class="post-header"><strong class="post-author">${post.authorName || "Anonim"}</strong></div><p class="post-text">${post.text || ""}</p></div></article>`,
-        )
-        .join("")
-    : `<div class="empty-state">Sonuc bulunamadi.</div>`;
+  let results = [];
+
+  if (q) {
+    posts.forEach((post) => {
+      const postSource = `
+        ${post.text || ""}
+        ${post.authorName || ""}
+      `.toLowerCase();
+      const postMatch = postSource.includes(q) || (q.startsWith("#") && postSource.includes(qWithoutHash));
+
+      if (postMatch) {
+        results.push({
+          ...post,
+          __fromDiscover: true
+        });
+      }
+
+      Object.values(post.comments || {}).forEach((comment) => {
+        const commentSource = `
+          ${comment.text || ""}
+          ${comment.authorName || ""}
+        `.toLowerCase();
+        const commentMatch = commentSource.includes(q) || (q.startsWith("#") && commentSource.includes(qWithoutHash));
+
+        if (commentMatch) {
+          results.push({
+            ...comment,
+            id: `${post.id}-${comment.createdAt}`,
+            createdAt: comment.createdAt,
+            likes: comment.likes || {},
+            comments: {},
+            __fromDiscover: true,
+            __isComment: true
+          });
+        }
+      });
+    });
+  } else {
+    results = posts.slice(0, 8).map((post) => ({
+      ...post,
+      __fromDiscover: true
+    }));
+  }
+
+  if (!results.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = "Sonuç bulunamadı.";
+    elements.searchResults.replaceChildren(empty);
+    return;
+  }
+
+  elements.searchResults.replaceChildren(
+    ...results.map((item) => createPostElement(item))
+  );
+
+  if (window.lucide) {
+    window.lucide.createIcons();
+  }
 }
 
 export function setupDiscover() {
@@ -34,4 +86,12 @@ export function setupDiscover() {
   });
 
   window.addEventListener("posts:updated", renderDiscover);
+  window.addEventListener("search:query", (event) => {
+    openSearch();
+    queryText = event.detail?.query || "";
+    if (elements.searchInput) {
+      elements.searchInput.value = queryText;
+    }
+    renderDiscover();
+  });
 }

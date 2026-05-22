@@ -62,7 +62,7 @@
         <section class="feed-list" id="postList" aria-live="polite"></section>
       </main>
 
-      <main class="timeline hidden" id="discover">
+      <main class="timeline hidden" id="search">
         <header class="topbar">
           <div>
             <h1>Ara</h1>
@@ -70,11 +70,11 @@
         </header>
 
         
-        <section class="discover" id="discoverPanel" aria-label="Arama">
-          <div class="discover-search">
+        <section class="search" id="searchPanel" aria-label="Arama">
+          <div class="search-box">
             <input class="input" id="searchInput" type="search" placeholder="Post, kisi veya etiket ara..." />
           </div>
-          <div id="searchResults" class="discover-list"></div>        </section>
+          <div id="searchResults" class="search-list"></div>        </section>
       </main>
 
       <main class="timeline hidden" id="settingsPanel">
@@ -88,13 +88,23 @@
           <div class="settings-section section--group">
             <div class="section-heading">
               <h3>Profil</h3>
-              <p>Favori avatar renginizi seçin.</p>
+              <p>Görünen adını ve avatar rengini güncelle.</p>
             </div>
             <label class="form-field settings-field">
-              <div class="color-picker-wrapper">
-                <input id="settingsAvatarInput" type="color" value="#2563eb" aria-label="Avatar rengi"/>
-              </div>
+              <span>Görünen ad</span>
+              <input id="settingsNameInput" type="text" maxlength="50" placeholder="Adın" />
             </label>
+            <div class="settings-profile-preview">
+              <button class="avatar settings-avatar-button" id="settingsAvatarButton" type="button" aria-label="Avatar rengini değiştir"></button>
+              <div class="settings-profile-meta">
+                <strong id="settingsProfileName">User</strong>
+                <span>Postlarda göründüğü hali</span>
+              </div>
+              <input id="settingsAvatarInput" class="settings-color-input" type="color" value="#2563eb" aria-label="Avatar rengi"/>
+            </div>
+            <div class="settings-actions">
+              <button class="button button--secondary" id="saveProfileButton" type="button">Profili Kaydet</button>
+            </div>
           </div>
 
           <div class="settings-section section--group">
@@ -104,6 +114,7 @@
             </div>
             <div class="settings-actions">
               <button class="button button--secondary" id="changePasswordButton" type="button">Şifreyi Değiştir</button>
+              <button class="button button--secondary" id="logoutButton" type="button">Çıkış Yap</button>
             </div>
           </div>
 
@@ -113,7 +124,6 @@
               <p>Bu adımlar geri alınamaz ve hesap verilerinizi etkiler.</p>
             </div>
             <div class="settings-actions">
-              <button class="button button--secondary" id="logoutButton" type="button">Çıkış Yap</button>
               <button class="button button--danger" id="deleteAccountButton" type="button">Hesabı Sil</button>
             </div>
 
