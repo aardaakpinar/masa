@@ -196,10 +196,10 @@ button {
   font-weight: 800;
 }
 
-.brand-text-mobile {
+.brand-image {
+  width: 32px;
+  height: 32px;
   display: none;
-  font-size: 22px;
-  font-weight: 800;
 }
 
 .nav-item:hover,
@@ -829,7 +829,7 @@ button {
     display: none;
   }
 
-  .brand-text-mobile {
+  .brand-image {
     display: block;
   }
 
