@@ -17,6 +17,7 @@ export function renderDiscover() {
   const posts = getPosts();
   const q = queryText.trim().toLowerCase();
   const qWithoutHash = q.startsWith("#") ? q.slice(1) : q;
+  const qWithoutAt = q.startsWith("@") ? q.slice(1) : q;
 
   let results = [];
 
@@ -26,7 +27,12 @@ export function renderDiscover() {
         ${post.text || ""}
         ${post.authorName || ""}
       `.toLowerCase();
-      const postMatch = postSource.includes(q) || (q.startsWith("#") && postSource.includes(qWithoutHash));
+
+      const postMatch =
+        q.startsWith("@")
+          ? (post.authorName || "").toLowerCase().includes(qWithoutAt)
+          : postSource.includes(q) ||
+            (q.startsWith("#") && postSource.includes(qWithoutHash));
 
       if (postMatch) {
         results.push({
@@ -40,7 +46,12 @@ export function renderDiscover() {
           ${comment.text || ""}
           ${comment.authorName || ""}
         `.toLowerCase();
-        const commentMatch = commentSource.includes(q) || (q.startsWith("#") && commentSource.includes(qWithoutHash));
+
+        const commentMatch =
+          q.startsWith("@")
+            ? (comment.authorName || "").toLowerCase().includes(qWithoutAt)
+            : commentSource.includes(q) ||
+              (q.startsWith("#") && commentSource.includes(qWithoutHash));
 
         if (commentMatch) {
           results.push({

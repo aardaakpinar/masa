@@ -22,6 +22,6 @@
   "homepage": "https://github.com/aardaakpinar/masa#readme",
   "devDependencies": {
     "terser": "^5.47.1",
-    "vite": "^8.0.13"
+    "vite": "^8.0.16"
   }
 }
