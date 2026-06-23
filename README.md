@@ -62,16 +62,6 @@ npm run build
 
 Build çıktısı `dist/` klasörüne yazılır.
 
-## Scriptler
-
-- `npm run dev`: Vite geliştirme sunucusu
-- `npm run build`: Prod build
-- `npm run preview`: Build önizleme
-
-## Güvenlik Notu
-
-İstemci tarafı kontroller tek başına yeterli değildir. Üretimde mutlaka Firebase Database Rules ve Auth kurallarını sıkılaştırın.
-
 ## Lisans
 
 Bu proje depo içindeki [LICENSE](LICENSE) dosyasındaki koşullarla lisanslanmıştır.
