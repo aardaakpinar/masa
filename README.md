@@ -44,35 +44,7 @@ VITE_FIREBASE_PROJECT_ID=...
 3. Firebase Console ayarları:
 - Authentication > Sign-in method > Email/Password etkin olsun.
 - Realtime Database oluşturulmuş olsun.
-- Realtime Database kurallarında `groups` yolu için okuma/yazma izni verin. Örnek:
-
-```json
-{
-  "rules": {
-    "groups": {
-      ".read": "auth != null",
-      ".write": "auth != null"
-    }
-  }
-}
-```
-
-Eğer grup üyeliği kullanacaksanız `members/$uid/role` için hem `owner` hem `member` değerine izin verin. Örnek:
-
-```json
-"members": {
-  "$uid": {
-    ".write": "auth != null && auth.uid === $uid",
-    ".validate": "newData.hasChildren(['role', 'joinedAt'])",
-    "role": {
-      ".validate": "newData.isString() && (newData.val() === 'owner' || newData.val() === 'member')"
-    },
-    "joinedAt": {
-      ".validate": "newData.isNumber()"
-    }
-  }
-}
-```
+- Realtime Database kurallarında `groups` yolu için okuma/yazma izni verin.
 
 4. Geliştirme sunucusunu başlat:
 
