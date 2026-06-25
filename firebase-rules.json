@@ -1,0 +1,131 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "users": {
+      ".read": false,
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.hasChildren(['name', 'email'])",
+        "name": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 50"
+        },
+        "color": {
+          ".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{3,8}$/)"
+        },
+        "email": {
+          ".validate": "newData.isString()"
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber()"
+        },
+        "updatedAt": {
+          ".validate": "newData.isNumber()"
+        },
+        "securityVersion": {
+          ".validate": "newData.isNumber()"
+        }
+      }
+    },
+
+    "posts": {
+      ".read": true,
+      "$postId": {
+        ".write": "auth != null && (!data.exists() || data.child('authorId').val() === auth.uid)",
+        ".validate": "newData.hasChildren(['text', 'authorId', 'createdAt'])",
+        "text": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 280"
+        },
+        "authorId": {
+          ".validate": "newData.val() === auth.uid"
+        },
+        "authorName": {
+          ".validate": "newData.isString()"
+        },
+        "authorColor": {
+          ".validate": "newData.isString()"
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber()"
+        },
+
+        "likes": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid",
+            ".validate": "!newData.exists() || (newData.isBoolean() && newData.val() === true)"
+          }
+        },
+
+        "comments": {
+          "$commentId": {
+            ".write": "auth != null && (!data.exists() || data.child('authorId').val() === auth.uid)",
+            ".validate": "newData.hasChildren(['text', 'authorId', 'createdAt'])",
+            "text": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 180"
+            },
+            "authorId": {
+              ".validate": "newData.val() === auth.uid"
+            },
+            "authorName": {
+              ".validate": "newData.isString()"
+            },
+            "authorColor": {
+              ".validate": "newData.isString()"
+            },
+            "createdAt": {
+              ".validate": "newData.isNumber()"
+            },
+
+            "likes": {
+              "$uid": {
+                ".write": "auth != null && auth.uid === $uid",
+                ".validate": "!newData.exists() || (newData.isBoolean() && newData.val() === true)"
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "groups": {
+      ".read": "auth != null",
+      ".indexOn": ["createdAt"],
+      "$groupId": {
+        ".write": "auth != null && (!data.exists() || data.child('ownerId').val() === auth.uid)",
+        ".validate": "newData.hasChildren(['name', 'description', 'color', 'ownerId', 'ownerName', 'createdAt', 'members'])",
+        "name": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 48"
+        },
+        "description": {
+          ".validate": "newData.isString() && newData.val().length <= 160"
+        },
+        "color": {
+          ".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{3,8}$/)"
+        },
+        "ownerId": {
+          ".validate": "newData.val() === auth.uid"
+        },
+        "ownerName": {
+          ".validate": "newData.isString()"
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber()"
+        },
+        "members": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid",
+            ".validate": "newData.hasChildren(['role', 'joinedAt'])",
+            "role": {
+              ".validate": "newData.isString() && (newData.val() === 'owner' || newData.val() === 'member')"
+            },
+            "joinedAt": {
+              ".validate": "newData.isNumber()"
+            }
+          }
+        }
+      }
+    }
+  }
+}
