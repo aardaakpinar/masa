@@ -2,8 +2,9 @@
 import { elements } from "./elements.js";
 import { connectToFirebase } from "./firebase.js";
 import { submitAuth, saveSettingsAvatar, saveProfileSettings, openChangePasswordDialog, confirmDeleteAccount, setAuthMode, logout } from "./auth.js";
-import { syncAuthMode, syncAuthUi, syncComposer, openAuth, closeSettings, openSearch } from "./ui.js";
+import { syncAuthMode, syncAuthUi, syncComposer, openAuth, closeSettings, openSearch, openGroups } from "./ui.js";
 import { submitComposerText, loadMorePosts, closeComments } from "./posts.js";
+import { submitGroupForm } from "./groups.js";
 import { setupDiscover } from "./discover.js";
 import { initials } from "./utils.js";
 
@@ -22,7 +23,9 @@ if (storedConfig) {
 
 elements.authButton.addEventListener("click", openAuth);
 elements.searchButton.addEventListener("click", openSearch);
+elements.groupsButton?.addEventListener("click", openGroups);
 elements.openAuthFromGate.addEventListener("click", openAuth);
+elements.openGroupsAuthFromGate?.addEventListener("click", openAuth);
 elements.changePasswordButton.addEventListener("click", openChangePasswordDialog);
 elements.deleteAccountButton.addEventListener("click", confirmDeleteAccount);
 elements.logoutButton.addEventListener("click", () => {
@@ -31,6 +34,7 @@ elements.logoutButton.addEventListener("click", () => {
 });
 elements.settingsAvatarInput.addEventListener("change", saveSettingsAvatar);
 elements.saveProfileButton.addEventListener("click", saveProfileSettings);
+elements.createGroupButton?.addEventListener("click", submitGroupForm);
 elements.settingsAvatarButton?.addEventListener("click", () => {
   elements.settingsAvatarInput?.click();
 });
@@ -59,10 +63,10 @@ elements.authEmail.addEventListener("keydown", (event) => {
   if (event.key === "Enter") submitAuth();
 });
 
-elements.postText.addEventListener("input", syncComposer);
+elements.postText?.addEventListener("input", syncComposer);
 
-elements.sendPost.addEventListener("click", async () => {
-  const text = elements.postText.value.trim();
+elements.sendPost?.addEventListener("click", async () => {
+  const text = elements.postText?.value.trim();
   if (!text) return;
 
   elements.sendPost.disabled = true;
@@ -72,7 +76,7 @@ elements.sendPost.addEventListener("click", async () => {
 
   try {
     await submitComposerText(text);
-    elements.postText.value = "";
+    if (elements.postText) elements.postText.value = "";
   } catch (error) {
     if (elements.settingsError) {
       elements.settingsError.textContent = "Post paylaşılamadı: " + error.message;

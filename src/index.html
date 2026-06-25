@@ -32,6 +32,10 @@
             <span data-lucide="search"></span>
             <span class="nav-item-label">Ara</span>
           </button>
+          <button class="nav-item button button--ghost" id="groupsButton" type="button" aria-label="Masalar">
+            <span data-lucide="users"></span>
+            <span class="nav-item-label">Masalar</span>
+          </button>
           <button class="nav-item button button--ghost" id="authButton" type="button" aria-label="Giriş">
             <span data-lucide="user"></span>
             <span class="nav-item-label">Giriş</span>
@@ -55,11 +59,54 @@
           <textarea class="textarea" id="postText" maxlength="280" placeholder="Neler oluyor?" rows="2"></textarea>
           <div class="composer-footer">
             <span id="charCount">0/280</span>
-            <button class="button button--primary" id="sendPost" type="button" disabled>Paylaş</button>
+            <div class="composer-group-row">
+              <label class="form-field composer-group-field">
+                <select class="input" id="postGroupSelect">
+                  <option value="">Akış</option>
+                </select>
+              </label>
+              <button class="button button--primary" id="sendPost" type="button" disabled>Paylaş</button>
+            </div>
           </div>
         </section>
 
         <section class="feed-list" id="postList" aria-live="polite"></section>
+      </main>
+
+      <main class="timeline hidden" id="groupsView">
+        <header class="topbar">
+          <div>
+            <h1>Masalar</h1>
+          </div>
+        </header>
+
+        <section class="auth-gate" id="groupsAuthGate">
+          <strong>Grup oluşturmak ve yönetmek için giriş yap.</strong>
+          <button class="button button--primary" id="openGroupsAuthFromGate" type="button">Giriş yap</button>
+        </section>
+
+        <section class="composer" aria-label="Topluluk oluştur">
+          <div class="section-heading">
+            <h3>Yeni topluluk</h3>
+            <p>Buradan topluluk ekleyebilir ve sahip olduğun toplulukları silebilirsin.</p>
+          </div>
+          <label class="form-field">
+            <span>Topluluk adı</span>
+            <input class="input" id="groupNameInput" type="text" maxlength="48" placeholder="Örn. Tasarım Kulübü" />
+          </label>
+          <label class="form-field">
+            <span>Açıklama</span>
+            <textarea class="textarea community-textarea" id="groupDescriptionInput" maxlength="160" rows="3" placeholder="Bu topluluk ne hakkında?"></textarea>
+          </label>
+          <div class="composer-footer">
+            <span id="groupCount">0</span>
+            <button class="button button--primary" id="createGroupButton" type="button">Topluluk Oluştur</button>
+          </div>
+          <p class="error-text" id="groupError"></p>
+          <p class="success-text" id="groupSuccess"></p>
+        </section>
+
+        <section class="feed-list groups-feed-list" id="groupsList" aria-live="polite"></section>
       </main>
 
       <main class="timeline hidden" id="search">
@@ -133,9 +180,7 @@
         </section>
       </main>
 
-      <aside class="right-panel" aria-label="Durum">
-        
-      </aside>
+      <aside class="right-panel" aria-label="Durum"></aside>
     </div>
 
     <dialog class="settings-dialog" id="authDialog">

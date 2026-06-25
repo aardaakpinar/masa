@@ -4,7 +4,7 @@ import { initials } from "./utils.js";
 
 export function syncComposer() {
   if (!elements.postText || !elements.charCount || !elements.sendPost) return;
-  
+
   const length = elements.postText.value.trim().length;
   elements.charCount.textContent = `${elements.postText.value.length}/280`;
   elements.sendPost.disabled = !state.db || !state.authUser || length === 0;
@@ -39,6 +39,9 @@ export function syncAuthUi() {
   if (elements.authGate) {
     elements.authGate.classList.toggle("visible", !isSignedIn);
   }
+  if (elements.groupsAuthGate) {
+    elements.groupsAuthGate.classList.toggle("visible", !isSignedIn);
+  }
 
   const composer = document.querySelector(".composer");
   if (composer) {
@@ -54,6 +57,18 @@ export function syncAuthUi() {
   setHidden(elements.panelAuthButton, isSignedIn);
   setHidden(elements.logoutButton, !isSignedIn);
   setText(elements.accountText, isSignedIn ? `${state.profile.name} olarak giriş yapıldı.` : "Giriş yapılmadı.");
+  if (elements.createGroupButton) {
+    elements.createGroupButton.disabled = !isSignedIn || !state.db;
+  }
+  if (elements.groupNameInput) {
+    elements.groupNameInput.disabled = !isSignedIn;
+  }
+  if (elements.groupDescriptionInput) {
+    elements.groupDescriptionInput.disabled = !isSignedIn;
+  }
+  if (elements.groupCount) {
+    setText(elements.groupCount, String(state.groups ? Object.keys(state.groups).length : 0));
+  }
 
   if (!isSignedIn) {
     closeSettings();
@@ -113,11 +128,13 @@ export function openAuth() {
 
 function setMainView(view) {
   elements.feed?.classList.toggle("hidden", view !== "feed");
+  elements.groupsView?.classList.toggle("hidden", view !== "groups");
   elements.searchPanel?.classList.toggle("hidden", view !== "search");
   elements.settingsPanel?.classList.toggle("hidden", view !== "settings");
 
   elements.feedButton?.classList.toggle("active", view === "feed");
   elements.searchButton?.classList.toggle("active", view === "search");
+  elements.groupsButton?.classList.toggle("active", view === "groups");
 }
 
 export function openFeed() {
@@ -126,6 +143,10 @@ export function openFeed() {
 
 export function openSearch() {
   setMainView("search");
+}
+
+export function openGroups() {
+  setMainView("groups");
 }
 
 export function openSettings() {

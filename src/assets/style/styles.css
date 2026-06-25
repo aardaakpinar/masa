@@ -137,11 +137,124 @@ button {
 }
 
 .sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  overflow: auto;
+}
+
+.sidebar {
   border-right: 1px solid var(--line);
 }
 
 .right-panel {
   border-left: 1px solid var(--line);
+}
+
+.communities-panel {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.sidebar-section {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.section-heading--compact h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.section-heading--compact p {
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+
+.community-form {
+  display: grid;
+  gap: 12px;
+}
+
+.community-textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.groups-list {
+  display: grid;
+  gap: 10px;
+}
+
+.groups-feed-list {
+  padding: 18px 22px 28px;
+  gap: 14px;
+}
+
+.groups-list--top .group-card {
+  padding: 10px;
+}
+
+.group-card {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.group-avatar {
+  width: 42px;
+  height: 42px;
+  font-size: 13px;
+}
+
+.group-card__content {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.group-card__content h4 {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+
+.group-card__content p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.group-card__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.group-action {
+  min-height: 32px;
+  padding: 0 12px;
+}
+
+.group-action.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-dark);
+}
+
+.group-card__description {
+  margin-top: 6px !important;
+}
+
+.empty-state--compact {
+  padding: 16px;
+  text-align: left;
 }
 
 .brand {
@@ -357,6 +470,26 @@ button {
   font-size: 20px;
 }
 
+.composer-group-row {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+
+.composer-group-field {
+  display: grid;
+  gap: 6px;
+}
+
+.composer-group-field select {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+  background: var(--bg);
+  color: var(--text);
+}
+
 .composer textarea:focus,
 .settings-card textarea:focus {
   border-color: var(--accent);
@@ -439,6 +572,12 @@ button {
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
+}
+
+.post-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .post-author {

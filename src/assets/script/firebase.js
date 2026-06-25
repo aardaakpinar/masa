@@ -4,6 +4,7 @@ import { getDatabase } from "https://www.gstatic.com/firebasejs/10.12.5/firebase
 import { state, storageKeys, firebaseConfig } from "./state.js";
 import { subscribeToAuth } from "./auth.js";
 import { subscribeToPosts, stopPostSubscription } from "./posts.js";
+import { subscribeToGroups, stopGroupSubscription } from "./groups.js";
 import { syncAuthUi, syncComposer } from "./ui.js";
 
 export function connectToFirebase(rawConfig) {
@@ -14,6 +15,7 @@ export function connectToFirebase(rawConfig) {
     }
 
     stopPostSubscription();
+    stopGroupSubscription();
     const appName = "masa-app";
     state.app = getApps().some((app) => app.name === appName)
       ? getApp(appName)
@@ -23,6 +25,7 @@ export function connectToFirebase(rawConfig) {
 
     subscribeToAuth();
     subscribeToPosts();
+    subscribeToGroups();
   } catch (error) {
     state.auth = null;
     state.db = null;

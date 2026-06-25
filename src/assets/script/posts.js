@@ -3,6 +3,7 @@ import { elements } from "./elements.js";
 import { initials, formatTime, createRichTextFragment } from "./utils.js";
 import { ref, push, set, update, remove, onValue, off, serverTimestamp, query, orderByKey, limitToLast, endAt, get } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 import { openAuth } from "./ui.js";
+import { canViewGroup, getGroupName } from "./groups.js";
 
 const POSTS_PAGE_SIZE = 15;
 let oldestLoadedKey = null;
@@ -102,6 +103,7 @@ export function renderPosts() {
   
   const posts = Object.entries(state.posts)
     .map(([id, post]) => ({ id, ...post }))
+    .filter((post) => canViewGroup(post.groupId))
     .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
   if (!posts.length) {
@@ -146,9 +148,24 @@ export function createPostElement(post) {
   author.className = "post-author";
   author.textContent = post.authorName || "Anonim";
 
-  const time = document.createElement("time");
-  time.className = "post-time";
-  time.textContent = formatTime(post.createdAt);
+  const meta = document.createElement("div");
+meta.className = "post-meta";
+
+if (post.groupId) {
+  const groupBadge = document.createElement("span");
+  groupBadge.className = "post-group-badge";
+  groupBadge.textContent = "#" + getGroupName(post.groupId);
+
+  meta.append(groupBadge);
+}
+
+const time = document.createElement("time");
+time.className = "post-time";
+time.textContent = formatTime(post.createdAt);
+
+meta.append(time);
+
+header.append(author, meta);
 
   const text = document.createElement("p");
   text.className = "post-text";
@@ -194,7 +211,6 @@ export function createPostElement(post) {
     actions.append(deleteButton);
   }
 
-  header.append(author, time);
   body.append(header, text, actions);
   article.append(avatar, body);
   return article;
@@ -413,6 +429,12 @@ export async function createPost(text) {
   }
   if (!text) return;
 
+  const groupId = elements.postGroupSelect?.value || "";
+  const isGroupPost = Boolean(groupId);
+  if (isGroupPost && !canViewGroup(groupId)) {
+    throw new Error("Bu toplulukta paylaşım yapmak için üye olmalısın.");
+  }
+
   const postRef = push(ref(state.db, "posts"));
   await set(postRef, {
     text,
@@ -421,6 +443,7 @@ export async function createPost(text) {
     authorColor: state.profile.color,
     createdAt: serverTimestamp(),
     likes: {},
+    groupId: isGroupPost ? groupId : "",
   });
 }
 

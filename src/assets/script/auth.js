@@ -4,6 +4,7 @@ import { cleanName, sanitizeEmail, isValidEmail, authMessage } from "./utils.js"
 import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import { get, ref, set, update, remove, serverTimestamp, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 import { renderPosts } from "./posts.js";
+import { renderGroups } from "./groups.js";
 import { syncAuthUi, syncComposer, syncAuthMode, closeSettings } from "./ui.js";
 
 const authAttempts = {
@@ -38,6 +39,7 @@ export function subscribeToAuth() {
     }
     syncAuthUi();
     renderPosts();
+    renderGroups();
   });
 }
 
@@ -65,6 +67,7 @@ export async function loadOrCreateProfile(user) {
   }
 
   syncAuthUi();
+  renderGroups();
 }
 
 export async function submitAuth() {
@@ -206,6 +209,7 @@ export async function saveProfileSettings() {
     elements.settingsError.textContent = "";
     elements.settingsSuccess.textContent = "Profil güncellendi.";
     syncAuthUi();
+    renderGroups();
     setTimeout(() => {
       elements.settingsSuccess.textContent = "";
     }, 2000);
