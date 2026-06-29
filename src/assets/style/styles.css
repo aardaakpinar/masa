@@ -361,7 +361,7 @@ img {
   justify-content: space-between;
   gap: 14px;
   padding: 18px;
-  margin: 0 18px 18px;
+  margin: 18px;
   border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--line));
   border-radius: 18px;
   background: var(--accent-soft);
@@ -1504,7 +1504,6 @@ img {
   }
 
   .mobile-backdrop {
-    display: block;
     position: fixed;
     inset: 0;
     z-index: 70;
@@ -1530,13 +1529,14 @@ img {
   }
 
   .nav-item {
-    min-height: 54px;
     border-radius: 16px;
     flex-direction: row;
-    justify-content: flex-start;
+    justify-content: center;
     gap: 12px;
+    min-height: 54px;
     padding: 0 14px;
     font-size: 14px;
+    align-items: center;
   }
 
   .nav-item .lucide {
