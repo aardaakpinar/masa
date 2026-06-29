@@ -14,61 +14,375 @@
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <title>MASA - Giriş</title>
     <link rel="stylesheet" href="assets/style/styles.css" />
+    <style>
+      /* ── Login page override ─────────────────────────────── */
+      .login-bg {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background:
+          radial-gradient(ellipse 80% 60% at 20% -10%, color-mix(in srgb, var(--accent) 18%, transparent) 0%, transparent 60%),
+          radial-gradient(ellipse 60% 50% at 90% 110%, color-mix(in srgb, var(--accent) 10%, transparent) 0%, transparent 55%),
+          var(--bg);
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Decorative blurred blobs */
+      .login-bg::before,
+      .login-bg::after {
+        content: "";
+        position: absolute;
+        border-radius: 50%;
+        pointer-events: none;
+      }
+
+      .login-bg::before {
+        width: 520px;
+        height: 520px;
+        top: -180px;
+        left: -120px;
+        background: color-mix(in srgb, var(--accent) 12%, transparent);
+        filter: blur(80px);
+      }
+
+      .login-bg::after {
+        width: 400px;
+        height: 400px;
+        bottom: -140px;
+        right: -100px;
+        background: color-mix(in srgb, var(--accent) 8%, transparent);
+        filter: blur(70px);
+      }
+
+      /* ── Card ─────────────────────────────────────────────── */
+      .login-card {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        max-width: 420px;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      /* Top accent stripe */
+      .login-card-stripe {
+        height: 4px;
+        background: linear-gradient(90deg, var(--accent) 0%, var(--accent-dark) 100%);
+      }
+
+      .login-card-body {
+        padding: 36px 36px 40px;
+        display: grid;
+        gap: 28px;
+      }
+
+      /* ── Header ───────────────────────────────────────────── */
+      .login-header {
+        display: grid;
+        gap: 6px;
+      }
+
+      .login-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 4px;
+      }
+
+      .login-logo-img {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+      }
+
+      .login-logo-name {
+        font-family: "Bricolage Grotesque", sans-serif;
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        color: var(--text);
+      }
+
+      .login-title {
+        font-family: "Bricolage Grotesque", sans-serif;
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        color: var(--text);
+        margin: 0;
+        line-height: 1.2;
+      }
+
+      .login-subtitle {
+        font-size: 14px;
+        color: var(--text-soft);
+        margin: 0;
+        line-height: 1.55;
+      }
+
+      /* ── Social proof ─────────────────────────────────────── */
+      .login-social-proof {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 14px;
+        background: var(--bg-alt);
+        border: 1px solid var(--line-soft);
+        border-radius: 14px;
+      }
+
+      .login-avatars {
+        display: flex;
+        flex-shrink: 0;
+      }
+
+      .login-avatars .avatar {
+        width: 28px;
+        height: 28px;
+        font-size: 10px;
+        font-weight: 800;
+        border: 2px solid var(--bg);
+        box-shadow: none;
+        cursor: default;
+      }
+
+      .login-avatars .avatar + .avatar {
+        margin-left: -8px;
+      }
+
+      .login-social-text {
+        font-size: 13px;
+        color: var(--text-soft);
+        line-height: 1.4;
+      }
+
+      .login-social-text strong {
+        color: var(--text);
+        font-weight: 700;
+      }
+
+      /* ── Mode tabs ────────────────────────────────────────── */
+      .login-tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+        background: var(--bg-alt);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 4px;
+      }
+
+      .login-tab {
+        padding: 9px 0;
+        font-size: 14px;
+        font-weight: 700;
+        border-radius: 9px;
+        border: none;
+        background: transparent;
+        color: var(--text-soft);
+        cursor: pointer;
+        transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+      }
+
+      .login-tab.active {
+        background: var(--bg);
+        color: var(--text);
+        box-shadow: 0 1px 4px rgba(15,20,25,0.10), 0 0 0 1px var(--line);
+      }
+
+      /* ── Form ─────────────────────────────────────────────── */
+      .login-form {
+        display: grid;
+        gap: 14px;
+      }
+
+      .login-field {
+        display: grid;
+        gap: 6px;
+      }
+
+      .login-field label {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-soft);
+        letter-spacing: 0.02em;
+      }
+
+      .login-field .input {
+        height: 46px;
+        font-size: 15px;
+        border-radius: 12px;
+        padding: 0 14px;
+        border: 1.5px solid var(--line);
+        background: var(--bg);
+        color: var(--text);
+        transition: border-color 150ms ease, box-shadow 150ms ease;
+        width: 100%;
+      }
+
+      .login-field .input:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--focus-ring);
+      }
+
+      .login-field .input::placeholder {
+        color: var(--muted);
+      }
+
+      .login-password-hint {
+        font-size: 12px;
+        color: var(--text-soft);
+        line-height: 1.5;
+        margin: -4px 0 0;
+      }
+
+      /* ── Remember + forgot row ────────────────────────────── */
+      .login-meta-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: -2px 0;
+      }
+
+      .login-remember {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 13px;
+        color: var(--text-soft);
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .login-remember input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        accent-color: var(--accent);
+        cursor: pointer;
+      }
+
+      /* ── Submit button ────────────────────────────────────── */
+      .login-submit {
+        height: 50px;
+        font-size: 15px;
+        font-weight: 700;
+        border-radius: 12px;
+        width: 100%;
+        background: var(--accent);
+        color: #0f1419;
+        border: none;
+        cursor: pointer;
+        transition: background 150ms ease, transform 100ms ease, box-shadow 150ms ease;
+        letter-spacing: 0.01em;
+      }
+
+      .login-submit:hover {
+        background: var(--accent-dark);
+        box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 40%, transparent);
+      }
+
+      .login-submit:active {
+        transform: scale(0.985);
+      }
+
+      /* ── Error ────────────────────────────────────────────── */
+      .login-error {
+        font-size: 13px;
+        color: var(--danger);
+        min-height: 18px;
+        margin: -6px 0 0;
+        line-height: 1.5;
+      }
+
+      /* ── Mobile ───────────────────────────────────────────── */
+      @media (max-width: 480px) {
+        .login-bg {
+          padding: 16px;
+          align-items: flex-start;
+          padding-top: 40px;
+        }
+
+        .login-card-body {
+          padding: 24px 20px 28px;
+          gap: 22px;
+        }
+
+        .login-title {
+          font-size: 22px;
+        }
+      }
+    </style>
   </head>
-  <body class="auth-page">
-    <div class="auth-page-container">
-      <div class="auth-page-card">
-        <section>
-          <div class="auth-page-header">
-            <h1 class="brand-text">MASA</h1>
-            <span class="auth-page-subtitle">hadi sen de bir sandalye çek ve aramıza otur!</span>
+  <body class="login-bg">
+    <div class="login-card">
+      <div class="login-card-stripe"></div>
+      <div class="login-card-body">
+
+        <!-- Header -->
+        <div class="login-header">
+          <div class="login-logo">
+            <img class="login-logo-img" src="https://aardaakpinar.github.io/assets/images/logos/masa.png" alt="MASA Logo">
+            <span class="login-logo-name">MASA</span>
+          </div>
+          <h1 class="login-title" id="loginTitle">Tekrar hoş geldin!</h1>
+          <p class="login-subtitle" id="loginSubtitle">Masaya oturmak için giriş yap.</p>
+        </div>
+
+        <!-- Social proof -->
+        <div class="login-social-proof">
+          <div class="login-avatars">
+            <div class="avatar" style="background:#fcc41d;color:#0f1419;">SA</div>
+            <div class="avatar" style="background:#2563eb;color:#fff;">MK</div>
+            <div class="avatar" style="background:#16a34a;color:#fff;">CA</div>
+            <div class="avatar" style="background:#dc2626;color:#fff;">DK</div>
+          </div>
+          <p class="login-social-text"><strong>8.300+</strong> kişi masada seni bekliyor.</p>
+        </div>
+
+        <!-- Mode tabs -->
+        <div class="login-tabs" role="tablist" aria-label="Hesap modu">
+          <button class="login-tab active" id="loginModeButton" type="button" role="tab" aria-selected="true">Giriş yap</button>
+          <button class="login-tab" id="registerModeButton" type="button" role="tab" aria-selected="false">Kayıt ol</button>
+        </div>
+
+        <!-- Form -->
+        <form class="login-form" id="authForm" method="post" novalidate>
+
+          <div class="login-field" id="authNameField" hidden>
+            <label for="authName">Görünen ad</label>
+            <input class="input" id="authName" type="text" autocomplete="name" placeholder="Adın soyadın" />
           </div>
 
-          <div class="sidebar-card" style="max-width: 360px;">
-            <div class="card-row">
-              <button class="avatar" type="button" aria-hidden="true">SA</button>
-              <button class="avatar" type="button" aria-hidden="true" style="margin-left:-14px;background:#2563eb;color:#fff;">MK</button>
-              <button class="avatar" type="button" aria-hidden="true" style="margin-left:-14px;background:#16a34a;color:#fff;">CA</button>
-              <button class="avatar" type="button" aria-hidden="true" style="margin-left:-14px;background:#dc2626;color:#fff;">DK</button>
-            </div>
-            <p>8.300+ kişi masada</p>
+          <div class="login-field">
+            <label for="authEmail">E-posta</label>
+            <input class="input" id="authEmail" type="email" autocomplete="email" placeholder="ornek@email.com" required />
           </div>
-        </section>
 
-        <section class="auth-page-content">
-          <form method="post" class="auth-page-form" id="authForm">
-            <div class="auth-switch segmented-control" role="tablist" aria-label="Hesap modu">
-              <button class="switch-button segmented-control__item active button button--secondary" id="loginModeButton" type="button">Giriş</button>
-              <button class="switch-button segmented-control__item button button--secondary" id="registerModeButton" type="button">Kayıt</button>
-            </div>
+          <div class="login-field">
+            <label for="authPassword">Şifre</label>
+            <input class="input" id="authPassword" type="password" minlength="8" autocomplete="current-password" placeholder="••••••••" required />
+            <p class="login-password-hint" id="passwordHint" hidden>8+ karakter, büyük/küçük harf, sayı ve sembol (@$!%*?&) içermeli.</p>
+          </div>
 
-            <label class="auth-field" id="authNameField">
-              <span>Görünen ad</span>
-              <input class="input" id="authName" type="text" autocomplete="name" />
-            </label>
-
-            <label class="auth-field">
-              <span>E-posta</span>
-              <input class="input" id="authEmail" type="email" autocomplete="email" required />
-            </label>
-
-            <label class="auth-field">
-              <span>Şifre</span>
-              <input class="input" id="authPassword" type="password" minlength="8" autocomplete="current-password" required />
-            </label>
-
-            <p class="password-hint" id="passwordHint" hidden>Şifre: 8+ karakter, büyük, küçük, sayı ve sembol (@$!%*?&) içermeli.</p>
-
-            <label class="checkbox-field">
+          <div class="login-meta-row" id="rememberRow">
+            <label class="login-remember">
               <input type="checkbox" id="rememberMe" />
               <span>Oturumumu hatırla</span>
             </label>
+          </div>
 
-            <button class="button button--primary button--full" id="submitAuth" type="submit">Giriş yap</button>
+          <p class="login-error" id="authError"></p>
 
-            <p class="error-text" id="authError"></p>
-          </form>
-        </section>
+          <button class="login-submit" id="submitAuth" type="submit">Giriş yap</button>
+        </form>
+
       </div>
     </div>
 
@@ -76,6 +390,35 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
       lucide.createIcons();
+
+      // Tab switching
+      const loginBtn = document.getElementById("loginModeButton");
+      const registerBtn = document.getElementById("registerModeButton");
+      const nameField = document.getElementById("authNameField");
+      const rememberRow = document.getElementById("rememberRow");
+      const submitBtn = document.getElementById("submitAuth");
+      const title = document.getElementById("loginTitle");
+      const subtitle = document.getElementById("loginSubtitle");
+      const hint = document.getElementById("passwordHint");
+
+      function setMode(mode) {
+        const isLogin = mode === "login";
+        loginBtn.classList.toggle("active", isLogin);
+        loginBtn.setAttribute("aria-selected", String(isLogin));
+        registerBtn.classList.toggle("active", !isLogin);
+        registerBtn.setAttribute("aria-selected", String(!isLogin));
+        nameField.hidden = isLogin;
+        rememberRow.hidden = !isLogin;
+        hint.hidden = isLogin;
+        submitBtn.textContent = isLogin ? "Giriş yap" : "Kayıt ol";
+        title.textContent = isLogin ? "Tekrar hoş geldin!" : "Masaya katıl!";
+        subtitle.textContent = isLogin
+          ? "Masaya oturmak için giriş yap."
+          : "Hesap oluşturmak için birkaç saniye yeterli.";
+      }
+
+      loginBtn.addEventListener("click", () => setMode("login"));
+      registerBtn.addEventListener("click", () => setMode("register"));
     </script>
   </body>
 </html>
