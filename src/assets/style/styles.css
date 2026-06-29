@@ -578,7 +578,7 @@ img {
 }
 
 .action-button.liked {
-  color: var(--liked-text);
+  color: var(--accent-dark);
 }
 
 .empty-state {
