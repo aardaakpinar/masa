@@ -9,41 +9,55 @@
     <meta property="og:type" content="website">
     <meta property="og:image" content="https://aardaakpinar.github.io/assets/images/logos/masa.png">
     <link rel="icon" href="https://aardaakpinar.github.io/assets/images/logos/masa.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <title>MASA - Giriş</title>
-    <link rel="preconnect" href="https://www.gstatic.com" />
     <link rel="stylesheet" href="assets/style/styles.css" />
   </head>
   <body class="auth-page">
     <div class="auth-page-container">
       <div class="auth-page-card">
-        <div class="auth-page-header">
-          <h1 class="brand-text">MASA</h1>
-          <span class="brand-text-mobile">M</span>
-        </div>
+        <section>
+          <div class="auth-page-header">
+            <h1 class="brand-text">MASA</h1>
+            <span class="auth-page-subtitle">hadi sen de bir sandalye çek ve aramıza otur!</span>
+          </div>
 
-        <div class="auth-page-content">
+          <div class="sidebar-card" style="max-width: 360px;">
+            <div class="card-row">
+              <button class="avatar" type="button" aria-hidden="true">SA</button>
+              <button class="avatar" type="button" aria-hidden="true" style="margin-left:-14px;background:#2563eb;color:#fff;">MK</button>
+              <button class="avatar" type="button" aria-hidden="true" style="margin-left:-14px;background:#16a34a;color:#fff;">CA</button>
+              <button class="avatar" type="button" aria-hidden="true" style="margin-left:-14px;background:#dc2626;color:#fff;">DK</button>
+            </div>
+            <p>8.300+ kişi masada</p>
+          </div>
+        </section>
+
+        <section class="auth-page-content">
           <form method="post" class="auth-page-form" id="authForm">
             <div class="auth-switch segmented-control" role="tablist" aria-label="Hesap modu">
               <button class="switch-button segmented-control__item active button button--secondary" id="loginModeButton" type="button">Giriş</button>
               <button class="switch-button segmented-control__item button button--secondary" id="registerModeButton" type="button">Kayıt</button>
             </div>
 
-            <label class="form-field auth-field" id="authNameField">
+            <label class="auth-field" id="authNameField">
               <span>Görünen ad</span>
               <input class="input" id="authName" type="text" autocomplete="name" />
             </label>
 
-            <label class="form-field auth-field">
+            <label class="auth-field">
               <span>E-posta</span>
               <input class="input" id="authEmail" type="email" autocomplete="email" required />
             </label>
 
-            <label class="form-field auth-field">
+            <label class="auth-field">
               <span>Şifre</span>
               <input class="input" id="authPassword" type="password" minlength="8" autocomplete="current-password" required />
             </label>
 
-            <p class="password-hint" id="passwordHint">Şifre: 8+ karakter, büyük, küçük, sayı, sembol</p>
+            <p class="password-hint" id="passwordHint" hidden>Şifre: 8+ karakter, büyük, küçük, sayı ve sembol (@$!%*?&) içermeli.</p>
 
             <label class="checkbox-field">
               <input type="checkbox" id="rememberMe" />
@@ -54,7 +68,7 @@
 
             <p class="error-text" id="authError"></p>
           </form>
-        </div>
+        </section>
       </div>
     </div>
 
