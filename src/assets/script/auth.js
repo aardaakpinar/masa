@@ -24,9 +24,7 @@ export function subscribeToAuth() {
           name: cleanName(user.displayName || user.email?.split("@")[0] || "User"),
           color: "#2563eb",
         };
-        if (elements.settingsError) {
-          elements.settingsError.textContent = "Profil bilgisi alınamadı: " + error.message;
-        }
+        console.warn("Profil bilgisi alınamadı: " + error.message);
       }
       if (elements.authDialog?.open) {
         elements.authDialog.close();
@@ -97,7 +95,8 @@ export async function submitAuth() {
   }
 
   if (isAuthRateLimited()) {
-    elements.authError.textContent = "Çok fazla deneme yapılıldı. Lütfen daha sonra tekrar deneyin.";
+    const waitMin = getRateLimitWaitMinutes();
+    elements.authError.textContent = `Çok fazla deneme yapıldı. ${waitMin} dakika sonra tekrar dene.`;
     return;
   }
 
@@ -145,13 +144,13 @@ export async function saveSettingsAvatar() {
       elements.settingsSuccess.textContent = "";
     }, 2000);
   } catch (error) {
-    elements.settingsError.textContent = "Profil guncellenemedi: " + error.message;
+    console.warn("Profil guncellenemedi: " + error.message);
   }
 }
 
 export async function saveProfileSettings() {
   if (!state.authUser || !state.db) {
-    elements.settingsError.textContent = "Giriş yapılmalıdır.";
+    console.warn("Giriş yapılmalıdır.");
     return;
   }
 
@@ -206,7 +205,6 @@ export async function saveProfileSettings() {
 
     state.profile.name = name;
     state.profile.color = color;
-    elements.settingsError.textContent = "";
     elements.settingsSuccess.textContent = "Profil güncellendi.";
     syncAuthUi();
     renderGroups();
@@ -214,7 +212,7 @@ export async function saveProfileSettings() {
       elements.settingsSuccess.textContent = "";
     }, 2000);
   } catch (error) {
-    elements.settingsError.textContent = "Profil güncellenemedi: " + error.message;
+    console.warn("Profil güncellenemedi: " + error.message);
   }
 }
 
@@ -256,7 +254,7 @@ export function getRememberedEmail() {
 
 export function openChangePasswordDialog() {
   if (!state.authUser) {
-    elements.settingsError.textContent = "Giriş yapılmalıdır.";
+    console.warn("Giriş yapılmalıdır.");
     return;
   }
 
@@ -266,11 +264,11 @@ export function openChangePasswordDialog() {
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]+$/;
 
   if (newPassword.length < 8) {
-    elements.settingsError.textContent = "Şifre en az 8 karakter olmalı.";
+    console.warn("Şifre en az 8 karakter olmalı.");
     return;
   }
   if (!passwordRegex.test(newPassword)) {
-    elements.settingsError.textContent = "Şifre büyük, küçük, sayı ve sembol içermeli.";
+    console.warn("Şifre büyük, küçük, sayı ve sembol içermeli.");
     return;
   }
 
@@ -282,13 +280,13 @@ export function openChangePasswordDialog() {
       }, 3000);
     })
     .catch((error) => {
-      elements.settingsError.textContent = "Şifre değiştirilemedi: " + error.message;
+      console.warn("Şifre değiştirilemedi: " + error.message);
     });
 }
 
 export async function confirmDeleteAccount() {
   if (!state.authUser) {
-    elements.settingsError.textContent = "Giriş yapılmalıdır.";
+    console.warn("Giriş yapılmalıdır.");
     return;
   }
 
@@ -301,7 +299,7 @@ export async function confirmDeleteAccount() {
   const doubleConfirm = prompt(`Hesabınızı silmek için "${state.authUser.email}" yazınız:`);
 
   if (doubleConfirm !== state.authUser.email) {
-    elements.settingsError.textContent = "Doğrulama başarısız. Hesap silinmedi.";
+    console.warn("Doğrulama başarısız. Hesap silinmedi.");
     return;
   }
 
@@ -326,14 +324,13 @@ export async function confirmDeleteAccount() {
 
     await state.authUser.delete();
 
-    elements.settingsSuccess.textContent = "Hesabınız başarıyla silindi.";
     closeSettings();
 
     setTimeout(() => {
       signOut(state.auth);
     }, 2000);
   } catch (error) {
-    elements.settingsError.textContent = "Hesap silinemedi: " + error.message;
+    console.warn("Hesap silinemedi: " + error.message);
     elements.deleteAccountButton.disabled = false;
   }
 }
@@ -356,5 +353,14 @@ function isAuthRateLimited() {
   );
   return recentAttempts.length >= authAttempts.maxAttempts;
 }
+
+function getRateLimitWaitMinutes() {
+  const now = Date.now();
+  const oldest = [...authAttempts.attempts].sort()[0];
+  if (!oldest) return 15;
+  return Math.max(1, Math.ceil((oldest + authAttempts.timeWindow - now) / 60000));
+}
+
+export { getRateLimitWaitMinutes };
 
 

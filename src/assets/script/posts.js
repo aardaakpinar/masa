@@ -45,8 +45,9 @@ export function subscribeToPosts() {
       renderPosts();
     },
     (error) => {
-      if (elements.settingsError) {
-        elements.settingsError.textContent = "Postlar yüklenemedi: " + error.message;
+      if (elements.feedError) {
+        elements.feedError.hidden = false;
+        elements.feedError.textContent = "Postlar yüklenemedi: " + error.message;
       }
     },
   );
@@ -59,10 +60,26 @@ export function stopPostSubscription() {
   state.postsRef = null;
 }
 
+let loadMoreIndicator = null;
+
+function showLoadMoreIndicator() {
+  if (loadMoreIndicator) return;
+  loadMoreIndicator = document.createElement("div");
+  loadMoreIndicator.className = "empty-state";
+  loadMoreIndicator.textContent = "Yükleniyor…";
+  elements.postList?.append(loadMoreIndicator);
+}
+
+function hideLoadMoreIndicator() {
+  loadMoreIndicator?.remove();
+  loadMoreIndicator = null;
+}
+
 export async function loadMorePosts() {
   if (!state.db || !hasMorePosts || isLoadingMore || !oldestLoadedKey) return;
 
   isLoadingMore = true;
+  showLoadMoreIndicator();
   try {
     const olderPostsQuery = query(
       ref(state.db, "posts"),
@@ -90,17 +107,21 @@ export async function loadMorePosts() {
     }
     renderPosts();
   } catch (error) {
-    if (elements.settingsError) {
-      elements.settingsError.textContent = "Daha fazla post yüklenemedi: " + error.message;
+    if (elements.feedError) {
+      elements.feedError.hidden = false;
+      elements.feedError.textContent = "Daha fazla post yüklenemedi: " + error.message;
     }
   } finally {
+    hideLoadMoreIndicator();
     isLoadingMore = false;
   }
 }
 
 export function renderPosts() {
   if (!elements.postList) return;
-  
+
+  if (elements.postsLoading) elements.postsLoading.remove();
+
   const posts = Object.entries(state.posts)
     .map(([id, post]) => ({ id, ...post }))
     .filter((post) => canViewGroup(post.groupId))
@@ -154,7 +175,7 @@ meta.className = "post-meta";
 if (post.groupId) {
   const groupBadge = document.createElement("span");
   groupBadge.className = "post-group-badge";
-  groupBadge.textContent = "#" + getGroupName(post.groupId);
+  groupBadge.textContent = getGroupName(post.groupId);
 
   meta.append(groupBadge);
 }
@@ -182,8 +203,10 @@ header.append(author, meta);
   const likeIcon = document.createElement("span");
   likeIcon.setAttribute("data-lucide", "heart");
   likeButton.append(likeIcon, ` ${Object.keys(likes).length}`);
-  likeButton.disabled = !state.authUser;
-  likeButton.addEventListener("click", () => toggleLike(post.id, liked));
+  likeButton.addEventListener("click", () => {
+    if (!state.authUser) { openAuth(); return; }
+    toggleLike(post.id, liked);
+  });
 
   const commentCount = Object.keys(post.comments || {}).length;
   const commentButton = document.createElement("button");
@@ -192,7 +215,10 @@ header.append(author, meta);
   const commentIcon = document.createElement("span");
   commentIcon.setAttribute("data-lucide", "message-circle");
   commentButton.append(commentIcon, ` ${commentCount}`);
-  commentButton.addEventListener("click", () => openComments(post.id));
+  commentButton.addEventListener("click", () => {
+    if (!state.authUser) { openAuth(); return; }
+    openComments(post.id);
+  });
 
   if (!post.__fromDiscover) {
     actions.append(likeButton, commentButton);
@@ -229,13 +255,24 @@ function createCommentsSection(post) {
 
   if (!comments.length) {
     const empty = document.createElement("div");
-    empty.className = "empty-state";
-    empty.textContent = "Henüz yorum yok.";
+    empty.className = "comment-empty";
+
+    const icon = document.createElement("span");
+    icon.className = "comment-empty-icon";
+    icon.setAttribute("data-lucide", "message-circle");
+    const emptyText = document.createElement("span");
+    emptyText.textContent = "Henüz yorum yok. İlk yorumu sen yap.";
+
+    empty.append(icon, emptyText);
     list.append(empty);
   } else {
     comments.forEach((comment) => {
       const item = document.createElement("div");
       item.className = "comment-item";
+
+      // Avatar column with thread line
+      const avatarCol = document.createElement("div");
+      avatarCol.className = "comment-avatar-col";
 
       const avatar = document.createElement("div");
       avatar.className = "avatar";
@@ -243,38 +280,41 @@ function createCommentsSection(post) {
       avatar.style.height = "36px";
       avatar.style.fontSize = "13px";
       avatar.style.flexShrink = "0";
-      avatar.style.background = comment.authorColor;
+      avatar.style.background = comment.authorColor || "#2563eb";
       avatar.textContent = initials(comment.authorName);
 
-      const contentWrap = document.createElement("div");
-      contentWrap.style.minWidth = "0";
-      contentWrap.style.flex = "1";
+      const threadLine = document.createElement("div");
+      threadLine.className = "comment-thread-line";
+
+      avatarCol.append(avatar, threadLine);
+
+      // Content
+      const content = document.createElement("div");
+      content.className = "comment-content";
 
       const meta = document.createElement("div");
-      meta.className = "post-header";
+      meta.className = "comment-meta";
 
       const commenter = document.createElement("span");
-      commenter.className = "post-author";
+      commenter.className = "comment-author";
       commenter.textContent = comment.authorName || "Anonim";
 
       const commentTime = document.createElement("time");
-      commentTime.className = "post-time";
+      commentTime.className = "comment-time";
       commentTime.textContent = formatTime(comment.createdAt);
 
       meta.append(commenter, commentTime);
 
-      const content = document.createElement("p");
-      content.className = "post-text";
-      content.append(createRichTextFragment(comment.text || ""));
+      const text = document.createElement("p");
+      text.className = "comment-text";
+      text.append(createRichTextFragment(comment.text || ""));
 
-      // LIKE SİSTEMİ
+      // Actions
       const actions = document.createElement("div");
-      actions.className = "post-actions";
+      actions.className = "comment-actions";
 
       const likes = comment.likes || {};
-      const liked = Boolean(
-        state.authUser && likes[state.authUser.uid]
-      );
+      const liked = Boolean(state.authUser && likes[state.authUser.uid]);
 
       const likeButton = document.createElement("button");
       likeButton.className = `action-button${liked ? " liked" : ""}`;
@@ -285,22 +325,11 @@ function createCommentsSection(post) {
       commentLikeCount.textContent = String(Object.keys(likes).length);
       likeButton.append(commentLikeIcon, commentLikeCount);
 
-      likeButton.disabled = !state.authUser;
-
       likeButton.addEventListener("click", async () => {
-        if (!state.authUser) return;
-
-        const likeRef = ref(
-          state.db,
-          `posts/${post.id}/comments/${comment.id}/likes/${state.authUser.uid}`
-        );
-
+        if (!state.authUser) { openAuth(); return; }
+        const likeRef = ref(state.db, `posts/${post.id}/comments/${comment.id}/likes/${state.authUser.uid}`);
         try {
-          if (liked) {
-            await remove(likeRef);
-          } else {
-            await set(likeRef, true);
-          }
+          if (liked) { await remove(likeRef); } else { await set(likeRef, true); }
         } catch (err) {
           console.error("Yorum beğenilemedi:", err);
         }
@@ -308,7 +337,6 @@ function createCommentsSection(post) {
 
       actions.append(likeButton);
 
-      // SİLME
       if (state.authUser && comment.authorId === state.authUser.uid) {
         const del = document.createElement("button");
         del.className = "action-button";
@@ -316,24 +344,19 @@ function createCommentsSection(post) {
         const commentDeleteIcon = document.createElement("span");
         commentDeleteIcon.setAttribute("data-lucide", "trash-2");
         del.append(commentDeleteIcon);
-
         del.addEventListener("click", () =>
           remove(ref(state.db, `posts/${post.id}/comments/${comment.id}`))
         );
-
         actions.append(del);
       }
 
-      contentWrap.append(meta, content, actions);
-
-      item.append(avatar, contentWrap);
-
+      content.append(meta, text, actions);
+      item.append(avatarCol, content);
       list.append(item);
     });
   }
 
   wrap.append(list);
-
   return wrap;
 }
 
@@ -345,19 +368,23 @@ function createCommentScreen(post) {
 
   const body = document.createElement("div");
 
-  const title = document.createElement("h3");
-  title.style.margin = "0";
-  title.style.paddingLeft = "18px";
-  title.textContent = "Yorumlar";
-
+  // Original post preview
   const postPreview = createPostElement(post);
+
+  // Section heading
+  const heading = document.createElement("div");
+  heading.className = "comments-section-heading";
+  const headingIcon = document.createElement("span");
+  headingIcon.setAttribute("data-lucide", "message-circle");
+  const headingText = document.createElement("span");
+  const commentCount = Object.keys(post.comments || {}).length;
+  headingText.textContent = commentCount > 0 ? `${commentCount} Yorum` : "Yorumlar";
+  heading.append(headingIcon, headingText);
 
   const comments = createCommentsSection(post);
 
-  body.append(title, postPreview, comments);
-
+  body.append(postPreview, heading, comments);
   container.append(body);
-
   return container;
 }
 

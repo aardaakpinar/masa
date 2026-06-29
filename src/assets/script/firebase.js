@@ -30,10 +30,7 @@ export function connectToFirebase(rawConfig) {
     state.auth = null;
     state.db = null;
     state.authUser = null;
-    const settingsError = document.querySelector("#settingsError");
-    if (settingsError) {
-      settingsError.textContent = "Firebase bağlantı hatası: " + error.message;
-    }
+    console.warn("Firebase bağlantı hatası: " + error.message);
   }
 
   syncAuthUi();

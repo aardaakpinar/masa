@@ -34,6 +34,15 @@ function toggleClass(element, className, enabled) {
   }
 }
 
+// Composer tıklama handler'ı — isimlendirilmiş olduğu için removeEventListener ile temizlenebilir
+function _composerAuthHandler() {
+  // Sadece locked durumdaysa (giriş yapılmamışsa) auth aç
+  const composer = document.querySelector(".composer");
+  if (composer && composer.classList.contains("locked")) {
+    openAuth();
+  }
+}
+
 export function syncAuthUi() {
   const isSignedIn = Boolean(state.authUser);
   if (elements.authGate) {
@@ -46,6 +55,11 @@ export function syncAuthUi() {
   const composer = document.querySelector(".composer");
   if (composer) {
     composer.classList.toggle("locked", !isSignedIn);
+    // Önceki listener'ı temizle, sonra sadece giriş yapılmamışsa yenisini ekle
+    composer.removeEventListener("click", _composerAuthHandler);
+    if (!isSignedIn) {
+      composer.addEventListener("click", _composerAuthHandler);
+    }
   }
 
   if (elements.authButton) {
@@ -86,8 +100,9 @@ export function syncAuthUi() {
   if (elements.settingsAvatarButton) {
     const name = isSignedIn ? state.profile.name || "User" : "User";
     const color = isSignedIn ? state.profile.color || "#2563eb" : "#2563eb";
-    elements.settingsAvatarButton.textContent = initials(name);
-    elements.settingsAvatarButton.style.background = color;
+    const avatar = elements.settingsAvatarButton.querySelector(".profile-avatar") || elements.settingsAvatarButton;
+    avatar.textContent = initials(name);
+    avatar.style.background = color;
   }
   if (elements.settingsProfileName) {
     setText(elements.settingsProfileName, isSignedIn ? state.profile.name || "User" : "User");
@@ -135,6 +150,7 @@ function setMainView(view) {
   elements.feedButton?.classList.toggle("active", view === "feed");
   elements.searchButton?.classList.toggle("active", view === "search");
   elements.groupsButton?.classList.toggle("active", view === "groups");
+  elements.authButton?.classList.toggle("active", view === "settings");
 }
 
 export function openFeed() {
@@ -155,7 +171,6 @@ export function openSettings() {
     return;
   }
 
-  if (elements.settingsError) elements.settingsError.textContent = "";
   if (elements.settingsSuccess) elements.settingsSuccess.textContent = "";
   setMainView("settings");
 }

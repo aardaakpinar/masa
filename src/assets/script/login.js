@@ -26,7 +26,6 @@ setTimeout(() => {
 }, 500);
 
 // Elements
-const authTitle = document.querySelector("#authTitle") || document.querySelector("h2");
 const loginModeButton = document.querySelector("#loginModeButton");
 const registerModeButton = document.querySelector("#registerModeButton");
 const authNameField = document.querySelector("#authNameField") || document.querySelector("[id='authNameField']");
@@ -38,31 +37,35 @@ const submitAuth = document.querySelector("#submitAuth");
 const authError = document.querySelector("#authError");
 const passwordHint = document.querySelector("#passwordHint");
 const authForm = document.querySelector("#authForm");
+const authTitle = document.querySelector("#authTitle") || document.querySelector("h2");
+
+function bind(element, eventName, handler) {
+  element?.addEventListener(eventName, handler);
+}
 
 let currentAuthMode = "login";
 
 // Set remember me checkbox if email was remembered
 const rememberedEmail = getRememberedEmail();
-if (rememberedEmail) {
+if (rememberedEmail && authEmail) {
   authEmail.value = rememberedEmail;
-  rememberMe.checked = true;
+  if (rememberMe) rememberMe.checked = true;
 }
 
 // Event listeners
-loginModeButton.addEventListener("click", () => setAuthMode("login"));
-registerModeButton.addEventListener("click", () => setAuthMode("register"));
-authForm.addEventListener("submit", (e) => {
+bind(loginModeButton, "click", () => setAuthMode("login"));
+bind(registerModeButton, "click", () => setAuthMode("register"));
+bind(authForm, "submit", (e) => {
   e.preventDefault();
-  submitAuth.click();
+  submitAuth?.click();
 });
-authPassword.addEventListener("keydown", (event) => {
-  if (event.key === "Enter") submitAuth.click();
+bind(authPassword, "keydown", (event) => {
+  if (event.key === "Enter") submitAuth?.click();
 });
-authEmail.addEventListener("keydown", (event) => {
-  if (event.key === "Enter") submitAuth.click();
+bind(authEmail, "keydown", (event) => {
+  if (event.key === "Enter") submitAuth?.click();
 });
-
-submitAuth.addEventListener("click", submitLoginAuth);
+bind(submitAuth, "click", submitLoginAuth);
 
 function setAuthMode(mode) {
   currentAuthMode = mode;
@@ -77,23 +80,23 @@ function setAuthMode(mode) {
   }
   submitAuth.textContent = isRegister ? "Kayıt ol" : "Giriş yap";
   
-  authPassword.autocomplete = isRegister ? "new-password" : "current-password";
+  if (authPassword) authPassword.autocomplete = isRegister ? "new-password" : "current-password";
   
-  loginModeButton.classList.toggle("active", !isRegister);
-  registerModeButton.classList.toggle("active", isRegister);
-  authError.textContent = "";
+  loginModeButton?.classList.toggle("active", !isRegister);
+  registerModeButton?.classList.toggle("active", isRegister);
+  if (passwordHint) passwordHint.hidden = !isRegister;
+  if (authError) authError.textContent = "";
 }
 
 async function submitLoginAuth() {
-  if (!state.auth) {
-    authError.textContent = "Önce Firebase bağlantısı kurulmalı.";
+  if (!state.auth || !authEmail || !authPassword || !submitAuth || !authError) {
     return;
   }
 
   const email = sanitizeEmail(authEmail.value.trim());
   const password = authPassword.value;
-  const name = cleanName(authName.value.trim() || email.split("@")[0] || "User");
-  const shouldRemember = rememberMe.checked;
+  const name = cleanName((authName?.value || "").trim() || email.split("@")[0] || "User");
+  const shouldRemember = Boolean(rememberMe?.checked);
 
   if (!email || !isValidEmail(email)) {
     authError.textContent = "Geçerli bir e-posta adresi gir.";
@@ -105,15 +108,18 @@ async function submitLoginAuth() {
     return;
   }
   if (currentAuthMode === "register") {
-    authError.textContent = "Şifre büyük, küçük, sayı ve sembol içermeli.";
-    return;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/;
+    if (!passwordRegex.test(password)) {
+      authError.textContent = "Şifre büyük, küçük, sayı ve sembol içermeli.";
+      return;
+    }
   }
 
   submitAuth.disabled = true;
 
   try {
     if (currentAuthMode === "register") {
-      if (!authName.value.trim()) {
+      if (!(authName?.value || "").trim()) {
         throw new Error("Kayıt yaparken görünen ad gereklidir.");
       }
       const credential = await createUserWithEmailAndPassword(state.auth, email, password);
@@ -133,7 +139,7 @@ async function submitLoginAuth() {
       window.location.href = "index.html";
     }
   } catch (error) {
-    authError.textContent = authMessage(error.code);
+      authError.textContent = authMessage(error.code);
   } finally {
     submitAuth.disabled = false;
   }
@@ -141,5 +147,3 @@ async function submitLoginAuth() {
 
 // Initial setup
 setAuthMode("login");
-
-

@@ -31,12 +31,7 @@ export function subscribeToGroups() {
       renderGroups();
     },
     (error) => {
-      if (elements.groupError) {
-        const suffix = String(error?.message || "").includes("permission_denied")
-          ? " Firebase Realtime Database kurallarında /groups yolu için okuma izni verin."
-          : "";
-        elements.groupError.textContent = "Topluluklar yüklenemedi: " + error.message + suffix;
-      }
+      console.error("Topluluklar yüklenemedi:", error);
     },
   );
 }
@@ -62,18 +57,29 @@ function createGroupCard(group, { compact = false } = {}) {
   const card = document.createElement("article");
   card.className = compact ? "group-card group-card--compact" : "group-card";
 
+  const head = document.createElement("button");
+  head.type = "button";
+  head.className = "group-card__head";
+  head.addEventListener("click", () => {
+    if (state.authUser && group.members?.[state.authUser.uid]) {
+      state.activeGroupId = group.id;
+      window.dispatchEvent(new Event("groups:open"));
+    }
+  });
+
   const avatar = document.createElement("div");
-  avatar.className = "avatar group-avatar";
+  avatar.className = "avatar group-card__avatar";
   avatar.style.background = group.color || "#2563eb";
   avatar.textContent = initials(group.name);
 
-  const content = document.createElement("div");
+  const content = document.createElement("span");
   content.className = "group-card__content";
 
   const title = document.createElement("h4");
   title.textContent = group.name || "Topluluk";
 
-  const meta = document.createElement("p");
+  const meta = document.createElement("span");
+  meta.className = "group-card__meta";
   const memberCount = Object.keys(group.members || {}).length;
   meta.textContent = `${memberCount} üye · ${group.ownerName || "Anonim"} oluşturdu`;
 
@@ -81,19 +87,36 @@ function createGroupCard(group, { compact = false } = {}) {
   description.className = "group-card__description";
   description.textContent = group.description || "Açıklama eklenmemiş.";
 
+  const titleRow = document.createElement("span");
+  titleRow.className = "group-card__title-row";
+
+  const titleWrap = document.createElement("span");
+  titleWrap.className = "group-card__title-wrap";
+
+  const status = document.createElement("span");
+  status.className = "group-card__status";
+
   const actions = document.createElement("div");
   actions.className = "group-card__actions";
 
   if (state.authUser) {
     const joined = isMember(group);
     const isOwner = group.ownerId === state.authUser.uid;
+    status.textContent = isOwner || joined ? "üye" : "öneri";
 
     if (!joined && !isOwner) {
       const joinButton = document.createElement("button");
       joinButton.type = "button";
       joinButton.className = "button button--secondary group-action";
       joinButton.textContent = "Katıl";
-      joinButton.addEventListener("click", () => joinGroup(group.id));
+      joinButton.addEventListener("click", async () => {
+        joinButton.disabled = true;
+        joinButton.textContent = "Katılınıyor…";
+        try { await joinGroup(group.id); } finally {
+          joinButton.disabled = false;
+          joinButton.textContent = "Katıl";
+        }
+      });
       actions.append(joinButton);
     }
 
@@ -102,7 +125,14 @@ function createGroupCard(group, { compact = false } = {}) {
       leaveButton.type = "button";
       leaveButton.className = "button button--secondary group-action";
       leaveButton.textContent = "Gruptan Çık";
-      leaveButton.addEventListener("click", () => leaveGroup(group.id));
+      leaveButton.addEventListener("click", async () => {
+        leaveButton.disabled = true;
+        leaveButton.textContent = "Ayrılınıyor…";
+        try { await leaveGroup(group.id); } finally {
+          leaveButton.disabled = false;
+          leaveButton.textContent = "Gruptan Çık";
+        }
+      });
       actions.append(leaveButton);
     }
 
@@ -114,14 +144,25 @@ function createGroupCard(group, { compact = false } = {}) {
       deleteButton.addEventListener("click", () => deleteGroup(group.id));
       actions.append(deleteButton);
     }
+  } else {
+    status.textContent = "öneri";
   }
 
-  content.append(title, meta, description);
+  const arrow = document.createElement("span");
+  arrow.className = "group-card__arrow";
+  arrow.setAttribute("aria-hidden", "true");
+  arrow.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>`;
+
+  titleWrap.append(title);
+  titleRow.append(titleWrap, status, arrow);
+
+  content.append(titleRow, meta, description);
   if (actions.childNodes.length) {
     content.append(actions);
   }
 
-  card.append(avatar, content);
+  head.append(avatar, content);
+  card.append(head);
   return card;
 }
 
@@ -178,6 +219,12 @@ function syncComposerGroupOptions() {
 function updateGroupStats() {
   if (elements.groupCount) {
     elements.groupCount.textContent = String(getGroups().length);
+  }
+  if (elements.groupNameCount) {
+    elements.groupNameCount.textContent = `${elements.groupNameInput?.value.length || 0}/48`;
+  }
+  if (elements.groupDescriptionCount) {
+    elements.groupDescriptionCount.textContent = `${elements.groupDescriptionInput?.value.length || 0}/160`;
   }
 }
 
@@ -301,13 +348,6 @@ export function getMemberGroups() {
 export async function submitGroupForm() {
   if (isSubmittingGroup) return;
 
-  if (elements.groupError) {
-    elements.groupError.textContent = "";
-  }
-  if (elements.groupSuccess) {
-    elements.groupSuccess.textContent = "";
-  }
-
   isSubmittingGroup = true;
   if (elements.createGroupButton) {
     elements.createGroupButton.disabled = true;
@@ -321,23 +361,16 @@ export async function submitGroupForm() {
 
     if (elements.groupNameInput) elements.groupNameInput.value = "";
     if (elements.groupDescriptionInput) elements.groupDescriptionInput.value = "";
-    if (elements.groupSuccess) {
-      elements.groupSuccess.textContent = "Topluluk oluşturuldu.";
-      setTimeout(() => {
-        if (elements.groupSuccess) elements.groupSuccess.textContent = "";
-      }, 2000);
-    }
   } catch (error) {
-    if (elements.groupError) {
-      const suffix = String(error?.message || "").includes("permission_denied")
-        ? " Firebase Realtime Database kurallarında /groups yolu için yazma izni verin."
-        : "";
-      elements.groupError.textContent = error.message + suffix;
-    }
+    console.error("Topluluk oluşturulamadı:", error);
   } finally {
     isSubmittingGroup = false;
     if (elements.createGroupButton) {
       elements.createGroupButton.disabled = false;
     }
   }
+}
+
+export function syncGroupFormCounts() {
+  updateGroupStats();
 }
