@@ -362,7 +362,7 @@ function createCommentsSection(post) {
 
 function createCommentScreen(post) {
   const container = document.createElement("section");
-  container.className = "post comments-screen";
+  container.className = "comments-screen";
   container.style.paddingLeft = "0";
   container.style.paddingRight = "0";
 
