@@ -12,17 +12,20 @@
     <meta property="og:image:alt" content="MASA Logo">
     <meta property="og:site_name" content="MASA">
     <link rel="icon" href="https://aardaakpinar.github.io/assets/images/logos/masa.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <title>MASA</title>
-    <link rel="preconnect" href="https://www.gstatic.com" />
     <link rel="stylesheet" href="assets/style/styles.css" />
   </head>
   <body>
     <div class="app-shell">
       <aside class="sidebar" aria-label="Ana menü">
-        <div class="brand" aria-label="Masa Sosyal">
-          <span class="brand-text">MASA</span>
+        <div class="brand" aria-label="MASA">
           <img class="brand-image" src="https://aardaakpinar.github.io/assets/images/logos/masa.png" alt="MASA Logo">
+          <span class="brand-text">MASA</span>
         </div>
+
         <nav class="nav-list">
           <button class="nav-item button button--ghost" id="feedButton" type="button" aria-label="Masaüstü">
             <span data-lucide="home"></span>
@@ -43,148 +46,170 @@
         </nav>
       </aside>
 
+      <!-- Mobil backdrop: sidebar açıkken arkayı karartır -->
+      <div class="mobile-backdrop" id="mobileBackdrop" hidden></div>
+
       <main class="timeline" id="feed">
         <header class="topbar">
+          <button class="button button--ghost mobile-menu-button" type="button" aria-label="Menüyü aç">
+            <span data-lucide="menu"></span>
+          </button>
           <div>
             <h1>Akış</h1>
           </div>
         </header>
 
         <section class="auth-gate" id="authGate">
-          <strong>Post paylaşmak için giriş yap.</strong>
+          <div>
+            <strong>Masaya bir şeyler bırak</strong>
+            <p>Paylaşım yapmak ve sohbete katılmak için giriş yapman gerekiyor.</p>
+          </div>
           <button class="button button--primary" id="openAuthFromGate" type="button">Giriş yap</button>
         </section>
 
         <section class="composer" aria-label="Post oluştur">
-          <textarea class="textarea" id="postText" maxlength="280" placeholder="Neler oluyor?" rows="2"></textarea>
+          <textarea id="postText" maxlength="280" placeholder="Masada neler oluyor?" rows="2"></textarea>
           <div class="composer-footer">
-            <span id="charCount">0/280</span>
-            <div class="composer-group-row">
-              <label class="form-field composer-group-field">
-                <select class="input" id="postGroupSelect">
-                  <option value="">Akış</option>
-                </select>
-              </label>
-              <button class="button button--primary" id="sendPost" type="button" disabled>Paylaş</button>
+            <div class="composer-group-field">
+              <select id="postGroupSelect">
+                <option value="">Genel akış</option>
+              </select>
             </div>
+            <span class="count-text" id="charCount">0/280</span>
+            <button class="button button--primary" id="sendPost" type="button" disabled>Paylaş</button>
           </div>
         </section>
 
-        <section class="feed-list" id="postList" aria-live="polite"></section>
+        <p class="error-text" id="feedError" hidden></p>
+        <section class="feed-list" id="postList" aria-live="polite">
+          <div class="empty-state" id="postsLoading">Yükleniyor…</div>
+        </section>
       </main>
 
       <main class="timeline hidden" id="groupsView">
         <header class="topbar">
+          <button class="button button--ghost mobile-menu-button" type="button" aria-label="Menüyü aç">
+            <span data-lucide="menu"></span>
+          </button>
           <div>
             <h1>Masalar</h1>
           </div>
         </header>
 
         <section class="auth-gate" id="groupsAuthGate">
-          <strong>Grup oluşturmak ve yönetmek için giriş yap.</strong>
+          <div>
+            <strong>Topluluk oluşturmak ve yönetmek için giriş yap.</strong>
+            <p>İçerik, sahip olduğun masalar ve öneriler burada görünür.</p>
+          </div>
           <button class="button button--primary" id="openGroupsAuthFromGate" type="button">Giriş yap</button>
         </section>
 
-        <section class="composer" aria-label="Topluluk oluştur">
-          <div class="section-heading">
-            <h3>Yeni topluluk</h3>
-            <p>Buradan topluluk ekleyebilir ve sahip olduğun toplulukları silebilirsin.</p>
+        <section class="groups-form-card" aria-label="Topluluk oluştur">
+          <div class="groups-form-title">Yeni topluluk</div>
+          <div class="groups-form-fields">
+            <div class="groups-field">
+              <input id="groupNameInput" name="g_name" type="text" maxlength="48" placeholder="Topluluk adı" />
+              <span class="groups-counter" id="groupNameCount">0/48</span>
+            </div>
+            <div class="groups-field">
+              <textarea id="groupDescriptionInput" name="g_desc" maxlength="160" rows="2" placeholder="Bu masa ne hakkında?"></textarea>
+              <span class="groups-counter groups-counter--bottom" id="groupDescriptionCount">0/160</span>
+            </div>
+            <button class="button button--primary groups-submit" id="createGroupButton" type="button">Topluluk Oluştur</button>
           </div>
-          <label class="form-field">
-            <span>Topluluk adı</span>
-            <input class="input" id="groupNameInput" type="text" maxlength="48" placeholder="Örn. Tasarım Kulübü" />
-          </label>
-          <label class="form-field">
-            <span>Açıklama</span>
-            <textarea class="textarea community-textarea" id="groupDescriptionInput" maxlength="160" rows="3" placeholder="Bu topluluk ne hakkında?"></textarea>
-          </label>
-          <div class="composer-footer">
-            <span id="groupCount">0</span>
-            <button class="button button--primary" id="createGroupButton" type="button">Topluluk Oluştur</button>
-          </div>
-          <p class="error-text" id="groupError"></p>
-          <p class="success-text" id="groupSuccess"></p>
         </section>
 
+        <div class="group-list-heading" style="padding: 0 18px;">Tüm masalar</div>
         <section class="feed-list groups-feed-list" id="groupsList" aria-live="polite"></section>
       </main>
 
       <main class="timeline hidden" id="search">
         <header class="topbar">
+          <button class="button button--ghost mobile-menu-button" type="button" aria-label="Menüyü aç">
+            <span data-lucide="menu"></span>
+          </button>
           <div>
             <h1>Ara</h1>
           </div>
         </header>
 
-        
         <section class="search" id="searchPanel" aria-label="Arama">
           <div class="search-box">
-            <input class="input" id="searchInput" type="search" placeholder="Post, kisi veya etiket ara..." />
+            <input class="input" id="searchInput" type="search" placeholder="Post, kişi veya etiket ara..." />
           </div>
-          <div id="searchResults" class="search-list"></div>        </section>
+          <div id="searchResults" class="search-list"></div>
+        </section>
       </main>
 
       <main class="timeline hidden" id="settingsPanel">
         <header class="topbar">
+          <button class="button button--ghost mobile-menu-button" type="button" aria-label="Menüyü aç">
+            <span data-lucide="menu"></span>
+          </button>
           <div>
             <h1>Hesap</h1>
           </div>
         </header>
 
-        <section class="panel panel--surface settings-panel">
+        <section class="settings-panel panel--surface">
           <div class="settings-section section--group">
             <div class="section-heading">
               <h3>Profil</h3>
               <p>Görünen adını ve avatar rengini güncelle.</p>
             </div>
-            <label class="form-field settings-field">
-              <span>Görünen ad</span>
-              <input id="settingsNameInput" type="text" maxlength="50" placeholder="Adın" />
-            </label>
-            <div class="settings-profile-preview">
-              <button class="avatar settings-avatar-button" id="settingsAvatarButton" type="button" aria-label="Avatar rengini değiştir"></button>
-              <div class="settings-profile-meta">
-                <strong id="settingsProfileName">User</strong>
-                <span>Postlarda göründüğü hali</span>
+            <div class="profile-card">
+              <button class="profile-color-button" id="settingsAvatarButton" type="button" title="Rengi değiştir" aria-label="Rengi değiştir">
+                <span class="profile-avatar" id="settingsProfileAvatar">NA</span>
+                <span class="profile-color-badge" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 19l7-7 3 3-7 7-3-3zM18 13l-1.5-1.5M2 2l7.586 7.586M11 11l-4 4-3 .5.5-3 4-4"></path>
+                  </svg>
+                </span>
+                <input id="settingsAvatarInput" class="settings-color-input" type="color" value="#2563eb" aria-label="Avatar rengi"/>
+              </button>
+              <div class="profile-card__body">
+                <label class="settings-field settings-field--compact">
+                  <span>Görünen ad</span>
+                  <input id="settingsNameInput" type="text" maxlength="32" placeholder="Adın" />
+                </label>
+                <div class="settings-actions settings-actions--profile">
+                  <button class="button button--secondary" id="saveProfileButton" type="button">Profili Kaydet</button>
+                </div>
               </div>
-              <input id="settingsAvatarInput" class="settings-color-input" type="color" value="#2563eb" aria-label="Avatar rengi"/>
             </div>
-            <div class="settings-actions">
-              <button class="button button--secondary" id="saveProfileButton" type="button">Profili Kaydet</button>
-            </div>
+            <input id="settingsEmail" type="email" hidden />
           </div>
 
           <div class="settings-section section--group">
             <div class="section-heading">
               <h3>Güvenlik</h3>
-              <p>Hesabınızın temel bilgilerini burada yönetin.</p>
+              <p>Hesabının temel bilgilerini burada yönetebilirsin.</p>
             </div>
             <div class="settings-actions">
               <button class="button button--secondary" id="changePasswordButton" type="button">Şifreyi Değiştir</button>
-              <button class="button button--secondary" id="logoutButton" type="button">Çıkış Yap</button>
+              <button class="button button--secondary" type="button">Çıkış Yap</button>
             </div>
           </div>
 
           <div class="settings-section section--group">
             <div class="section-heading">
               <h3>Tehlikeli İşlemler</h3>
-              <p>Bu adımlar geri alınamaz ve hesap verilerinizi etkiler.</p>
+              <p>Bu adımlar geri alınamaz ve hesap verilerini etkiler.</p>
             </div>
             <div class="settings-actions">
               <button class="button button--danger" id="deleteAccountButton" type="button">Hesabı Sil</button>
             </div>
-
-            <p class="error-text" id="settingsError"></p>
             <p class="success-text" id="settingsSuccess"></p>
           </div>
         </section>
       </main>
 
-      <aside class="right-panel" aria-label="Durum"></aside>
+      <aside class="right-panel" aria-label="Öneriler">
+      </aside>
     </div>
 
     <dialog class="settings-dialog" id="authDialog">
-      <form method="dialog" class="card card--dialog settings-card">
+      <form method="dialog" class="settings-card">
         <div class="dialog-heading">
           <h2 id="authTitle">Giriş yap</h2>
           <button class="icon-button button button--icon" value="cancel" aria-label="Kapat">×</button>
@@ -193,20 +218,20 @@
           <button class="switch-button segmented-control__item active button button--secondary" id="loginMode" type="button">Giriş</button>
           <button class="switch-button segmented-control__item button button--secondary" id="registerMode" type="button">Kayıt</button>
         </div>
-        <label class="form-field auth-field" id="authNameField">
+        <label class="auth-field" id="authNameField">
           <span>Görünen ad</span>
           <input class="input" id="authName" type="text" autocomplete="name" />
         </label>
-        <label class="form-field auth-field">
+        <label class="auth-field">
           <span>E-posta</span>
           <input class="input" id="authEmail" type="email" autocomplete="email" />
         </label>
-        <label class="form-field auth-field">
+        <label class="auth-field">
           <span>Şifre</span>
           <input class="input" id="authPassword" type="password" minlength="8" autocomplete="current-password" />
         </label>
         <p class="password-hint" id="passwordHint">Şifre: 8+ karakter, büyük, küçük, sayı, sembol</p>
-        <button class="button button--primary" id="submitAuth" type="button">Giriş yap</button>
+        <button class="button button--primary button--full" id="submitAuth" type="button">Giriş yap</button>
         <p class="error-text" id="authError"></p>
       </form>
     </dialog>
@@ -219,5 +244,3 @@
     </script>
   </body>
 </html>
-
-
