@@ -18,7 +18,6 @@
   </head>
   <body class="login-bg">
     <div class="login-card">
-      <div class="login-card-stripe"></div>
       <div class="login-card-body">
 
         <!-- Header -->
@@ -29,17 +28,6 @@
           </div>
           <h1 class="login-title" id="loginTitle">Tekrar hoş geldin!</h1>
           <p class="login-subtitle" id="loginSubtitle">Masaya oturmak için giriş yap.</p>
-        </div>
-
-        <!-- Social proof -->
-        <div class="login-social-proof">
-          <div class="login-avatars">
-            <div class="avatar" style="background:#fcc41d;color:#0f1419;">SA</div>
-            <div class="avatar" style="background:#2563eb;color:#fff;">MK</div>
-            <div class="avatar" style="background:#16a34a;color:#fff;">CA</div>
-            <div class="avatar" style="background:#dc2626;color:#fff;">DK</div>
-          </div>
-          <p class="login-social-text"><strong>8.300+</strong> kişi masada seni bekliyor.</p>
         </div>
 
         <!-- Mode tabs -->
@@ -67,13 +55,6 @@
             <p class="login-password-hint" id="passwordHint" hidden>8+ karakter, büyük/küçük harf, sayı ve sembol (@$!%*?&) içermeli.</p>
           </div>
 
-          <div class="login-meta-row" id="rememberRow">
-            <label class="login-remember">
-              <input type="checkbox" id="rememberMe" />
-              <span>Oturumumu hatırla</span>
-            </label>
-          </div>
-
           <p class="login-error" id="authError"></p>
 
           <button class="login-submit" id="submitAuth" type="submit">Giriş yap</button>
@@ -91,7 +72,6 @@
       const loginBtn = document.getElementById("loginModeButton");
       const registerBtn = document.getElementById("registerModeButton");
       const nameField = document.getElementById("authNameField");
-      const rememberRow = document.getElementById("rememberRow");
       const submitBtn = document.getElementById("submitAuth");
       const title = document.getElementById("loginTitle");
       const subtitle = document.getElementById("loginSubtitle");
@@ -104,7 +84,6 @@
         registerBtn.classList.toggle("active", !isLogin);
         registerBtn.setAttribute("aria-selected", String(!isLogin));
         nameField.hidden = isLogin;
-        rememberRow.hidden = !isLogin;
         hint.hidden = isLogin;
         submitBtn.textContent = isLogin ? "Giriş yap" : "Kayıt ol";
         title.textContent = isLogin ? "Tekrar hoş geldin!" : "Masaya katıl!";
