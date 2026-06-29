@@ -818,12 +818,8 @@ img {
   margin-bottom: 4px;
 }
 
-.search {
-  padding: 18px;
-}
-
 .search-box {
-  margin-bottom: 14px;
+  margin: 18px;
 }
 
 .search-box .input {
