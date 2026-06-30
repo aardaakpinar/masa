@@ -1,7 +1,26 @@
 import { state } from "./state.js";
 import { elements } from "./elements.js";
-import { initials, formatTime, createRichTextFragment, getContrastColor } from "./utils.js";
-import { ref, push, set, update, remove, onValue, off, serverTimestamp, query, orderByKey, limitToLast, endAt, get } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+import {
+  initials,
+  formatTime,
+  createRichTextFragment,
+  getContrastColor,
+} from "./utils.js";
+import {
+  ref,
+  push,
+  set,
+  update,
+  remove,
+  onValue,
+  off,
+  serverTimestamp,
+  query,
+  orderByKey,
+  limitToLast,
+  endAt,
+  get,
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 import { openAuth } from "./ui.js";
 import { canViewGroup, getGroupName } from "./groups.js";
 
@@ -22,7 +41,11 @@ export function subscribeToPosts() {
   isLoadingMore = false;
   liveWindowPostIds = new Set();
 
-  state.postsRef = query(ref(state.db, "posts"), orderByKey(), limitToLast(POSTS_PAGE_SIZE));
+  state.postsRef = query(
+    ref(state.db, "posts"),
+    orderByKey(),
+    limitToLast(POSTS_PAGE_SIZE),
+  );
   onValue(
     state.postsRef,
     (snapshot) => {
@@ -47,7 +70,8 @@ export function subscribeToPosts() {
     (error) => {
       if (elements.feedError) {
         elements.feedError.hidden = false;
-        elements.feedError.textContent = "Postlar yüklenemedi: " + error.message;
+        elements.feedError.textContent =
+          "Postlar yüklenemedi: " + error.message;
       }
     },
   );
@@ -109,7 +133,8 @@ export async function loadMorePosts() {
   } catch (error) {
     if (elements.feedError) {
       elements.feedError.hidden = false;
-      elements.feedError.textContent = "Daha fazla post yüklenemedi: " + error.message;
+      elements.feedError.textContent =
+        "Daha fazla post yüklenemedi: " + error.message;
     }
   } finally {
     hideLoadMoreIndicator();
@@ -171,23 +196,23 @@ export function createPostElement(post) {
   author.textContent = post.authorName || "Anonim";
 
   const meta = document.createElement("div");
-meta.className = "post-meta";
+  meta.className = "post-meta";
 
-if (post.groupId) {
-  const groupBadge = document.createElement("span");
-  groupBadge.className = "post-group-badge";
-  groupBadge.textContent = getGroupName(post.groupId);
+  if (post.groupId) {
+    const groupBadge = document.createElement("span");
+    groupBadge.className = "post-group-badge";
+    groupBadge.textContent = getGroupName(post.groupId);
 
-  meta.append(groupBadge);
-}
+    meta.append(groupBadge);
+  }
 
-const time = document.createElement("time");
-time.className = "post-time";
-time.textContent = formatTime(post.createdAt);
+  const time = document.createElement("time");
+  time.className = "post-time";
+  time.textContent = formatTime(post.createdAt);
 
-meta.append(time);
+  meta.append(time);
 
-header.append(author, meta);
+  header.append(author, meta);
 
   const text = document.createElement("p");
   text.className = "post-text";
@@ -205,7 +230,10 @@ header.append(author, meta);
   likeIcon.setAttribute("data-lucide", "heart");
   likeButton.append(likeIcon, ` ${Object.keys(likes).length}`);
   likeButton.addEventListener("click", () => {
-    if (!state.authUser) { openAuth(); return; }
+    if (!state.authUser) {
+      openAuth();
+      return;
+    }
     toggleLike(post.id, liked);
   });
 
@@ -217,7 +245,10 @@ header.append(author, meta);
   commentIcon.setAttribute("data-lucide", "message-circle");
   commentButton.append(commentIcon, ` ${commentCount}`);
   commentButton.addEventListener("click", () => {
-    if (!state.authUser) { openAuth(); return; }
+    if (!state.authUser) {
+      openAuth();
+      return;
+    }
     openComments(post.id);
   });
 
@@ -234,7 +265,9 @@ header.append(author, meta);
     const deleteIcon = document.createElement("span");
     deleteIcon.setAttribute("data-lucide", "trash-2");
     deleteButton.append(deleteIcon);
-    deleteButton.addEventListener("click", () => remove(ref(state.db, `posts/${post.id}`)));
+    deleteButton.addEventListener("click", () =>
+      remove(ref(state.db, `posts/${post.id}`)),
+    );
     actions.append(deleteButton);
   }
 
@@ -328,10 +361,20 @@ function createCommentsSection(post) {
       likeButton.append(commentLikeIcon, commentLikeCount);
 
       likeButton.addEventListener("click", async () => {
-        if (!state.authUser) { openAuth(); return; }
-        const likeRef = ref(state.db, `posts/${post.id}/comments/${comment.id}/likes/${state.authUser.uid}`);
+        if (!state.authUser) {
+          openAuth();
+          return;
+        }
+        const likeRef = ref(
+          state.db,
+          `posts/${post.id}/comments/${comment.id}/likes/${state.authUser.uid}`,
+        );
         try {
-          if (liked) { await remove(likeRef); } else { await set(likeRef, true); }
+          if (liked) {
+            await remove(likeRef);
+          } else {
+            await set(likeRef, true);
+          }
         } catch (err) {
           console.error("Yorum beğenilemedi:", err);
         }
@@ -347,7 +390,7 @@ function createCommentsSection(post) {
         commentDeleteIcon.setAttribute("data-lucide", "trash-2");
         del.append(commentDeleteIcon);
         del.addEventListener("click", () =>
-          remove(ref(state.db, `posts/${post.id}/comments/${comment.id}`))
+          remove(ref(state.db, `posts/${post.id}/comments/${comment.id}`)),
         );
         actions.append(del);
       }
@@ -380,7 +423,8 @@ function createCommentScreen(post) {
   headingIcon.setAttribute("data-lucide", "message-circle");
   const headingText = document.createElement("span");
   const commentCount = Object.keys(post.comments || {}).length;
-  headingText.textContent = commentCount > 0 ? `${commentCount} Yorum` : "Yorumlar";
+  headingText.textContent =
+    commentCount > 0 ? `${commentCount} Yorum` : "Yorumlar";
   heading.append(headingIcon, headingText);
 
   const comments = createCommentsSection(post);
@@ -422,7 +466,9 @@ export async function submitComposerText(text) {
 function syncComposerMode() {
   if (!elements.sendPost || !elements.postText) return;
   const commentMode = Boolean(activeCommentPostId);
-  elements.postText.placeholder = commentMode ? "Ne düşünüyorsun?" : "Neler oluyor?";
+  elements.postText.placeholder = commentMode
+    ? "Ne düşünüyorsun?"
+    : "Neler oluyor?";
   elements.postText.maxLength = commentMode ? 180 : 280;
 }
 

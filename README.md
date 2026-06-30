@@ -42,6 +42,7 @@ VITE_FIREBASE_PROJECT_ID=...
 ```
 
 3. Firebase Console ayarları:
+
 - Authentication > Sign-in method > Email/Password etkin olsun.
 - Realtime Database oluşturulmuş olsun.
 - Realtime Database kurallarında `groups` yolu için okuma/yazma izni verin.
@@ -53,6 +54,7 @@ npm run dev
 ```
 
 5. Tarayıcıda aç:
+
 - Giriş ekranı: `/login.html`
 - Uygulama: `/index.html`
 

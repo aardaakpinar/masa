@@ -70,7 +70,12 @@ export function syncAuthUi() {
   setText(elements.mobileAuthButton, isSignedIn ? "Hesap" : "Giriş");
   setHidden(elements.panelAuthButton, isSignedIn);
   setHidden(elements.logoutButton, !isSignedIn);
-  setText(elements.accountText, isSignedIn ? `${state.profile.name} olarak giriş yapıldı.` : "Giriş yapılmadı.");
+  setText(
+    elements.accountText,
+    isSignedIn
+      ? `${state.profile.name} olarak giriş yapıldı.`
+      : "Giriş yapılmadı.",
+  );
   if (elements.createGroupButton) {
     elements.createGroupButton.disabled = !isSignedIn || !state.db;
   }
@@ -81,7 +86,10 @@ export function syncAuthUi() {
     elements.groupDescriptionInput.disabled = !isSignedIn;
   }
   if (elements.groupCount) {
-    setText(elements.groupCount, String(state.groups ? Object.keys(state.groups).length : 0));
+    setText(
+      elements.groupCount,
+      String(state.groups ? Object.keys(state.groups).length : 0),
+    );
   }
 
   if (!isSignedIn) {
@@ -89,24 +97,38 @@ export function syncAuthUi() {
   }
 
   if (elements.settingsEmail) {
-    setValue(elements.settingsEmail, isSignedIn ? state.authUser?.email || "" : "");
+    setValue(
+      elements.settingsEmail,
+      isSignedIn ? state.authUser?.email || "" : "",
+    );
   }
   if (elements.settingsNameInput) {
-    setValue(elements.settingsNameInput, isSignedIn ? state.profile.name || "" : "");
+    setValue(
+      elements.settingsNameInput,
+      isSignedIn ? state.profile.name || "" : "",
+    );
   }
   if (elements.settingsAvatarInput) {
-    setValue(elements.settingsAvatarInput, isSignedIn ? state.profile.color || "#2563eb" : "#2563eb");
+    setValue(
+      elements.settingsAvatarInput,
+      isSignedIn ? state.profile.color || "#2563eb" : "#2563eb",
+    );
   }
   if (elements.settingsAvatarButton) {
     const name = isSignedIn ? state.profile.name || "User" : "User";
     const color = isSignedIn ? state.profile.color || "#2563eb" : "#2563eb";
-    const avatar = elements.settingsAvatarButton.querySelector(".profile-avatar") || elements.settingsAvatarButton;
+    const avatar =
+      elements.settingsAvatarButton.querySelector(".profile-avatar") ||
+      elements.settingsAvatarButton;
     avatar.textContent = initials(name);
     avatar.style.background = color;
     avatar.style.color = getContrastColor(color);
   }
   if (elements.settingsProfileName) {
-    setText(elements.settingsProfileName, isSignedIn ? state.profile.name || "User" : "User");
+    setText(
+      elements.settingsProfileName,
+      isSignedIn ? state.profile.name || "User" : "User",
+    );
   }
   syncComposer();
 }
@@ -122,7 +144,9 @@ export function syncAuthMode() {
   setText(elements.submitAuth, isRegister ? "Kayıt ol" : "Giriş yap");
 
   if (elements.authPassword) {
-    elements.authPassword.autocomplete = isRegister ? "new-password" : "current-password";
+    elements.authPassword.autocomplete = isRegister
+      ? "new-password"
+      : "current-password";
   }
 
   toggleClass(elements.loginMode, "active", !isRegister);

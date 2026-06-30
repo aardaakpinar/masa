@@ -60,11 +60,15 @@ export function authMessage(code) {
     "auth/invalid-credential": "E-posta veya şifre hatalı.",
     "auth/weak-password": "Şifre daha güçlü olmalı.",
     "auth/network-request-failed": "Ağ bağlantısı kurulamadı.",
-    "auth/operation-not-allowed": "Firebase Console'da Email/Password girişini açmalısın.",
-    "auth/too-many-requests": "Çok fazla başarısız deneme. Lütfen daha sonra tekrar deneyin.",
+    "auth/operation-not-allowed":
+      "Firebase Console'da Email/Password girişini açmalısın.",
+    "auth/too-many-requests":
+      "Çok fazla başarısız deneme. Lütfen daha sonra tekrar deneyin.",
   };
 
-  return messages[code] || "İşlem tamamlanamadı. Firebase ayarlarını kontrol et.";
+  return (
+    messages[code] || "İşlem tamamlanamadı. Firebase ayarlarını kontrol et."
+  );
 }
 
 const TOKEN_REGEX = /(https?:\/\/[^\s]+|#[\p{L}\p{N}_]+)/gu;
@@ -96,7 +100,7 @@ export function createRichTextFragment(text) {
       hashtag.textContent = token;
       hashtag.addEventListener("click", () => {
         window.dispatchEvent(
-          new CustomEvent("search:query", { detail: { query: token } })
+          new CustomEvent("search:query", { detail: { query: token } }),
         );
       });
       fragment.append(hashtag);

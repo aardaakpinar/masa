@@ -1,17 +1,26 @@
 <!doctype html>
 <html lang="tr">
   <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="MASA - Giriş yap veya kayıt ol">
-    <meta property="og:title" content="MASA - Giriş">
-    <meta property="og:url" content="https://devnar.github.io/masa">
-    <meta property="og:type" content="website">
-    <meta property="og:image" content="https://aardaakpinar.github.io/assets/images/logos/masa.png">
-    <link rel="icon" href="https://aardaakpinar.github.io/assets/images/logos/masa.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="MASA - Giriş yap veya kayıt ol" />
+    <meta property="og:title" content="MASA - Giriş" />
+    <meta property="og:url" content="https://devnar.github.io/masa" />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:image"
+      content="https://aardaakpinar.github.io/assets/images/logos/masa.png"
+    />
+    <link
+      rel="icon"
+      href="https://aardaakpinar.github.io/assets/images/logos/masa.png"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <title>MASA - Giriş</title>
     <link rel="stylesheet" href="assets/style/styles.css" />
     <link rel="stylesheet" href="assets/style/login.css" />
@@ -19,47 +28,91 @@
   <body class="login-bg">
     <div class="login-card">
       <div class="login-card-body">
-
         <!-- Header -->
         <div class="login-header">
           <div class="login-logo">
-            <img class="login-logo-img" src="https://aardaakpinar.github.io/assets/images/logos/masa.png" alt="MASA Logo">
+            <img
+              class="login-logo-img"
+              src="https://aardaakpinar.github.io/assets/images/logos/masa.png"
+              alt="MASA Logo"
+            />
             <span class="login-logo-name">MASA</span>
           </div>
           <h1 class="login-title" id="loginTitle">Tekrar hoş geldin!</h1>
-          <p class="login-subtitle" id="loginSubtitle">Masaya oturmak için giriş yap.</p>
+          <p class="login-subtitle" id="loginSubtitle">
+            Masaya oturmak için giriş yap.
+          </p>
         </div>
 
         <!-- Mode tabs -->
         <div class="login-tabs" role="tablist" aria-label="Hesap modu">
-          <button class="login-tab active" id="loginModeButton" type="button" role="tab" aria-selected="true">Giriş yap</button>
-          <button class="login-tab" id="registerModeButton" type="button" role="tab" aria-selected="false">Kayıt ol</button>
+          <button
+            class="login-tab active"
+            id="loginModeButton"
+            type="button"
+            role="tab"
+            aria-selected="true"
+          >
+            Giriş yap
+          </button>
+          <button
+            class="login-tab"
+            id="registerModeButton"
+            type="button"
+            role="tab"
+            aria-selected="false"
+          >
+            Kayıt ol
+          </button>
         </div>
 
         <!-- Form -->
         <form class="login-form" id="authForm" method="post" novalidate>
-
           <div class="login-field" id="authNameField" hidden>
             <label for="authName">Görünen ad</label>
-            <input class="input" id="authName" type="text" autocomplete="name" placeholder="Adın soyadın" />
+            <input
+              class="input"
+              id="authName"
+              type="text"
+              autocomplete="name"
+              placeholder="Adın soyadın"
+            />
           </div>
 
           <div class="login-field">
             <label for="authEmail">E-posta</label>
-            <input class="input" id="authEmail" type="email" autocomplete="email" placeholder="ornek@email.com" required />
+            <input
+              class="input"
+              id="authEmail"
+              type="email"
+              autocomplete="email"
+              placeholder="ornek@email.com"
+              required
+            />
           </div>
 
           <div class="login-field">
             <label for="authPassword">Şifre</label>
-            <input class="input" id="authPassword" type="password" minlength="8" autocomplete="current-password" placeholder="••••••••" required />
-            <p class="login-password-hint" id="passwordHint" hidden>8+ karakter, büyük/küçük harf, sayı ve sembol (@$!%*?&) içermeli.</p>
+            <input
+              class="input"
+              id="authPassword"
+              type="password"
+              minlength="8"
+              autocomplete="current-password"
+              placeholder="••••••••"
+              required
+            />
+            <p class="login-password-hint" id="passwordHint" hidden>
+              8+ karakter, büyük/küçük harf, sayı ve sembol (@$!%*?&) içermeli.
+            </p>
           </div>
 
           <p class="login-error" id="authError"></p>
 
-          <button class="login-submit" id="submitAuth" type="submit">Giriş yap</button>
+          <button class="login-submit" id="submitAuth" type="submit">
+            Giriş yap
+          </button>
         </form>
-
       </div>
     </div>
 

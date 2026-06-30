@@ -1,7 +1,21 @@
 ﻿import { state, storageKeys, firebaseConfig } from "./state.js";
-import { cleanName, sanitizeEmail, isValidEmail, authMessage } from "./utils.js";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import { set, ref, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+import {
+  cleanName,
+  sanitizeEmail,
+  isValidEmail,
+  authMessage,
+} from "./utils.js";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
+  onAuthStateChanged,
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import {
+  set,
+  ref,
+  serverTimestamp,
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 import { connectToFirebase } from "./firebase.js";
 import { saveRememberMe, getRememberedEmail } from "./auth.js";
 
@@ -28,7 +42,9 @@ setTimeout(() => {
 // Elements
 const loginModeButton = document.querySelector("#loginModeButton");
 const registerModeButton = document.querySelector("#registerModeButton");
-const authNameField = document.querySelector("#authNameField") || document.querySelector("[id='authNameField']");
+const authNameField =
+  document.querySelector("#authNameField") ||
+  document.querySelector("[id='authNameField']");
 const authName = document.querySelector("#authName");
 const authEmail = document.querySelector("#authEmail");
 const authPassword = document.querySelector("#authPassword");
@@ -37,7 +53,8 @@ const submitAuth = document.querySelector("#submitAuth");
 const authError = document.querySelector("#authError");
 const passwordHint = document.querySelector("#passwordHint");
 const authForm = document.querySelector("#authForm");
-const authTitle = document.querySelector("#authTitle") || document.querySelector("h2");
+const authTitle =
+  document.querySelector("#authTitle") || document.querySelector("h2");
 
 function bind(element, eventName, handler) {
   element?.addEventListener(eventName, handler);
@@ -70,7 +87,7 @@ bind(submitAuth, "click", submitLoginAuth);
 function setAuthMode(mode) {
   currentAuthMode = mode;
   const isRegister = mode === "register";
-  
+
   if (authNameField) {
     authNameField.style.display = isRegister ? "grid" : "none";
   }
@@ -79,9 +96,12 @@ function setAuthMode(mode) {
     authTitle.textContent = isRegister ? "Kayıt ol" : "Giriş yap";
   }
   submitAuth.textContent = isRegister ? "Kayıt ol" : "Giriş yap";
-  
-  if (authPassword) authPassword.autocomplete = isRegister ? "new-password" : "current-password";
-  
+
+  if (authPassword)
+    authPassword.autocomplete = isRegister
+      ? "new-password"
+      : "current-password";
+
   loginModeButton?.classList.toggle("active", !isRegister);
   registerModeButton?.classList.toggle("active", isRegister);
   if (passwordHint) passwordHint.hidden = !isRegister;
@@ -95,7 +115,9 @@ async function submitLoginAuth() {
 
   const email = sanitizeEmail(authEmail.value.trim());
   const password = authPassword.value;
-  const name = cleanName((authName?.value || "").trim() || email.split("@")[0] || "User");
+  const name = cleanName(
+    (authName?.value || "").trim() || email.split("@")[0] || "User",
+  );
   const shouldRemember = Boolean(rememberMe?.checked);
 
   if (!email || !isValidEmail(email)) {
@@ -108,7 +130,8 @@ async function submitLoginAuth() {
     return;
   }
   if (currentAuthMode === "register") {
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/;
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/;
     if (!passwordRegex.test(password)) {
       authError.textContent = "Şifre büyük, küçük, sayı ve sembol içermeli.";
       return;
@@ -122,7 +145,11 @@ async function submitLoginAuth() {
       if (!(authName?.value || "").trim()) {
         throw new Error("Kayıt yaparken görünen ad gereklidir.");
       }
-      const credential = await createUserWithEmailAndPassword(state.auth, email, password);
+      const credential = await createUserWithEmailAndPassword(
+        state.auth,
+        email,
+        password,
+      );
       await updateProfile(credential.user, { displayName: name });
       await set(ref(state.db, `users/${credential.user.uid}`), {
         name,
@@ -139,7 +166,7 @@ async function submitLoginAuth() {
       window.location.href = "index.html";
     }
   } catch (error) {
-      authError.textContent = authMessage(error.code);
+    authError.textContent = authMessage(error.code);
   } finally {
     submitAuth.disabled = false;
   }

@@ -1,8 +1,30 @@
 ﻿import { state, storageKeys } from "./state.js";
 import { elements } from "./elements.js";
-import { cleanName, sanitizeEmail, isValidEmail, authMessage } from "./utils.js";
-import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import { get, ref, set, update, remove, serverTimestamp, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+import {
+  cleanName,
+  sanitizeEmail,
+  isValidEmail,
+  authMessage,
+} from "./utils.js";
+import {
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  updateProfile,
+  updatePassword,
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import {
+  get,
+  ref,
+  set,
+  update,
+  remove,
+  serverTimestamp,
+  query,
+  orderByChild,
+  equalTo,
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 import { renderPosts } from "./posts.js";
 import { renderGroups } from "./groups.js";
 import { syncAuthUi, syncComposer, syncAuthMode, closeSettings } from "./ui.js";
@@ -21,7 +43,9 @@ export function subscribeToAuth() {
         await loadOrCreateProfile(user);
       } catch (error) {
         state.profile = {
-          name: cleanName(user.displayName || user.email?.split("@")[0] || "User"),
+          name: cleanName(
+            user.displayName || user.email?.split("@")[0] || "User",
+          ),
           color: "#2563eb",
         };
         console.warn("Profil bilgisi alınamadı: " + error.message);
@@ -72,7 +96,11 @@ async function isNameTaken(name, excludeUid) {
   if (!state.db) return false;
   const normalized = name.trim().toLowerCase();
 
-  const usersQuery = query(ref(state.db, "users"), orderByChild("name"), equalTo(name));
+  const usersQuery = query(
+    ref(state.db, "users"),
+    orderByChild("name"),
+    equalTo(name),
+  );
   let snapshot;
   try {
     snapshot = await get(usersQuery);
@@ -90,7 +118,10 @@ async function isNameTaken(name, excludeUid) {
   const users = snapshot.val();
   return Object.entries(users).some(
     ([uid, user]) =>
-      uid !== excludeUid && String(user?.name || "").trim().toLowerCase() === normalized
+      uid !== excludeUid &&
+      String(user?.name || "")
+        .trim()
+        .toLowerCase() === normalized,
   );
 }
 
@@ -102,21 +133,25 @@ export async function submitAuth() {
 
   const email = sanitizeEmail(elements.authEmail.value.trim());
   const password = elements.authPassword.value;
-  const name = cleanName(elements.authName.value.trim() || email.split("@")[0] || "User");
+  const name = cleanName(
+    elements.authName.value.trim() || email.split("@")[0] || "User",
+  );
 
   if (!email || !isValidEmail(email)) {
     elements.authError.textContent = "Geçerli bir e-posta adresi gir.";
     return;
   }
 
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]+$/;
+  const passwordRegex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]+$/;
 
   if (password.length < 8) {
     elements.authError.textContent = "Şifre en az 8 karakter olmalı.";
     return;
   }
   if (state.authMode === "register" && !passwordRegex.test(password)) {
-    elements.authError.textContent = "Şifre büyük, küçük, sayı ve sembol içermeli.";
+    elements.authError.textContent =
+      "Şifre büyük, küçük, sayı ve sembol içermeli.";
     return;
   }
 
@@ -134,11 +169,16 @@ export async function submitAuth() {
         throw new Error("Kayıt yaparken görünen ad gereklidir.");
       }
       if (await isNameTaken(name)) {
-        elements.authError.textContent = "Bu kullanıcı adı zaten alınmış, lütfen başka bir tane seç.";
+        elements.authError.textContent =
+          "Bu kullanıcı adı zaten alınmış, lütfen başka bir tane seç.";
         elements.submitAuth.disabled = false;
         return;
       }
-      const credential = await createUserWithEmailAndPassword(state.auth, email, password);
+      const credential = await createUserWithEmailAndPassword(
+        state.auth,
+        email,
+        password,
+      );
       await updateProfile(credential.user, { displayName: name });
       await set(ref(state.db, `users/${credential.user.uid}`), {
         name,
@@ -181,10 +221,15 @@ export async function saveProfileSettings() {
     return;
   }
 
-  const name = cleanName(elements.settingsNameInput?.value || state.profile.name);
+  const name = cleanName(
+    elements.settingsNameInput?.value || state.profile.name,
+  );
   const color = elements.settingsAvatarInput?.value || state.profile.color;
 
-  if (name !== state.profile.name && (await isNameTaken(name, state.authUser.uid))) {
+  if (
+    name !== state.profile.name &&
+    (await isNameTaken(name, state.authUser.uid))
+  ) {
     alert("Bu kullanıcı adı zaten alınmış, lütfen başka bir tane seç.");
     return;
   }
@@ -200,7 +245,7 @@ export async function saveProfileSettings() {
     const userPostsQuery = query(
       ref(state.db, "posts"),
       orderByChild("authorId"),
-      equalTo(state.authUser.uid)
+      equalTo(state.authUser.uid),
     );
     let postsSnapshot;
     try {
@@ -226,7 +271,8 @@ export async function saveProfileSettings() {
         for (const [commentId, comment] of Object.entries(comments)) {
           if (comment?.authorId === state.authUser.uid) {
             updates[`posts/${postId}/comments/${commentId}/authorName`] = name;
-            updates[`posts/${postId}/comments/${commentId}/authorColor`] = color;
+            updates[`posts/${postId}/comments/${commentId}/authorColor`] =
+              color;
           }
         }
       }
@@ -257,7 +303,10 @@ export async function logout() {
 
 export function saveRememberMe(email, remember) {
   if (remember) {
-    localStorage.setItem(storageKeys.rememberMe, JSON.stringify({ email, timestamp: Date.now() }));
+    localStorage.setItem(
+      storageKeys.rememberMe,
+      JSON.stringify({ email, timestamp: Date.now() }),
+    );
   } else {
     clearRememberMe();
   }
@@ -286,10 +335,13 @@ export function openChangePasswordDialog() {
     return;
   }
 
-  const newPassword = prompt("Yeni şifreyi gir (8+ karakter, büyük, küçük, sayı, sembol):");
+  const newPassword = prompt(
+    "Yeni şifreyi gir (8+ karakter, büyük, küçük, sayı, sembol):",
+  );
   if (!newPassword) return;
 
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]+$/;
+  const passwordRegex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]+$/;
 
   if (newPassword.length < 8) {
     console.warn("Şifre en az 8 karakter olmalı.");
@@ -316,12 +368,14 @@ export async function confirmDeleteAccount() {
   }
 
   const confirmed = confirm(
-    "Hesabınızı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz ve tüm verileriniz silinecektir."
+    "Hesabınızı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz ve tüm verileriniz silinecektir.",
   );
 
   if (!confirmed) return;
 
-  const doubleConfirm = prompt(`Hesabınızı silmek için "${state.authUser.email}" yazınız:`);
+  const doubleConfirm = prompt(
+    `Hesabınızı silmek için "${state.authUser.email}" yazınız:`,
+  );
 
   if (doubleConfirm !== state.authUser.email) {
     console.warn("Doğrulama başarısız. Hesap silinmedi.");
@@ -336,10 +390,10 @@ export async function confirmDeleteAccount() {
     const userPostsQuery = query(
       ref(state.db, "posts"),
       orderByChild("authorId"),
-      equalTo(state.authUser.uid)
+      equalTo(state.authUser.uid),
     );
     const snapshot = await get(userPostsQuery);
-    
+
     if (snapshot.exists()) {
       const userPosts = snapshot.val();
       for (const postId of Object.keys(userPosts)) {
@@ -383,9 +437,10 @@ function getRateLimitWaitMinutes() {
   const now = Date.now();
   const oldest = [...authAttempts.attempts].sort()[0];
   if (!oldest) return 15;
-  return Math.max(1, Math.ceil((oldest + authAttempts.timeWindow - now) / 60000));
+  return Math.max(
+    1,
+    Math.ceil((oldest + authAttempts.timeWindow - now) / 60000),
+  );
 }
 
 export { getRateLimitWaitMinutes };
-
-

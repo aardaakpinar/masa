@@ -22,7 +22,8 @@ function renderGroupResults(groupQuery) {
   const q = groupQuery.trim().toLowerCase();
   const groups = getGroups().filter((group) => {
     if (!q) return true;
-    const source = `${group.name || ""} ${group.description || ""}`.toLowerCase();
+    const source =
+      `${group.name || ""} ${group.description || ""}`.toLowerCase();
     return source.includes(q);
   });
 
@@ -35,7 +36,7 @@ function renderGroupResults(groupQuery) {
   }
 
   elements.searchResults.replaceChildren(
-    ...groups.map((group) => createGroupCard(group, { compact: true }))
+    ...groups.map((group) => createGroupCard(group, { compact: true })),
   );
 
   if (window.lucide) {
@@ -67,16 +68,15 @@ export function renderDiscover() {
         ${post.authorName || ""}
       `.toLowerCase();
 
-      const postMatch =
-        q.startsWith("@")
-          ? (post.authorName || "").toLowerCase().includes(qWithoutAt)
-          : postSource.includes(q) ||
-            (q.startsWith("#") && postSource.includes(qWithoutHash));
+      const postMatch = q.startsWith("@")
+        ? (post.authorName || "").toLowerCase().includes(qWithoutAt)
+        : postSource.includes(q) ||
+          (q.startsWith("#") && postSource.includes(qWithoutHash));
 
       if (postMatch) {
         results.push({
           ...post,
-          __fromDiscover: true
+          __fromDiscover: true,
         });
       }
 
@@ -86,11 +86,10 @@ export function renderDiscover() {
           ${comment.authorName || ""}
         `.toLowerCase();
 
-        const commentMatch =
-          q.startsWith("@")
-            ? (comment.authorName || "").toLowerCase().includes(qWithoutAt)
-            : commentSource.includes(q) ||
-              (q.startsWith("#") && commentSource.includes(qWithoutHash));
+        const commentMatch = q.startsWith("@")
+          ? (comment.authorName || "").toLowerCase().includes(qWithoutAt)
+          : commentSource.includes(q) ||
+            (q.startsWith("#") && commentSource.includes(qWithoutHash));
 
         if (commentMatch) {
           results.push({
@@ -100,7 +99,7 @@ export function renderDiscover() {
             likes: comment.likes || {},
             comments: {},
             __fromDiscover: true,
-            __isComment: true
+            __isComment: true,
           });
         }
       });
@@ -108,7 +107,7 @@ export function renderDiscover() {
   } else {
     results = posts.slice(0, 8).map((post) => ({
       ...post,
-      __fromDiscover: true
+      __fromDiscover: true,
     }));
   }
 
@@ -121,7 +120,7 @@ export function renderDiscover() {
   }
 
   elements.searchResults.replaceChildren(
-    ...results.map((item) => createPostElement(item))
+    ...results.map((item) => createPostElement(item)),
   );
 
   if (window.lucide) {

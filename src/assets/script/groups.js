@@ -22,7 +22,11 @@ export function subscribeToGroups() {
 
   stopGroupSubscription();
   state.groups = {};
-  state.groupsRef = query(ref(state.db, "groups"), orderByChild("createdAt"), limitToLast(100));
+  state.groupsRef = query(
+    ref(state.db, "groups"),
+    orderByChild("createdAt"),
+    limitToLast(100),
+  );
 
   onValue(
     state.groupsRef,
@@ -50,7 +54,9 @@ function getGroups() {
 }
 
 function isMember(group) {
-  return Boolean(state.authUser && group.members && group.members[state.authUser.uid]);
+  return Boolean(
+    state.authUser && group.members && group.members[state.authUser.uid],
+  );
 }
 
 export function createGroupCard(group, { compact = false } = {}) {
@@ -113,7 +119,9 @@ export function createGroupCard(group, { compact = false } = {}) {
       joinButton.addEventListener("click", async () => {
         joinButton.disabled = true;
         joinButton.textContent = "Katılınıyor…";
-        try { await joinGroup(group.id); } finally {
+        try {
+          await joinGroup(group.id);
+        } finally {
           joinButton.disabled = false;
           joinButton.textContent = "Katıl";
         }
@@ -129,7 +137,9 @@ export function createGroupCard(group, { compact = false } = {}) {
       leaveButton.addEventListener("click", async () => {
         leaveButton.disabled = true;
         leaveButton.textContent = "Ayrılınıyor…";
-        try { await leaveGroup(group.id); } finally {
+        try {
+          await leaveGroup(group.id);
+        } finally {
           leaveButton.disabled = false;
           leaveButton.textContent = "Gruptan Çık";
         }
@@ -178,13 +188,25 @@ function renderInto(container, groups, emptyText) {
     return;
   }
 
-  container.replaceChildren(...groups.map((group) => createGroupCard(group, { compact: container !== elements.groupsList })));
+  container.replaceChildren(
+    ...groups.map((group) =>
+      createGroupCard(group, { compact: container !== elements.groupsList }),
+    ),
+  );
 }
 
 export function renderGroups() {
   const groups = getGroups();
-  renderInto(elements.groupsList, groups, "Henüz bir masa yok. İlkini sen oluştur.");
-  renderInto(elements.topGroupsList, groups.slice(0, 3), "Henüz önerilecek masa yok.");
+  renderInto(
+    elements.groupsList,
+    groups,
+    "Henüz bir masa yok. İlkini sen oluştur.",
+  );
+  renderInto(
+    elements.topGroupsList,
+    groups.slice(0, 3),
+    "Henüz önerilecek masa yok.",
+  );
   syncComposerGroupOptions();
   updateGroupStats();
 }
@@ -228,7 +250,8 @@ function updateGroupStats() {
     elements.groupDescriptionCount.textContent = `${elements.groupDescriptionInput?.value.length || 0}/160`;
   }
   if (elements.groupAvatarPreview && !elements.groupAvatarCharInput?.value) {
-    elements.groupAvatarPreview.textContent = initials(elements.groupNameInput?.value || "") || "M";
+    elements.groupAvatarPreview.textContent =
+      initials(elements.groupNameInput?.value || "") || "M";
   }
 }
 
@@ -241,9 +264,16 @@ export async function createGroup({ name, description, avatarChar, color }) {
   }
 
   const groupName = cleanName(name).slice(0, 48);
-  const groupDescription = String(description || "").trim().slice(0, 160);
-  const groupAvatarChar = String(avatarChar || "").trim().slice(0, 1).toUpperCase();
-  const groupColor = /^#[0-9a-fA-F]{6}$/.test(color || "") ? color : state.profile.color || "#2563eb";
+  const groupDescription = String(description || "")
+    .trim()
+    .slice(0, 160);
+  const groupAvatarChar = String(avatarChar || "")
+    .trim()
+    .slice(0, 1)
+    .toUpperCase();
+  const groupColor = /^#[0-9a-fA-F]{6}$/.test(color || "")
+    ? color
+    : state.profile.color || "#2563eb";
 
   if (!groupName) {
     throw new Error("Masa adı gerekli.");
@@ -277,10 +307,13 @@ export async function joinGroup(groupId) {
   if (group.members?.[state.authUser.uid]) return;
 
   try {
-    await update(ref(state.db, `groups/${groupId}/members/${state.authUser.uid}`), {
-      role: "member",
-      joinedAt: serverTimestamp(),
-    });
+    await update(
+      ref(state.db, `groups/${groupId}/members/${state.authUser.uid}`),
+      {
+        role: "member",
+        joinedAt: serverTimestamp(),
+      },
+    );
   } catch (error) {
     const message = String(error?.message || "");
     if (elements.groupError) {
@@ -303,11 +336,15 @@ export async function leaveGroup(groupId) {
   if (group.ownerId === state.authUser.uid) return;
   if (!group.members?.[state.authUser.uid]) return;
 
-  const confirmed = confirm(`"${group.name}" grubundan çıkmak istediğine emin misin?`);
+  const confirmed = confirm(
+    `"${group.name}" grubundan çıkmak istediğine emin misin?`,
+  );
   if (!confirmed) return;
 
   try {
-    await remove(ref(state.db, `groups/${groupId}/members/${state.authUser.uid}`));
+    await remove(
+      ref(state.db, `groups/${groupId}/members/${state.authUser.uid}`),
+    );
   } catch (error) {
     const message = String(error?.message || "");
     if (elements.groupError) {
@@ -327,7 +364,9 @@ export async function deleteGroup(groupId) {
   const group = state.groups?.[groupId];
   if (!group || group.ownerId !== state.authUser.uid) return;
 
-  const confirmed = confirm(`"${group.name}" topluluğunu silmek istediğine emin misin?`);
+  const confirmed = confirm(
+    `"${group.name}" topluluğunu silmek istediğine emin misin?`,
+  );
   if (!confirmed) return;
 
   await remove(ref(state.db, `groups/${groupId}`));
@@ -341,11 +380,16 @@ export function canViewGroup(groupId) {
   const group = state.groups?.[groupId];
   if (!group) return false;
   if (!state.authUser) return false;
-  return Boolean(group.members?.[state.authUser.uid] || group.ownerId === state.authUser.uid);
+  return Boolean(
+    group.members?.[state.authUser.uid] || group.ownerId === state.authUser.uid,
+  );
 }
 
 export function getGroupName(groupId) {
-  return state.groups?.[groupId]?.avatarChar + " " + state.groups?.[groupId]?.name || "Masa";
+  return (
+    state.groups?.[groupId]?.avatarChar + " " + state.groups?.[groupId]?.name ||
+    "Masa"
+  );
 }
 
 export function getMemberGroups() {
@@ -369,9 +413,11 @@ export async function submitGroupForm() {
     });
 
     if (elements.groupNameInput) elements.groupNameInput.value = "";
-    if (elements.groupDescriptionInput) elements.groupDescriptionInput.value = "";
+    if (elements.groupDescriptionInput)
+      elements.groupDescriptionInput.value = "";
     if (elements.groupAvatarCharInput) elements.groupAvatarCharInput.value = "";
-    if (elements.groupAvatarColorInput) elements.groupAvatarColorInput.value = "#2563eb";
+    if (elements.groupAvatarColorInput)
+      elements.groupAvatarColorInput.value = "#2563eb";
     if (elements.groupAvatarPreview) {
       elements.groupAvatarPreview.textContent = "M";
       elements.groupAvatarPreview.style.background = "#2563eb";

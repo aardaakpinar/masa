@@ -1,8 +1,24 @@
 ﻿import { storageKeys, firebaseConfig } from "./state.js";
 import { elements } from "./elements.js";
 import { connectToFirebase } from "./firebase.js";
-import { submitAuth, saveSettingsAvatar, saveProfileSettings, openChangePasswordDialog, confirmDeleteAccount, setAuthMode, logout } from "./auth.js";
-import { syncAuthMode, syncAuthUi, syncComposer, openAuth, closeSettings, openSearch, openGroups } from "./ui.js";
+import {
+  submitAuth,
+  saveSettingsAvatar,
+  saveProfileSettings,
+  openChangePasswordDialog,
+  confirmDeleteAccount,
+  setAuthMode,
+  logout,
+} from "./auth.js";
+import {
+  syncAuthMode,
+  syncAuthUi,
+  syncComposer,
+  openAuth,
+  closeSettings,
+  openSearch,
+  openGroups,
+} from "./ui.js";
 import { submitComposerText, loadMorePosts, closeComments } from "./posts.js";
 import { submitGroupForm, syncGroupFormCounts } from "./groups.js";
 import { setupDiscover } from "./discover.js";
@@ -40,7 +56,7 @@ if (storedConfig) {
   connectToFirebase(defaultConfigText);
 }
 
-elements.mobileMenuButtons.forEach(button => {
+elements.mobileMenuButtons.forEach((button) => {
   bind(button, "click", () => {
     if (document.body.classList.contains("mobile-drawer-open")) {
       closeMobileMenu();
@@ -49,7 +65,7 @@ elements.mobileMenuButtons.forEach(button => {
     }
   });
 });
-elements.closeSettingsButtons.forEach(button => {
+elements.closeSettingsButtons.forEach((button) => {
   bind(button, "click", () => {
     closeSettings();
   });
@@ -87,14 +103,17 @@ bind(elements.groupAvatarButton, "click", () => {
 bind(elements.groupAvatarColorInput, "input", (event) => {
   if (elements.groupAvatarPreview) {
     elements.groupAvatarPreview.style.background = event.target.value;
-    elements.groupAvatarPreview.style.color = getContrastColor(event.target.value);
+    elements.groupAvatarPreview.style.color = getContrastColor(
+      event.target.value,
+    );
   }
 });
 bind(elements.groupAvatarCharInput, "input", (event) => {
   const char = (event.target.value || "").trim().slice(0, 1).toUpperCase();
   event.target.value = char;
   if (elements.groupAvatarPreview) {
-    elements.groupAvatarPreview.textContent = char || initials(elements.groupNameInput?.value || "") || "M";
+    elements.groupAvatarPreview.textContent =
+      char || initials(elements.groupNameInput?.value || "") || "M";
   }
 });
 bind(elements.settingsAvatarButton, "click", () => {
@@ -102,12 +121,16 @@ bind(elements.settingsAvatarButton, "click", () => {
 });
 bind(elements.settingsNameInput, "input", (event) => {
   const value = event.target.value || "User";
-  if (elements.settingsProfileName) elements.settingsProfileName.textContent = value;
-  const avatar = elements.settingsAvatarButton?.querySelector(".profile-avatar");
+  if (elements.settingsProfileName)
+    elements.settingsProfileName.textContent = value;
+  const avatar =
+    elements.settingsAvatarButton?.querySelector(".profile-avatar");
   if (avatar) avatar.textContent = initials(value);
 });
 bind(elements.settingsAvatarInput, "input", (event) => {
-  const avatar = elements.settingsAvatarButton?.querySelector(".profile-avatar") || elements.settingsAvatarButton;
+  const avatar =
+    elements.settingsAvatarButton?.querySelector(".profile-avatar") ||
+    elements.settingsAvatarButton;
   if (avatar) {
     avatar.style.background = event.target.value;
     avatar.style.color = getContrastColor(event.target.value);
@@ -118,7 +141,6 @@ bind(elements.feedButton, "click", () => {
   closeSettings();
   closeMobileMenu();
 });
-
 
 bind(elements.loginMode, "click", () => setAuthMode("login"));
 bind(elements.registerMode, "click", () => setAuthMode("register"));
@@ -157,7 +179,9 @@ bind(elements.sendPost, "click", async () => {
 
 window.addEventListener("scroll", () => {
   const threshold = 300;
-  const nearBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - threshold;
+  const nearBottom =
+    window.innerHeight + window.scrollY >=
+    document.body.offsetHeight - threshold;
   if (nearBottom) {
     loadMorePosts();
   }

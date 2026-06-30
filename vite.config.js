@@ -1,24 +1,24 @@
-import { defineConfig } from 'vite'
-import { resolve } from 'path'
+import { defineConfig } from "vite";
+import { resolve } from "path";
 
-const isGithubActions = process.env.GITHUB_ACTIONS === 'true'
+const isGithubActions = process.env.GITHUB_ACTIONS === "true";
 
 export default defineConfig({
-  root: 'src',
-  base: isGithubActions ? '/masa/' : '',
+  root: "src",
+  base: isGithubActions ? "/masa/" : "",
   server: {
     port: 5173,
-    open: true
+    open: true,
   },
   build: {
-    outDir: '../dist',
+    outDir: "../dist",
     emptyOutDir: true,
-    minify: 'terser',
+    minify: "terser",
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'src/index.html'),
-        login: resolve(__dirname, 'src/login.html')
-      }
-    }
-  }
-})
+        main: resolve(__dirname, "src/index.html"),
+        login: resolve(__dirname, "src/login.html"),
+      },
+    },
+  },
+});
