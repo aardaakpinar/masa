@@ -81,6 +81,22 @@ bind(elements.saveProfileButton, "click", saveProfileSettings);
 bind(elements.createGroupButton, "click", submitGroupForm);
 bind(elements.groupNameInput, "input", syncGroupFormCounts);
 bind(elements.groupDescriptionInput, "input", syncGroupFormCounts);
+bind(elements.groupAvatarButton, "click", () => {
+  elements.groupAvatarColorInput?.click();
+});
+bind(elements.groupAvatarColorInput, "input", (event) => {
+  if (elements.groupAvatarPreview) {
+    elements.groupAvatarPreview.style.background = event.target.value;
+    elements.groupAvatarPreview.style.color = getContrastColor(event.target.value);
+  }
+});
+bind(elements.groupAvatarCharInput, "input", (event) => {
+  const char = (event.target.value || "").trim().slice(0, 1).toUpperCase();
+  event.target.value = char;
+  if (elements.groupAvatarPreview) {
+    elements.groupAvatarPreview.textContent = char || initials(elements.groupNameInput?.value || "") || "M";
+  }
+});
 bind(elements.settingsAvatarButton, "click", () => {
   elements.settingsAvatarInput?.click();
 });

@@ -107,6 +107,17 @@
         <section class="groups-form-card" aria-label="Masa oluştur">
           <div class="groups-form-title">Yeni Masa</div>
           <div class="groups-form-fields">
+            <div class="groups-avatar-editor">
+              <button class="profile-color-button" id="groupAvatarButton" type="button" title="Avatar rengini değiştir" aria-label="Avatar rengini değiştir">
+                <span class="avatar groups-avatar-preview" id="groupAvatarPreview">M</span>
+                <span class="profile-color-badge" data-lucide="palette" aria-hidden="true"></span>
+                <input id="groupAvatarColorInput" class="settings-color-input" type="color" value="#2563eb" aria-label="Masa avatar rengi" />
+              </button>
+              <label class="settings-field settings-field--compact groups-avatar-char-field">
+                <span>Avatar karakteri</span>
+                <input id="groupAvatarCharInput" name="g_avatar_char" type="text" maxlength="1" placeholder="Otomatik" />
+              </label>
+            </div>
             <div class="groups-field">
               <input id="groupNameInput" name="g_name" type="text" maxlength="48" placeholder="Masa adı" />
               <span class="groups-counter" id="groupNameCount">0/48</span>
@@ -135,7 +146,8 @@
 
         <section class="search" id="searchPanel" aria-label="Arama">
           <div class="search-box">
-            <input class="input" id="searchInput" type="search" placeholder="Post, kişi veya etiket ara..." />
+            <input class="input" id="searchInput" type="search" placeholder="Post, kişi, etiket veya masa ara..." />
+            <span class="search-hint"><b>@</b>kişi · <b>-</b>masa · <b>#</b>etiket</span>
           </div>
           <div id="searchResults" class="search-list"></div>
         </section>

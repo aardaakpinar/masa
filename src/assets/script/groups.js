@@ -53,7 +53,7 @@ function isMember(group) {
   return Boolean(state.authUser && group.members && group.members[state.authUser.uid]);
 }
 
-function createGroupCard(group, { compact = false } = {}) {
+export function createGroupCard(group, { compact = false } = {}) {
   const card = document.createElement("article");
   card.className = compact ? "group-card group-card--compact" : "group-card";
 
@@ -71,7 +71,7 @@ function createGroupCard(group, { compact = false } = {}) {
   avatar.className = "avatar group-card__avatar";
   avatar.style.background = group.color || "#2563eb";
   avatar.style.color = getContrastColor(group.color || "#2563eb");
-  avatar.textContent = initials(group.name);
+  avatar.textContent = group.avatarChar || initials(group.name);
 
   const content = document.createElement("span");
   content.className = "group-card__content";
@@ -227,9 +227,12 @@ function updateGroupStats() {
   if (elements.groupDescriptionCount) {
     elements.groupDescriptionCount.textContent = `${elements.groupDescriptionInput?.value.length || 0}/160`;
   }
+  if (elements.groupAvatarPreview && !elements.groupAvatarCharInput?.value) {
+    elements.groupAvatarPreview.textContent = initials(elements.groupNameInput?.value || "") || "M";
+  }
 }
 
-export async function createGroup({ name, description }) {
+export async function createGroup({ name, description, avatarChar, color }) {
   if (!state.authUser) {
     throw new Error("Masa oluşturmak için giriş yapmalısın.");
   }
@@ -239,6 +242,8 @@ export async function createGroup({ name, description }) {
 
   const groupName = cleanName(name).slice(0, 48);
   const groupDescription = String(description || "").trim().slice(0, 160);
+  const groupAvatarChar = String(avatarChar || "").trim().slice(0, 1).toUpperCase();
+  const groupColor = /^#[0-9a-fA-F]{6}$/.test(color || "") ? color : state.profile.color || "#2563eb";
 
   if (!groupName) {
     throw new Error("Masa adı gerekli.");
@@ -248,7 +253,8 @@ export async function createGroup({ name, description }) {
   await set(groupRef, {
     name: groupName,
     description: groupDescription,
-    color: state.profile.color || "#2563eb",
+    avatarChar: groupAvatarChar || null,
+    color: groupColor,
     ownerId: state.authUser.uid,
     ownerName: state.profile.name,
     createdAt: serverTimestamp(),
@@ -339,7 +345,7 @@ export function canViewGroup(groupId) {
 }
 
 export function getGroupName(groupId) {
-  return state.groups?.[groupId]?.name || "Masa";
+  return state.groups?.[groupId]?.avatarChar + " " + state.groups?.[groupId]?.name || "Masa";
 }
 
 export function getMemberGroups() {
@@ -358,10 +364,19 @@ export async function submitGroupForm() {
     await createGroup({
       name: elements.groupNameInput?.value || "",
       description: elements.groupDescriptionInput?.value || "",
+      avatarChar: elements.groupAvatarCharInput?.value || "",
+      color: elements.groupAvatarColorInput?.value || "",
     });
 
     if (elements.groupNameInput) elements.groupNameInput.value = "";
     if (elements.groupDescriptionInput) elements.groupDescriptionInput.value = "";
+    if (elements.groupAvatarCharInput) elements.groupAvatarCharInput.value = "";
+    if (elements.groupAvatarColorInput) elements.groupAvatarColorInput.value = "#2563eb";
+    if (elements.groupAvatarPreview) {
+      elements.groupAvatarPreview.textContent = "M";
+      elements.groupAvatarPreview.style.background = "#2563eb";
+      elements.groupAvatarPreview.style.color = getContrastColor("#2563eb");
+    }
   } catch (error) {
     console.error("Masa oluşturulamadı:", error);
   } finally {

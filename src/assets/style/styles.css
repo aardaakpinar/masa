@@ -841,6 +841,12 @@ img {
   line-height: 1.5;
 }
 
+.search-hint {
+    font-size: 12px;
+    color: #6b7280;
+    padding-left: 6px;
+}
+
 .groups-form-card {
   background: var(--bg);
   border: 1px solid var(--line);
@@ -860,6 +866,33 @@ img {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.groups-avatar-editor {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.groups-avatar-preview {
+  width: 56px;
+  height: 56px;
+  font-size: 19px;
+}
+
+.groups-avatar-char-field {
+  flex: 1 1 0;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.groups-avatar-char-field input {
+  min-height: 42px;
+  padding: 0 12px;
+  width: 100%;
+  max-width: 120px;
+  text-transform: uppercase;
+  text-align: center;
 }
 
 .groups-field {
@@ -1667,6 +1700,16 @@ img {
     font-size: 17px;
   }
 
+  .groups-avatar-preview {
+    width: 48px;
+    height: 48px;
+    font-size: 17px;
+  }
+
+  .groups-avatar-char-field input {
+    max-width: 100%;
+  }
+
   .settings-panel {
     margin: 0;
     border-radius: 0;
@@ -1721,6 +1764,14 @@ img {
 @media (max-width: 420px) {
   .groups-form-fields {
     gap: 10px;
+  }
+
+  .groups-avatar-editor {
+    gap: 12px;
+  }
+
+  .groups-avatar-char-field input {
+    max-width: 96px;
   }
 
   .profile-card {
