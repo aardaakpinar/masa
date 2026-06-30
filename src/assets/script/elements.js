@@ -25,7 +25,6 @@ export const elements = {
   settingsEmail: document.querySelector("#settingsEmail"),
   changePasswordButton: document.querySelector("#changePasswordButton"),
   deleteAccountButton: document.querySelector("#deleteAccountButton"),
-  settingsSuccess: document.querySelector("#settingsSuccess"),
   postText: document.querySelector("#postText"),
   sendPost: document.querySelector("#sendPost"),
   charCount: document.querySelector("#charCount"),

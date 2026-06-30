@@ -1,6 +1,6 @@
 import { state } from "./state.js";
 import { elements } from "./elements.js";
-import { initials, cleanName } from "./utils.js";
+import { initials, cleanName, getContrastColor } from "./utils.js";
 import {
   ref,
   push,
@@ -31,7 +31,7 @@ export function subscribeToGroups() {
       renderGroups();
     },
     (error) => {
-      console.error("Topluluklar yüklenemedi:", error);
+      console.error("Masalar yüklenemedi:", error);
     },
   );
 }
@@ -70,13 +70,14 @@ function createGroupCard(group, { compact = false } = {}) {
   const avatar = document.createElement("div");
   avatar.className = "avatar group-card__avatar";
   avatar.style.background = group.color || "#2563eb";
+  avatar.style.color = getContrastColor(group.color || "#2563eb");
   avatar.textContent = initials(group.name);
 
   const content = document.createElement("span");
   content.className = "group-card__content";
 
   const title = document.createElement("h4");
-  title.textContent = group.name || "Topluluk";
+  title.textContent = group.name || "Masa";
 
   const meta = document.createElement("span");
   meta.className = "group-card__meta";
@@ -182,8 +183,8 @@ function renderInto(container, groups, emptyText) {
 
 export function renderGroups() {
   const groups = getGroups();
-  renderInto(elements.groupsList, groups, "Henüz bir topluluk yok. İlkini sen oluştur.");
-  renderInto(elements.topGroupsList, groups.slice(0, 3), "Henüz önerilecek topluluk yok.");
+  renderInto(elements.groupsList, groups, "Henüz bir masa yok. İlkini sen oluştur.");
+  renderInto(elements.topGroupsList, groups.slice(0, 3), "Henüz önerilecek masa yok.");
   syncComposerGroupOptions();
   updateGroupStats();
 }
@@ -230,7 +231,7 @@ function updateGroupStats() {
 
 export async function createGroup({ name, description }) {
   if (!state.authUser) {
-    throw new Error("Topluluk oluşturmak için giriş yapmalısın.");
+    throw new Error("Masa oluşturmak için giriş yapmalısın.");
   }
   if (!state.db) {
     throw new Error("Veritabanı bağlantısı kurulamadı.");
@@ -240,7 +241,7 @@ export async function createGroup({ name, description }) {
   const groupDescription = String(description || "").trim().slice(0, 160);
 
   if (!groupName) {
-    throw new Error("Topluluk adı gerekli.");
+    throw new Error("Masa adı gerekli.");
   }
 
   const groupRef = push(ref(state.db, "groups"));
@@ -338,7 +339,7 @@ export function canViewGroup(groupId) {
 }
 
 export function getGroupName(groupId) {
-  return state.groups?.[groupId]?.name || "Topluluk";
+  return state.groups?.[groupId]?.name || "Masa";
 }
 
 export function getMemberGroups() {
@@ -362,7 +363,7 @@ export async function submitGroupForm() {
     if (elements.groupNameInput) elements.groupNameInput.value = "";
     if (elements.groupDescriptionInput) elements.groupDescriptionInput.value = "";
   } catch (error) {
-    console.error("Topluluk oluşturulamadı:", error);
+    console.error("Masa oluşturulamadı:", error);
   } finally {
     isSubmittingGroup = false;
     if (elements.createGroupButton) {

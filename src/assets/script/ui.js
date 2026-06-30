@@ -1,6 +1,6 @@
 import { state } from "./state.js";
 import { elements } from "./elements.js";
-import { initials } from "./utils.js";
+import { initials, getContrastColor } from "./utils.js";
 
 export function syncComposer() {
   if (!elements.postText || !elements.charCount || !elements.sendPost) return;
@@ -103,6 +103,7 @@ export function syncAuthUi() {
     const avatar = elements.settingsAvatarButton.querySelector(".profile-avatar") || elements.settingsAvatarButton;
     avatar.textContent = initials(name);
     avatar.style.background = color;
+    avatar.style.color = getContrastColor(color);
   }
   if (elements.settingsProfileName) {
     setText(elements.settingsProfileName, isSignedIn ? state.profile.name || "User" : "User");
@@ -171,7 +172,6 @@ export function openSettings() {
     return;
   }
 
-  if (elements.settingsSuccess) elements.settingsSuccess.textContent = "";
   setMainView("settings");
 }
 

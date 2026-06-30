@@ -1,6 +1,6 @@
 import { state } from "./state.js";
 import { elements } from "./elements.js";
-import { initials, formatTime, createRichTextFragment } from "./utils.js";
+import { initials, formatTime, createRichTextFragment, getContrastColor } from "./utils.js";
 import { ref, push, set, update, remove, onValue, off, serverTimestamp, query, orderByKey, limitToLast, endAt, get } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 import { openAuth } from "./ui.js";
 import { canViewGroup, getGroupName } from "./groups.js";
@@ -159,6 +159,7 @@ export function createPostElement(post) {
   const avatar = document.createElement("div");
   avatar.className = "avatar";
   avatar.style.background = post.authorColor || "#2563eb";
+  avatar.style.color = getContrastColor(post.authorColor || "#2563eb");
   avatar.textContent = initials(post.authorName);
 
   const body = document.createElement("div");
@@ -281,6 +282,7 @@ function createCommentsSection(post) {
       avatar.style.fontSize = "13px";
       avatar.style.flexShrink = "0";
       avatar.style.background = comment.authorColor || "#2563eb";
+      avatar.style.color = getContrastColor(comment.authorColor || "#2563eb");
       avatar.textContent = initials(comment.authorName);
 
       const threadLine = document.createElement("div");
@@ -420,7 +422,6 @@ export async function submitComposerText(text) {
 function syncComposerMode() {
   if (!elements.sendPost || !elements.postText) return;
   const commentMode = Boolean(activeCommentPostId);
-  elements.sendPost.textContent = commentMode ? "Yorum Paylaş" : "Paylaş";
   elements.postText.placeholder = commentMode ? "Ne düşünüyorsun?" : "Neler oluyor?";
   elements.postText.maxLength = commentMode ? 180 : 280;
 }
@@ -459,7 +460,7 @@ export async function createPost(text) {
   const groupId = elements.postGroupSelect?.value || "";
   const isGroupPost = Boolean(groupId);
   if (isGroupPost && !canViewGroup(groupId)) {
-    throw new Error("Bu toplulukta paylaşım yapmak için üye olmalısın.");
+    throw new Error("Bu masada paylaşım yapmak için üye olmalısın.");
   }
 
   const postRef = push(ref(state.db, "posts"));

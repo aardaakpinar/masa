@@ -68,6 +68,32 @@ export async function loadOrCreateProfile(user) {
   renderGroups();
 }
 
+async function isNameTaken(name, excludeUid) {
+  if (!state.db) return false;
+  const normalized = name.trim().toLowerCase();
+
+  const usersQuery = query(ref(state.db, "users"), orderByChild("name"), equalTo(name));
+  let snapshot;
+  try {
+    snapshot = await get(usersQuery);
+  } catch (error) {
+    // Fallback for projects without indexOn "name" in RTDB rules.
+    if (String(error?.message || "").includes("Index not defined")) {
+      snapshot = await get(ref(state.db, "users"));
+    } else {
+      throw error;
+    }
+  }
+
+  if (!snapshot.exists()) return false;
+
+  const users = snapshot.val();
+  return Object.entries(users).some(
+    ([uid, user]) =>
+      uid !== excludeUid && String(user?.name || "").trim().toLowerCase() === normalized
+  );
+}
+
 export async function submitAuth() {
   if (!state.auth) {
     elements.authError.textContent = "Önce Firebase bağlantısı kurulmalı.";
@@ -107,6 +133,11 @@ export async function submitAuth() {
       if (!elements.authName.value.trim()) {
         throw new Error("Kayıt yaparken görünen ad gereklidir.");
       }
+      if (await isNameTaken(name)) {
+        elements.authError.textContent = "Bu kullanıcı adı zaten alınmış, lütfen başka bir tane seç.";
+        elements.submitAuth.disabled = false;
+        return;
+      }
       const credential = await createUserWithEmailAndPassword(state.auth, email, password);
       await updateProfile(credential.user, { displayName: name });
       await set(ref(state.db, `users/${credential.user.uid}`), {
@@ -139,10 +170,6 @@ export async function saveSettingsAvatar() {
       color: newColor,
       updatedAt: serverTimestamp(),
     });
-    elements.settingsSuccess.textContent = "Profil guncellendi.";
-    setTimeout(() => {
-      elements.settingsSuccess.textContent = "";
-    }, 2000);
   } catch (error) {
     console.warn("Profil guncellenemedi: " + error.message);
   }
@@ -156,6 +183,11 @@ export async function saveProfileSettings() {
 
   const name = cleanName(elements.settingsNameInput?.value || state.profile.name);
   const color = elements.settingsAvatarInput?.value || state.profile.color;
+
+  if (name !== state.profile.name && (await isNameTaken(name, state.authUser.uid))) {
+    alert("Bu kullanıcı adı zaten alınmış, lütfen başka bir tane seç.");
+    return;
+  }
 
   try {
     await update(ref(state.db, `users/${state.authUser.uid}`), {
@@ -205,12 +237,8 @@ export async function saveProfileSettings() {
 
     state.profile.name = name;
     state.profile.color = color;
-    elements.settingsSuccess.textContent = "Profil güncellendi.";
     syncAuthUi();
     renderGroups();
-    setTimeout(() => {
-      elements.settingsSuccess.textContent = "";
-    }, 2000);
   } catch (error) {
     console.warn("Profil güncellenemedi: " + error.message);
   }
@@ -274,10 +302,7 @@ export function openChangePasswordDialog() {
 
   updatePassword(state.authUser, newPassword)
     .then(() => {
-      elements.settingsSuccess.textContent = "Şifre başarıyla değiştirildi.";
-      setTimeout(() => {
-        elements.settingsSuccess.textContent = "";
-      }, 3000);
+      alert("Şifre başarıyla değiştirildi.");
     })
     .catch((error) => {
       console.warn("Şifre değiştirilemedi: " + error.message);

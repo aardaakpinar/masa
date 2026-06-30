@@ -6,7 +6,7 @@ import { syncAuthMode, syncAuthUi, syncComposer, openAuth, closeSettings, openSe
 import { submitComposerText, loadMorePosts, closeComments } from "./posts.js";
 import { submitGroupForm, syncGroupFormCounts } from "./groups.js";
 import { setupDiscover } from "./discover.js";
-import { initials } from "./utils.js";
+import { initials, getContrastColor } from "./utils.js";
 
 function bind(element, eventName, handler) {
   element?.addEventListener(eventName, handler);
@@ -87,12 +87,14 @@ bind(elements.settingsAvatarButton, "click", () => {
 bind(elements.settingsNameInput, "input", (event) => {
   const value = event.target.value || "User";
   if (elements.settingsProfileName) elements.settingsProfileName.textContent = value;
-  if (elements.settingsAvatarButton) elements.settingsAvatarButton.textContent = initials(value);
+  const avatar = elements.settingsAvatarButton?.querySelector(".profile-avatar");
+  if (avatar) avatar.textContent = initials(value);
 });
 bind(elements.settingsAvatarInput, "input", (event) => {
   const avatar = elements.settingsAvatarButton?.querySelector(".profile-avatar") || elements.settingsAvatarButton;
   if (avatar) {
     avatar.style.background = event.target.value;
+    avatar.style.color = getContrastColor(event.target.value);
   }
 });
 bind(elements.feedButton, "click", () => {
