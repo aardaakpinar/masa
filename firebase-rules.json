@@ -4,7 +4,7 @@
     ".write": false,
 
     "users": {
-      ".read": false,
+      ".read": "auth != null",
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid",
@@ -115,8 +115,8 @@
         },
         "members": {
           "$uid": {
-            ".write": "auth != null && auth.uid === $uid",
-            ".validate": "newData.hasChildren(['role', 'joinedAt'])",
+            ".write": "auth != null && (auth.uid === $uid || root.child('groups').child($groupId).child('ownerId').val() === auth.uid)",
+            ".validate": "!newData.exists() || newData.hasChildren(['role', 'joinedAt'])",
             "role": {
               ".validate": "newData.isString() && (newData.val() === 'owner' || newData.val() === 'member')"
             },

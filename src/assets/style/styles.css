@@ -611,12 +611,26 @@ img {
 }
 
 .group-list-heading {
-  margin: 0 0 12px;
+  margin: 12px 14px 10px;
   color: var(--text-soft);
   font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+.member-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 30px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.member-row__role {
+  margin-left: 10px;
+  color: var(--text-soft);
+  font-size: 13px;
 }
 
 .comments-screen {
@@ -1280,6 +1294,14 @@ img {
   background: var(--bg-hover);
 }
 
+.group-card__head--static {
+  cursor: default;
+}
+
+.group-card__head--static:hover {
+  background: var(--bg);
+}
+
 .group-card__avatar {
   width: 52px;
   height: 52px;
@@ -1324,6 +1346,69 @@ img {
   background: var(--accent-soft);
   border-color: var(--accent);
   color: var(--accent-dark);
+}
+
+.group-detail-header:not([hidden]) {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 20px 18px;
+  border-bottom: 1px solid var(--line);
+  animation: fadeIn 220ms ease both;
+}
+
+.group-detail-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  font-size: 22px;
+  flex: 0 0 auto;
+}
+
+.group-detail-info {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  padding-top: 2px;
+}
+
+.group-detail-info h2 {
+  margin: 0;
+  font-family: "Bricolage Grotesque", sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.group-detail-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.group-detail-owner-actions:not([hidden]) {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.group-detail-edit-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.group-detail-meta {
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+.group-detail-description {
+  margin: 4px 0 0;
+  color: var(--text-soft);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .auth-page {
@@ -1710,10 +1795,6 @@ img {
   .groups-submit {
     width: 100%;
     align-self: stretch;
-  }
-
-  .group-list-heading {
-    padding: 12px 14px 10px !important;
   }
 
   .group-card__head {

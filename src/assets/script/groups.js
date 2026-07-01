@@ -1,10 +1,12 @@
 import { state } from "./state.js";
 import { elements } from "./elements.js";
 import { initials, cleanName, getContrastColor } from "./utils.js";
+import { openGroups } from "./ui.js";
 import {
   ref,
   push,
   set,
+  get,
   onValue,
   off,
   query,
@@ -16,6 +18,35 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 
 let isSubmittingGroup = false;
+let isSubmittingGroupEdit = false;
+let isGroupEditFormOpen = false;
+
+async function loadUsersProfiles() {
+  if (!state.db) return;
+
+  try {
+    const snapshot = await get(ref(state.db, "users"));
+    state.users = snapshot.val() || {};
+  } catch (error) {
+    console.error("Kullanıcı profilleri yüklenemedi:", error);
+  }
+}
+
+function resolveMemberProfile(member, uid) {
+  const profile = uid ? state.users?.[uid] : null;
+  const isCurrentUser = Boolean(state.authUser && state.authUser.uid === uid);
+
+  return {
+    name:
+      profile?.name ||
+      member?.name ||
+      (isCurrentUser ? state.profile.name : "Anonim üye"),
+    color:
+      profile?.color ||
+      member?.color ||
+      (isCurrentUser ? state.profile.color : "#2563eb"),
+  };
+}
 
 export function subscribeToGroups() {
   if (!state.db) return;
@@ -32,7 +63,11 @@ export function subscribeToGroups() {
     state.groupsRef,
     (snapshot) => {
       state.groups = snapshot.val() || {};
+      void loadUsersProfiles();
       renderGroups();
+      if (state.activeGroupId) {
+        renderGroupDetail();
+      }
     },
     (error) => {
       console.error("Masalar yüklenemedi:", error);
@@ -63,11 +98,18 @@ export function createGroupCard(group, { compact = false } = {}) {
   const card = document.createElement("article");
   card.className = compact ? "group-card group-card--compact" : "group-card";
 
+  const isOwnerViewer = Boolean(
+    state.authUser && group.ownerId === state.authUser.uid,
+  );
+
   const head = document.createElement("button");
   head.type = "button";
   head.className = "group-card__head";
+  if (!isOwnerViewer) {
+    head.classList.add("group-card__head--static");
+  }
   head.addEventListener("click", () => {
-    if (state.authUser && group.members?.[state.authUser.uid]) {
+    if (isOwnerViewer) {
       state.activeGroupId = group.id;
       window.dispatchEvent(new Event("groups:open"));
     }
@@ -108,7 +150,7 @@ export function createGroupCard(group, { compact = false } = {}) {
 
   if (state.authUser) {
     const joined = isMember(group);
-    const isOwner = group.ownerId === state.authUser.uid;
+    const isOwner = isOwnerViewer;
     status.textContent = isOwner || joined ? "üye" : "öneri";
 
     if (!joined && !isOwner) {
@@ -116,7 +158,8 @@ export function createGroupCard(group, { compact = false } = {}) {
       joinButton.type = "button";
       joinButton.className = "button button--secondary group-action";
       joinButton.textContent = "Katıl";
-      joinButton.addEventListener("click", async () => {
+      joinButton.addEventListener("click", async (event) => {
+        event.stopPropagation();
         joinButton.disabled = true;
         joinButton.textContent = "Katılınıyor…";
         try {
@@ -134,7 +177,8 @@ export function createGroupCard(group, { compact = false } = {}) {
       leaveButton.type = "button";
       leaveButton.className = "button button--secondary group-action";
       leaveButton.textContent = "Gruptan Çık";
-      leaveButton.addEventListener("click", async () => {
+      leaveButton.addEventListener("click", async (event) => {
+        event.stopPropagation();
         leaveButton.disabled = true;
         leaveButton.textContent = "Ayrılınıyor…";
         try {
@@ -146,15 +190,6 @@ export function createGroupCard(group, { compact = false } = {}) {
       });
       actions.append(leaveButton);
     }
-
-    if (isOwner) {
-      const deleteButton = document.createElement("button");
-      deleteButton.type = "button";
-      deleteButton.className = "button button--danger group-action";
-      deleteButton.textContent = "Sil";
-      deleteButton.addEventListener("click", () => deleteGroup(group.id));
-      actions.append(deleteButton);
-    }
   } else {
     status.textContent = "öneri";
   }
@@ -163,6 +198,9 @@ export function createGroupCard(group, { compact = false } = {}) {
   arrow.className = "group-card__arrow";
   arrow.setAttribute("aria-hidden", "true");
   arrow.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>`;
+  if (!isOwnerViewer) {
+    arrow.classList.add("hidden");
+  }
 
   titleWrap.append(title);
   titleRow.append(titleWrap, status, arrow);
@@ -190,7 +228,9 @@ function renderInto(container, groups, emptyText) {
 
   container.replaceChildren(
     ...groups.map((group) =>
-      createGroupCard(group, { compact: container !== elements.groupsList }),
+      createGroupCard(group, {
+        compact: container !== elements.groupsList,
+      }),
     ),
   );
 }
@@ -209,6 +249,205 @@ export function renderGroups() {
   );
   syncComposerGroupOptions();
   updateGroupStats();
+}
+
+export function renderGroupDetail() {
+  const groupId = state.activeGroupId;
+  const group = groupId ? state.groups?.[groupId] : null;
+
+  if (!group) {
+    if (elements.groupDetailError) {
+      elements.groupDetailError.hidden = false;
+      elements.groupDetailError.textContent = "Bu masa artık mevcut değil.";
+    }
+    if (elements.groupDetailHeader) {
+      elements.groupDetailHeader.hidden = true;
+    }
+    if (elements.groupDetailMembersList) {
+      elements.groupDetailMembersList.replaceChildren();
+    }
+    closeGroupEditForm();
+    return;
+  }
+
+  const isOwner = Boolean(
+    state.authUser && group.ownerId === state.authUser.uid,
+  );
+
+  if (!isOwner) {
+    // Bu sekmeye sadece masanın yöneticisi girebilir.
+    state.activeGroupId = "";
+    closeGroupEditForm();
+    openGroups();
+    return;
+  }
+
+  if (elements.groupDetailError) {
+    elements.groupDetailError.hidden = true;
+  }
+  if (elements.groupDetailHeader) {
+    elements.groupDetailHeader.hidden = false;
+  }
+
+  if (elements.groupDetailAvatar) {
+    elements.groupDetailAvatar.textContent =
+      group.avatarChar || initials(group.name);
+    elements.groupDetailAvatar.style.background = group.color || "#2563eb";
+    elements.groupDetailAvatar.style.color = getContrastColor(
+      group.color || "#2563eb",
+    );
+  }
+  if (elements.groupDetailTitle) {
+    elements.groupDetailTitle.textContent = group.name || "Masa";
+  }
+  if (elements.groupDetailName) {
+    elements.groupDetailName.textContent = group.name || "Masa";
+  }
+  if (elements.groupDetailDescription) {
+    elements.groupDetailDescription.textContent =
+      group.description || "Açıklama eklenmemiş.";
+  }
+  if (elements.groupDetailMeta) {
+    const memberCount = Object.keys(group.members || {}).length;
+    elements.groupDetailMeta.textContent = `${memberCount} üye · ${group.ownerName || "Anonim"} oluşturdu`;
+  }
+
+  if (elements.groupDetailOwnerActions) {
+    elements.groupDetailOwnerActions.hidden = false;
+  }
+  if (isGroupEditFormOpen) {
+    fillGroupEditForm(group);
+  }
+
+  renderGroupDetailMembers();
+}
+
+function fillGroupEditForm(group) {
+  if (elements.groupDetailEditNameInput) {
+    elements.groupDetailEditNameInput.value = group.name || "";
+  }
+  if (elements.groupDetailEditDescriptionInput) {
+    elements.groupDetailEditDescriptionInput.value = group.description || "";
+  }
+  if (elements.groupDetailEditAvatarCharInput) {
+    elements.groupDetailEditAvatarCharInput.value = group.avatarChar || "";
+  }
+  if (elements.groupDetailEditAvatarColorInput) {
+    elements.groupDetailEditAvatarColorInput.value = group.color || "#2563eb";
+  }
+  if (elements.groupDetailEditAvatarPreview) {
+    const color = group.color || "#2563eb";
+    elements.groupDetailEditAvatarPreview.textContent =
+      group.avatarChar || initials(group.name) || "M";
+    elements.groupDetailEditAvatarPreview.style.background = color;
+    elements.groupDetailEditAvatarPreview.style.color = getContrastColor(color);
+  }
+  if (elements.groupDetailEditError) {
+    elements.groupDetailEditError.hidden = true;
+    elements.groupDetailEditError.textContent = "";
+  }
+  syncGroupEditFormCounts();
+}
+
+export function openGroupEditForm() {
+  const group = state.activeGroupId
+    ? state.groups?.[state.activeGroupId]
+    : null;
+  if (!group || !state.authUser || group.ownerId !== state.authUser.uid) {
+    return;
+  }
+
+  isGroupEditFormOpen = true;
+  fillGroupEditForm(group);
+  elements.groupDetailEditForm?.classList.remove("hidden");
+}
+
+export function closeGroupEditForm() {
+  isGroupEditFormOpen = false;
+  elements.groupDetailEditForm?.classList.add("hidden");
+}
+
+export function syncGroupEditFormCounts() {
+  if (elements.groupDetailEditNameCount) {
+    elements.groupDetailEditNameCount.textContent = `${elements.groupDetailEditNameInput?.value.length || 0}/48`;
+  }
+  if (elements.groupDetailEditDescriptionCount) {
+    elements.groupDetailEditDescriptionCount.textContent = `${elements.groupDetailEditDescriptionInput?.value.length || 0}/160`;
+  }
+}
+
+export async function updateGroup(
+  groupId,
+  { name, description, avatarChar, color },
+) {
+  if (!state.authUser) {
+    throw new Error("Masayı düzenlemek için giriş yapmalısın.");
+  }
+  if (!state.db) {
+    throw new Error("Veritabanı bağlantısı kurulamadı.");
+  }
+
+  const group = state.groups?.[groupId];
+  if (!group || group.ownerId !== state.authUser.uid) {
+    throw new Error("Bu masayı düzenleme yetkin yok.");
+  }
+
+  const groupName = cleanName(name).slice(0, 48);
+  const groupDescription = String(description || "")
+    .trim()
+    .slice(0, 160);
+  const groupAvatarChar = String(avatarChar || "")
+    .trim()
+    .slice(0, 1)
+    .toUpperCase();
+  const groupColor = /^#[0-9a-fA-F]{6}$/.test(color || "")
+    ? color
+    : group.color || "#2563eb";
+
+  if (!groupName) {
+    throw new Error("Masa adı gerekli.");
+  }
+
+  await update(ref(state.db, `groups/${groupId}`), {
+    name: groupName,
+    description: groupDescription,
+    avatarChar: groupAvatarChar || null,
+    color: groupColor,
+  });
+}
+
+export async function submitGroupEditForm() {
+  if (isSubmittingGroupEdit || !state.activeGroupId) return;
+
+  isSubmittingGroupEdit = true;
+  if (elements.groupDetailEditSaveButton) {
+    elements.groupDetailEditSaveButton.disabled = true;
+  }
+  if (elements.groupDetailEditError) {
+    elements.groupDetailEditError.hidden = true;
+    elements.groupDetailEditError.textContent = "";
+  }
+
+  try {
+    await updateGroup(state.activeGroupId, {
+      name: elements.groupDetailEditNameInput?.value || "",
+      description: elements.groupDetailEditDescriptionInput?.value || "",
+      avatarChar: elements.groupDetailEditAvatarCharInput?.value || "",
+      color: elements.groupDetailEditAvatarColorInput?.value || "",
+    });
+    closeGroupEditForm();
+  } catch (error) {
+    if (elements.groupDetailEditError) {
+      elements.groupDetailEditError.hidden = false;
+      elements.groupDetailEditError.textContent =
+        error.message || "Masa güncellenemedi.";
+    }
+  } finally {
+    isSubmittingGroupEdit = false;
+    if (elements.groupDetailEditSaveButton) {
+      elements.groupDetailEditSaveButton.disabled = false;
+    }
+  }
 }
 
 function syncComposerGroupOptions() {
@@ -236,6 +475,9 @@ function syncComposerGroupOptions() {
   } else {
     elements.postGroupSelect.value = "";
     state.activeGroupId = "";
+    if (current !== "") {
+      elements.postGroupSelect.dispatchEvent(new Event("change"));
+    }
   }
 }
 
@@ -372,7 +614,130 @@ export async function deleteGroup(groupId) {
   await remove(ref(state.db, `groups/${groupId}`));
   if (state.activeGroupId === groupId) {
     state.activeGroupId = "";
+    closeGroupEditForm();
+    openGroups();
   }
+}
+
+export async function removeMember(groupId, uid) {
+  if (!state.authUser || !state.db) return;
+
+  const group = state.groups?.[groupId];
+  if (!group || group.ownerId !== state.authUser.uid) return;
+  if (uid === group.ownerId) return;
+
+  const member = group.members?.[uid];
+  const confirmed = confirm(
+    `"${member?.name || "Bu üyeyi"}" masadan çıkarmak istediğine emin misin?`,
+  );
+  if (!confirmed) return;
+
+  try {
+    await remove(ref(state.db, `groups/${groupId}/members/${uid}`));
+    if (state.activeGroupId === groupId) {
+      renderGroupDetail();
+    }
+    renderGroups();
+  } catch (error) {
+    console.error("Üye çıkarılamadı:", error);
+    throw error;
+  }
+}
+
+function createMemberRow(group, groupId, member, isOwnerViewer) {
+  const row = document.createElement("div");
+  row.className = "member-row";
+  const activeGroupId = group?.id || groupId;
+
+  const memberProfile = resolveMemberProfile(member, member.uid);
+  const avatar = document.createElement("div");
+  avatar.className = "avatar member-row__avatar";
+  const color = memberProfile.color;
+  avatar.style.background = color;
+  avatar.style.color = getContrastColor(color);
+  avatar.textContent = initials(memberProfile.name || "Üye");
+
+  const info = document.createElement("div");
+  info.className = "member-row__info";
+
+  const name = document.createElement("span");
+  name.className = "member-row__name";
+  name.textContent = memberProfile.name || "Anonim üye";
+
+  const roleBadge = document.createElement("span");
+  roleBadge.className = "member-row__role";
+  roleBadge.textContent = member.role === "owner" ? "Yönetici" : "Üye";
+
+  info.append(name, roleBadge);
+  row.append(avatar, info);
+
+  if (isOwnerViewer && member.role !== "owner") {
+    const removeButton = document.createElement("button");
+    removeButton.type = "button";
+    removeButton.className =
+      "button button--danger group-action member-row__remove";
+    removeButton.textContent = "Çıkar";
+    removeButton.addEventListener("click", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      removeButton.disabled = true;
+      try {
+        await removeMember(activeGroupId, member.uid);
+      } catch (error) {
+        if (elements.groupError) {
+          elements.groupError.textContent =
+            "Üye çıkarılamadı: " + (error?.message || "Bilinmeyen hata");
+        }
+      } finally {
+        removeButton.disabled = false;
+      }
+    });
+    row.append(removeButton);
+  }
+
+  return row;
+}
+
+export function renderGroupDetailMembers() {
+  if (!elements.groupDetailMembersList) return;
+
+  const groupId = state.activeGroupId;
+  const group = groupId ? state.groups?.[groupId] : null;
+
+  if (!group) {
+    elements.groupDetailMembersList.replaceChildren();
+    return;
+  }
+
+  const isOwnerViewer = Boolean(
+    state.authUser && group.ownerId === state.authUser.uid,
+  );
+
+  if (!state.users || Object.keys(state.users).length === 0) {
+    void loadUsersProfiles();
+  }
+
+  const members = Object.entries(group.members || {})
+    .map(([uid, member]) => ({ uid, ...member }))
+    .sort((a, b) => {
+      if (a.role === "owner") return -1;
+      if (b.role === "owner") return 1;
+      return (a.joinedAt || 0) - (b.joinedAt || 0);
+    });
+
+  if (!members.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = "Bu masada henüz üye yok.";
+    elements.groupDetailMembersList.replaceChildren(empty);
+    return;
+  }
+
+  elements.groupDetailMembersList.replaceChildren(
+    ...members.map((member) =>
+      createMemberRow(group, groupId, member, isOwnerViewer),
+    ),
+  );
 }
 
 export function canViewGroup(groupId) {
@@ -434,5 +799,6 @@ export async function submitGroupForm() {
 }
 
 export function syncGroupFormCounts() {
+  3;
   updateGroupStats();
 }

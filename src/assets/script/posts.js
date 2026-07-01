@@ -66,6 +66,7 @@ export function subscribeToPosts() {
         oldestLoadedKey = keys.sort()[0];
       }
       renderPosts();
+      renderGroupDetailPosts();
     },
     (error) => {
       if (elements.feedError) {
@@ -130,6 +131,7 @@ export async function loadMorePosts() {
       hasMorePosts = false;
     }
     renderPosts();
+    renderGroupDetailPosts();
   } catch (error) {
     if (elements.feedError) {
       elements.feedError.hidden = false;
@@ -147,15 +149,20 @@ export function renderPosts() {
 
   if (elements.postsLoading) elements.postsLoading.remove();
 
+  const selectedGroupId = elements.postGroupSelect?.value || "";
+
   const posts = Object.entries(state.posts)
     .map(([id, post]) => ({ id, ...post }))
     .filter((post) => canViewGroup(post.groupId))
+    .filter((post) => !selectedGroupId || post.groupId === selectedGroupId)
     .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
   if (!posts.length) {
     const empty = document.createElement("div");
     empty.className = "empty-state";
-    empty.textContent = "İlk postu paylaşarak akışı başlat.";
+    empty.textContent = selectedGroupId
+      ? "Bu masaya henüz mesaj atılmamış."
+      : "İlk postu paylaşarak akışı başlat.";
     elements.postList.replaceChildren(empty);
     return;
   }
@@ -175,6 +182,27 @@ export function renderPosts() {
   elements.postList.replaceChildren(...posts.map(createPostElement));
   refreshIcons();
   window.dispatchEvent(new Event("posts:updated"));
+}
+
+export function renderGroupDetailPosts() {
+  if (!elements.groupDetailPostList || !state.activeGroupId) return;
+
+  const groupId = state.activeGroupId;
+  const posts = Object.entries(state.posts)
+    .map(([id, post]) => ({ id, ...post }))
+    .filter((post) => post.groupId === groupId)
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+  if (!posts.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = "Bu masaya henüz mesaj atılmamış.";
+    elements.groupDetailPostList.replaceChildren(empty);
+    return;
+  }
+
+  elements.groupDetailPostList.replaceChildren(...posts.map(createPostElement));
+  refreshIcons();
 }
 
 export function createPostElement(post) {

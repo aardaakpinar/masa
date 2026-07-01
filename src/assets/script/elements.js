@@ -19,6 +19,48 @@ export const elements = {
   postGroupSelect: document.querySelector("#postGroupSelect"),
   searchPanel: document.querySelector("#search"),
   groupsView: document.querySelector("#groupsView"),
+  groupDetail: document.querySelector("#groupDetail"),
+  groupDetailMembersList: document.querySelector("#groupDetailMembersList"),
+  groupDetailBack: document.querySelector("#groupDetailBack"),
+  groupDetailTitle: document.querySelector("#groupDetailTitle"),
+  groupDetailHeader: document.querySelector("#groupDetailHeader"),
+  groupDetailAvatar: document.querySelector("#groupDetailAvatar"),
+  groupDetailName: document.querySelector("#groupDetailName"),
+  groupDetailMeta: document.querySelector("#groupDetailMeta"),
+  groupDetailDescription: document.querySelector("#groupDetailDescription"),
+  groupDetailError: document.querySelector("#groupDetailError"),
+  groupDetailPostList: document.querySelector("#groupDetailPostList"),
+  groupDetailOwnerActions: document.querySelector("#groupDetailOwnerActions"),
+  groupDetailEditButton: document.querySelector("#groupDetailEditButton"),
+  groupDetailDeleteButton: document.querySelector("#groupDetailDeleteButton"),
+  groupDetailEditForm: document.querySelector("#groupDetailEditForm"),
+  groupDetailEditAvatarButton: document.querySelector(
+    "#groupDetailEditAvatarButton",
+  ),
+  groupDetailEditAvatarColorInput: document.querySelector(
+    "#groupDetailEditAvatarColorInput",
+  ),
+  groupDetailEditAvatarPreview: document.querySelector(
+    "#groupDetailEditAvatarPreview",
+  ),
+  groupDetailEditAvatarCharInput: document.querySelector(
+    "#groupDetailEditAvatarCharInput",
+  ),
+  groupDetailEditNameInput: document.querySelector("#groupDetailEditNameInput"),
+  groupDetailEditNameCount: document.querySelector("#groupDetailEditNameCount"),
+  groupDetailEditDescriptionInput: document.querySelector(
+    "#groupDetailEditDescriptionInput",
+  ),
+  groupDetailEditDescriptionCount: document.querySelector(
+    "#groupDetailEditDescriptionCount",
+  ),
+  groupDetailEditCancelButton: document.querySelector(
+    "#groupDetailEditCancelButton",
+  ),
+  groupDetailEditSaveButton: document.querySelector(
+    "#groupDetailEditSaveButton",
+  ),
+  groupDetailEditError: document.querySelector("#groupDetailEditError"),
   settingsPanel: document.querySelector("#settingsPanel"),
   settingsNameInput: document.querySelector("#settingsNameInput"),
   settingsProfileName: document.querySelector("#settingsProfileName"),

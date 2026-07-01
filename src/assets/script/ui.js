@@ -169,12 +169,16 @@ export function openAuth() {
 function setMainView(view) {
   elements.feed?.classList.toggle("hidden", view !== "feed");
   elements.groupsView?.classList.toggle("hidden", view !== "groups");
+  elements.groupDetail?.classList.toggle("hidden", view !== "groupDetail");
   elements.searchPanel?.classList.toggle("hidden", view !== "search");
   elements.settingsPanel?.classList.toggle("hidden", view !== "settings");
 
   elements.feedButton?.classList.toggle("active", view === "feed");
   elements.searchButton?.classList.toggle("active", view === "search");
-  elements.groupsButton?.classList.toggle("active", view === "groups");
+  elements.groupsButton?.classList.toggle(
+    "active",
+    view === "groups" || view === "groupDetail",
+  );
   elements.authButton?.classList.toggle("active", view === "settings");
 }
 
@@ -188,6 +192,10 @@ export function openSearch() {
 
 export function openGroups() {
   setMainView("groups");
+}
+
+export function openGroupDetail() {
+  setMainView("groupDetail");
 }
 
 export function openSettings() {

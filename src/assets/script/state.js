@@ -24,5 +24,6 @@ export const state = {
   postsRef: null,
   groups: {},
   groupsRef: null,
+  users: {},
   activeGroupId: null,
 };

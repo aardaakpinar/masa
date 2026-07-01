@@ -1,4 +1,4 @@
-﻿import { storageKeys, firebaseConfig } from "./state.js";
+﻿import { storageKeys, firebaseConfig, state } from "./state.js";
 import { elements } from "./elements.js";
 import { connectToFirebase } from "./firebase.js";
 import {
@@ -18,9 +18,25 @@ import {
   closeSettings,
   openSearch,
   openGroups,
+  openGroupDetail,
 } from "./ui.js";
-import { submitComposerText, loadMorePosts, closeComments } from "./posts.js";
-import { submitGroupForm, syncGroupFormCounts } from "./groups.js";
+import {
+  submitComposerText,
+  loadMorePosts,
+  closeComments,
+  renderGroupDetailPosts,
+  renderPosts,
+} from "./posts.js";
+import {
+  submitGroupForm,
+  syncGroupFormCounts,
+  renderGroupDetail,
+  deleteGroup,
+  openGroupEditForm,
+  closeGroupEditForm,
+  submitGroupEditForm,
+  syncGroupEditFormCounts,
+} from "./groups.js";
 import { setupDiscover } from "./discover.js";
 import { initials, getContrastColor } from "./utils.js";
 
@@ -83,6 +99,15 @@ bind(elements.groupsButton, "click", () => {
   openGroups();
   closeMobileMenu();
 });
+bind(elements.groupDetailBack, "click", () => {
+  openGroups();
+});
+window.addEventListener("groups:open", () => {
+  renderGroupDetail();
+  renderGroupDetailPosts();
+  openGroupDetail();
+  closeMobileMenu();
+});
 bind(elements.mobileBackdrop, "click", closeMobileMenu);
 bind(elements.openAuthFromGate, "click", openAuth);
 bind(elements.openGroupsAuthFromGate, "click", openAuth);
@@ -115,6 +140,37 @@ bind(elements.groupAvatarCharInput, "input", (event) => {
     elements.groupAvatarPreview.textContent =
       char || initials(elements.groupNameInput?.value || "") || "M";
   }
+});
+bind(elements.groupDetailEditButton, "click", openGroupEditForm);
+bind(elements.groupDetailEditCancelButton, "click", closeGroupEditForm);
+bind(elements.groupDetailEditSaveButton, "click", submitGroupEditForm);
+bind(elements.groupDetailEditNameInput, "input", syncGroupEditFormCounts);
+bind(
+  elements.groupDetailEditDescriptionInput,
+  "input",
+  syncGroupEditFormCounts,
+);
+bind(elements.groupDetailEditAvatarButton, "click", () => {
+  elements.groupDetailEditAvatarColorInput?.click();
+});
+bind(elements.groupDetailEditAvatarColorInput, "input", (event) => {
+  if (elements.groupDetailEditAvatarPreview) {
+    elements.groupDetailEditAvatarPreview.style.background = event.target.value;
+    elements.groupDetailEditAvatarPreview.style.color = getContrastColor(
+      event.target.value,
+    );
+  }
+});
+bind(elements.groupDetailEditAvatarCharInput, "input", (event) => {
+  const char = (event.target.value || "").trim().slice(0, 1).toUpperCase();
+  event.target.value = char;
+  if (elements.groupDetailEditAvatarPreview) {
+    elements.groupDetailEditAvatarPreview.textContent =
+      char || initials(elements.groupDetailEditNameInput?.value || "") || "M";
+  }
+});
+bind(elements.groupDetailDeleteButton, "click", () => {
+  if (state.activeGroupId) deleteGroup(state.activeGroupId);
 });
 bind(elements.settingsAvatarButton, "click", () => {
   elements.settingsAvatarInput?.click();
@@ -153,6 +209,9 @@ bind(elements.authEmail, "keydown", (event) => {
 });
 
 bind(elements.postText, "input", syncComposer);
+bind(elements.postGroupSelect, "change", () => {
+  renderPosts();
+});
 
 window.addEventListener("resize", () => {
   if (window.innerWidth > 760) {
