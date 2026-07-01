@@ -1,643 +1,693 @@
 <!doctype html>
 <html lang="tr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="MASA, Haberleşme, Eğlence ve Paylaşım Topluluğudur. hadi sende bir sandalye çek ve aramıza otur!"
-    />
-    <meta property="og:title" content="MASA" />
-    <meta
-      property="og:description"
-      content="MASA, Haberleşme, Eğlence ve Paylaşım Topluluğudur. hadi sende bir sandalye çek ve aramıza otur!"
-    />
-    <meta property="og:url" content="https://devnar.github.io/masa" />
-    <meta property="og:type" content="website" />
-    <meta
-      property="og:image"
-      content="https://aardaakpinar.github.io/assets/images/logos/masa.png"
-    />
-    <meta property="og:image:alt" content="MASA Logo" />
-    <meta property="og:site_name" content="MASA" />
-    <link
-      rel="icon"
-      href="https://aardaakpinar.github.io/assets/images/logos/masa.png"
-    />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <title>MASA</title>
-    <link rel="stylesheet" href="assets/style/styles.css" />
-  </head>
-  <body>
-    <div class="app-shell">
-      <aside class="sidebar" aria-label="Ana menü">
-        <div class="brand" aria-label="MASA">
-          <img
-            class="brand-image"
-            src="https://aardaakpinar.github.io/assets/images/logos/masa.png"
-            alt="MASA Logo"
-          />
-          <span class="brand-text">MASA</span>
-        </div>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta
+			name="description"
+			content="MASA, Haberleşme, Eğlence ve Paylaşım Topluluğudur. hadi sende bir sandalye çek ve aramıza otur!"
+		/>
+		<meta property="og:title" content="MASA" />
+		<meta
+			property="og:description"
+			content="MASA, Haberleşme, Eğlence ve Paylaşım Topluluğudur. hadi sende bir sandalye çek ve aramıza otur!"
+		/>
+		<meta property="og:url" content="https://devnar.github.io/masa" />
+		<meta property="og:type" content="website" />
+		<meta
+			property="og:image"
+			content="https://aardaakpinar.github.io/assets/images/logos/masa.png"
+		/>
+		<meta property="og:image:alt" content="MASA Logo" />
+		<meta property="og:site_name" content="MASA" />
+		<link
+			rel="icon"
+			href="https://aardaakpinar.github.io/assets/images/logos/masa.png"
+		/>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap"
+			rel="stylesheet"
+		/>
+		<title>MASA</title>
+		<link rel="stylesheet" href="assets/style/styles.css" />
+	</head>
+	<body>
+		<div class="app-shell">
+			<aside class="sidebar" aria-label="Ana menü">
+				<div class="brand" aria-label="MASA">
+					<img
+						class="brand-image"
+						src="https://aardaakpinar.github.io/assets/images/logos/masa.png"
+						alt="MASA Logo"
+					/>
+					<span class="brand-text">MASA</span>
+				</div>
 
-        <nav class="nav-list">
-          <button
-            class="nav-item button button--ghost"
-            id="feedButton"
-            type="button"
-            aria-label="Masaüstü"
-          >
-            <span data-lucide="home"></span>
-            <span class="nav-item-label">Masaüstü</span>
-          </button>
-          <button
-            class="nav-item button button--ghost"
-            id="searchButton"
-            type="button"
-            aria-label="Ara"
-          >
-            <span data-lucide="search"></span>
-            <span class="nav-item-label">Ara</span>
-          </button>
-          <button
-            class="nav-item button button--ghost"
-            id="groupsButton"
-            type="button"
-            aria-label="Masalar"
-          >
-            <span data-lucide="users"></span>
-            <span class="nav-item-label">Masalar</span>
-          </button>
-          <button
-            class="nav-item button button--ghost"
-            id="authButton"
-            type="button"
-            aria-label="Giriş"
-          >
-            <span data-lucide="user"></span>
-            <span class="nav-item-label">Giriş</span>
-          </button>
-        </nav>
-      </aside>
+				<nav class="nav-list">
+					<button
+						class="nav-item button button--ghost"
+						id="feedButton"
+						type="button"
+						aria-label="Masaüstü"
+					>
+						<span data-lucide="home"></span>
+						<span class="nav-item-label">Masaüstü</span>
+					</button>
+					<button
+						class="nav-item button button--ghost"
+						id="searchButton"
+						type="button"
+						aria-label="Ara"
+					>
+						<span data-lucide="search"></span>
+						<span class="nav-item-label">Ara</span>
+					</button>
+					<button
+						class="nav-item button button--ghost"
+						id="groupsButton"
+						type="button"
+						aria-label="Masalar"
+					>
+						<span data-lucide="users"></span>
+						<span class="nav-item-label">Masalar</span>
+					</button>
+					<button
+						class="nav-item button button--ghost"
+						id="authButton"
+						type="button"
+						aria-label="Giriş"
+					>
+						<span data-lucide="user"></span>
+						<span class="nav-item-label">Giriş</span>
+					</button>
+				</nav>
+			</aside>
 
-      <!-- Mobil backdrop: sidebar açıkken arkayı karartır -->
-      <div class="mobile-backdrop" id="mobileBackdrop" hidden></div>
+			<!-- Mobil backdrop: sidebar açıkken arkayı karartır -->
+			<div class="mobile-backdrop" id="mobileBackdrop" hidden></div>
 
-      <main class="timeline" id="feed">
-        <header class="topbar">
-          <button
-            class="button button--ghost mobile-menu-button"
-            type="button"
-            aria-label="Menüyü aç"
-          >
-            <span data-lucide="menu"></span>
-          </button>
-          <div>
-            <h1>Akış</h1>
-          </div>
-        </header>
+			<main class="timeline" id="feed">
+				<header class="topbar">
+					<button
+						class="button button--ghost mobile-menu-button"
+						type="button"
+						aria-label="Menüyü aç"
+					>
+						<span data-lucide="menu"></span>
+					</button>
+					<div>
+						<h1>Akış</h1>
+					</div>
+				</header>
 
-        <section class="auth-gate" id="authGate">
-          <div>
-            <strong>Masaya bir şeyler bırak</strong>
-            <p>
-              Paylaşım yapmak ve sohbete katılmak için giriş yapman gerekiyor.
-            </p>
-          </div>
-          <button
-            class="button button--primary"
-            id="openAuthFromGate"
-            type="button"
-          >
-            Giriş yap
-          </button>
-        </section>
+				<section class="auth-gate" id="authGate">
+					<div>
+						<strong>Masaya bir şeyler bırak</strong>
+						<p>
+							Paylaşım yapmak ve sohbete katılmak için giriş
+							yapman gerekiyor.
+						</p>
+					</div>
+					<button
+						class="button button--primary"
+						id="openAuthFromGate"
+						type="button"
+					>
+						Giriş yap
+					</button>
+				</section>
 
-        <section class="composer" aria-label="Post oluştur">
-          <textarea
-            id="postText"
-            maxlength="280"
-            placeholder="Masada neler oluyor?"
-            rows="2"
-          ></textarea>
-          <div class="composer-footer">
-            <div class="composer-group-field">
-              <select id="postGroupSelect">
-                <option value="">Genel akış</option>
-              </select>
-            </div>
-            <span class="count-text" id="charCount">0/280</span>
-            <button
-              class="button button--primary"
-              id="sendPost"
-              type="button"
-              disabled
-            >
-              Paylaş
-            </button>
-          </div>
-        </section>
+				<section class="composer" aria-label="Post oluştur">
+					<textarea
+						id="postText"
+						maxlength="280"
+						placeholder="Masada neler oluyor?"
+						rows="2"
+					></textarea>
+					<div class="composer-footer">
+						<div class="composer-group-field">
+							<select id="postGroupSelect">
+								<option value="">Genel akış</option>
+							</select>
+						</div>
+						<span class="count-text" id="charCount">0/280</span>
+						<button
+							class="button button--primary"
+							id="sendPost"
+							type="button"
+							disabled
+						>
+							Paylaş
+						</button>
+					</div>
+				</section>
 
-        <p class="error-text" id="feedError" hidden></p>
-        <section class="feed-list" id="postList" aria-live="polite">
-          <div class="empty-state" id="postsLoading">Yükleniyor…</div>
-        </section>
-      </main>
+				<p class="error-text" id="feedError" hidden></p>
+				<section class="feed-list" id="postList" aria-live="polite">
+					<div class="empty-state" id="postsLoading">Yükleniyor…</div>
+				</section>
+			</main>
 
-      <main class="timeline hidden" id="groupsView">
-        <header class="topbar">
-          <button
-            class="button button--ghost mobile-menu-button"
-            type="button"
-            aria-label="Menüyü aç"
-          >
-            <span data-lucide="menu"></span>
-          </button>
-          <div>
-            <h1>Masalar</h1>
-          </div>
-        </header>
+			<main class="timeline hidden" id="groupsView">
+				<header class="topbar">
+					<button
+						class="button button--ghost mobile-menu-button"
+						type="button"
+						aria-label="Menüyü aç"
+					>
+						<span data-lucide="menu"></span>
+					</button>
+					<div>
+						<h1>Masalar</h1>
+					</div>
+				</header>
 
-        <section class="auth-gate" id="groupsAuthGate">
-          <div>
-            <strong>Masa oluşturmak ve yönetmek için giriş yap.</strong>
-            <p>İçerik, sahip olduğun masalar ve öneriler burada görünür.</p>
-          </div>
-          <button
-            class="button button--primary"
-            id="openGroupsAuthFromGate"
-            type="button"
-          >
-            Giriş yap
-          </button>
-        </section>
+				<section class="auth-gate" id="groupsAuthGate">
+					<div>
+						<strong
+							>Masa oluşturmak ve yönetmek için giriş yap.</strong
+						>
+						<p>
+							İçerik, sahip olduğun masalar ve öneriler burada
+							görünür.
+						</p>
+					</div>
+					<button
+						class="button button--primary"
+						id="openGroupsAuthFromGate"
+						type="button"
+					>
+						Giriş yap
+					</button>
+				</section>
 
-        <section class="groups-form-card" aria-label="Masa oluştur">
-          <div class="groups-form-title">Yeni Masa</div>
-          <div class="groups-form-fields">
-            <div class="groups-avatar-editor">
-              <button
-                class="profile-color-button"
-                id="groupAvatarButton"
-                type="button"
-                title="Avatar rengini değiştir"
-                aria-label="Avatar rengini değiştir"
-              >
-                <span
-                  class="avatar groups-avatar-preview"
-                  id="groupAvatarPreview"
-                  >M</span
-                >
-                <span
-                  class="profile-color-badge"
-                  data-lucide="palette"
-                  aria-hidden="true"
-                ></span>
-                <input
-                  id="groupAvatarColorInput"
-                  class="settings-color-input"
-                  type="color"
-                  value="#2563eb"
-                  aria-label="Masa avatar rengi"
-                />
-              </button>
-              <label
-                class="settings-field settings-field--compact groups-avatar-char-field"
-              >
-                <span>Avatar karakteri</span>
-                <input
-                  id="groupAvatarCharInput"
-                  name="g_avatar_char"
-                  type="text"
-                  maxlength="1"
-                  placeholder="Otomatik"
-                />
-              </label>
-            </div>
-            <div class="groups-field">
-              <input
-                id="groupNameInput"
-                name="g_name"
-                type="text"
-                maxlength="48"
-                placeholder="Masa adı"
-              />
-              <span class="groups-counter" id="groupNameCount">0/48</span>
-            </div>
-            <div class="groups-field">
-              <textarea
-                id="groupDescriptionInput"
-                name="g_desc"
-                maxlength="160"
-                rows="2"
-                placeholder="Bu masa ne hakkında?"
-              ></textarea>
-              <span
-                class="groups-counter groups-counter--bottom"
-                id="groupDescriptionCount"
-                >0/160</span
-              >
-            </div>
-            <button
-              class="button button--primary groups-submit"
-              id="createGroupButton"
-              type="button"
-            >
-              Oluştur
-            </button>
-          </div>
-        </section>
+				<section class="groups-form-card" aria-label="Masa oluştur">
+					<div class="groups-form-title">Yeni Masa</div>
+					<div class="groups-form-fields">
+						<div class="groups-avatar-editor">
+							<button
+								class="profile-color-button"
+								id="groupAvatarButton"
+								type="button"
+								title="Avatar rengini değiştir"
+								aria-label="Avatar rengini değiştir"
+							>
+								<span
+									class="avatar groups-avatar-preview"
+									id="groupAvatarPreview"
+									>M</span
+								>
+								<span
+									class="profile-color-badge"
+									data-lucide="palette"
+									aria-hidden="true"
+								></span>
+								<input
+									id="groupAvatarColorInput"
+									class="settings-color-input"
+									type="color"
+									value="#2563eb"
+									aria-label="Masa avatar rengi"
+								/>
+							</button>
+							<label
+								class="settings-field settings-field--compact groups-avatar-char-field"
+							>
+								<span>Avatar karakteri</span>
+								<input
+									id="groupAvatarCharInput"
+									name="g_avatar_char"
+									type="text"
+									maxlength="1"
+									placeholder="Otomatik"
+								/>
+							</label>
+						</div>
+						<div class="groups-field">
+							<input
+								id="groupNameInput"
+								name="g_name"
+								type="text"
+								maxlength="48"
+								placeholder="Masa adı"
+							/>
+							<span class="groups-counter" id="groupNameCount"
+								>0/48</span
+							>
+						</div>
+						<div class="groups-field">
+							<textarea
+								id="groupDescriptionInput"
+								name="g_desc"
+								maxlength="160"
+								rows="2"
+								placeholder="Bu masa ne hakkında?"
+							></textarea>
+							<span
+								class="groups-counter groups-counter--bottom"
+								id="groupDescriptionCount"
+								>0/160</span
+							>
+						</div>
+						<button
+							class="button button--primary groups-submit"
+							id="createGroupButton"
+							type="button"
+						>
+							Oluştur
+						</button>
+					</div>
+				</section>
 
-        <div class="group-list-heading" style="padding: 0 18px">
-          Tüm masalar
-        </div>
-        <section
-          class="feed-list groups-feed-list"
-          id="groupsList"
-          aria-live="polite"
-        ></section>
-      </main>
+				<div class="group-list-heading" style="padding: 0 18px">
+					Tüm masalar
+				</div>
+				<section
+					class="feed-list groups-feed-list"
+					id="groupsList"
+					aria-live="polite"
+				></section>
+			</main>
 
-      <main class="timeline hidden" id="groupDetail">
-        <header class="topbar">
-          <button
-            class="button button--ghost mobile-menu-button"
-            type="button"
-            aria-label="Menüyü aç"
-          >
-            <span data-lucide="menu"></span>
-          </button>
-          <button
-            class="icon-button button button--ghost"
-            id="groupDetailBack"
-            type="button"
-            aria-label="Masalara dön"
-          >
-            <span data-lucide="arrow-left"></span>
-          </button>
-          <div>
-            <h1 id="groupDetailTitle">Masa</h1>
-          </div>
-        </header>
+			<main class="timeline hidden" id="groupDetail">
+				<header class="topbar">
+					<button
+						class="button button--ghost mobile-menu-button"
+						type="button"
+						aria-label="Menüyü aç"
+					>
+						<span data-lucide="menu"></span>
+					</button>
+					<button
+						class="icon-button button button--ghost"
+						id="groupDetailBack"
+						type="button"
+						aria-label="Masalara dön"
+					>
+						<span data-lucide="arrow-left"></span>
+					</button>
+					<div>
+						<h1 id="groupDetailTitle">Masa</h1>
+					</div>
+				</header>
 
-        <section class="group-detail-header" id="groupDetailHeader">
-          <div class="avatar group-detail-avatar" id="groupDetailAvatar">M</div>
-          <div class="group-detail-info">
-            <div class="group-detail-title-row">
-              <h2 id="groupDetailName">Masa</h2>
-              <div
-                class="group-detail-owner-actions"
-                id="groupDetailOwnerActions"
-                hidden
-              >
-                <button
-                  class="button button--secondary group-action"
-                  id="groupDetailEditButton"
-                  type="button"
-                >
-                  Düzenle
-                </button>
-                <button
-                  class="button button--danger group-action"
-                  id="groupDetailDeleteButton"
-                  type="button"
-                >
-                  Sil
-                </button>
-              </div>
-            </div>
-            <span class="group-detail-meta" id="groupDetailMeta"></span>
-            <p class="group-detail-description" id="groupDetailDescription">
-              Açıklama eklenmemiş.
-            </p>
-          </div>
-        </section>
+				<section class="group-detail-header" id="groupDetailHeader">
+					<div
+						class="avatar group-detail-avatar"
+						id="groupDetailAvatar"
+					>
+						M
+					</div>
+					<div class="group-detail-info">
+						<div class="group-detail-title-row">
+							<h2 id="groupDetailName">Masa</h2>
+							<div
+								class="group-detail-owner-actions"
+								id="groupDetailOwnerActions"
+								hidden
+							>
+								<button
+									class="button button--secondary group-action"
+									id="groupDetailEditButton"
+									type="button"
+								>
+									Düzenle
+								</button>
+								<button
+									class="button button--danger group-action"
+									id="groupDetailDeleteButton"
+									type="button"
+								>
+									Sil
+								</button>
+							</div>
+						</div>
+						<span
+							class="group-detail-meta"
+							id="groupDetailMeta"
+						></span>
+						<p
+							class="group-detail-description"
+							id="groupDetailDescription"
+						>
+							Açıklama eklenmemiş.
+						</p>
+					</div>
+				</section>
 
-        <section
-          class="groups-form-card hidden"
-          id="groupDetailEditForm"
-          aria-label="Masayı düzenle"
-        >
-          <div class="groups-form-title">Masayı Düzenle</div>
-          <div class="groups-form-fields">
-            <div class="groups-avatar-editor">
-              <button
-                class="profile-color-button"
-                id="groupDetailEditAvatarButton"
-                type="button"
-                title="Avatar rengini değiştir"
-                aria-label="Avatar rengini değiştir"
-              >
-                <span
-                  class="avatar groups-avatar-preview"
-                  id="groupDetailEditAvatarPreview"
-                  >M</span
-                >
-                <span
-                  class="profile-color-badge"
-                  data-lucide="palette"
-                  aria-hidden="true"
-                ></span>
-                <input
-                  id="groupDetailEditAvatarColorInput"
-                  class="settings-color-input"
-                  type="color"
-                  value="#2563eb"
-                  aria-label="Masa avatar rengi"
-                />
-              </button>
-              <label
-                class="settings-field settings-field--compact groups-avatar-char-field"
-              >
-                <span>Avatar karakteri</span>
-                <input
-                  id="groupDetailEditAvatarCharInput"
-                  name="ge_avatar_char"
-                  type="text"
-                  maxlength="1"
-                  placeholder="Otomatik"
-                />
-              </label>
-            </div>
-            <div class="groups-field">
-              <input
-                id="groupDetailEditNameInput"
-                name="ge_name"
-                type="text"
-                maxlength="48"
-                placeholder="Masa adı"
-              />
-              <span class="groups-counter" id="groupDetailEditNameCount"
-                >0/48</span
-              >
-            </div>
-            <div class="groups-field">
-              <textarea
-                id="groupDetailEditDescriptionInput"
-                name="ge_desc"
-                maxlength="160"
-                rows="2"
-                placeholder="Bu masa ne hakkında?"
-              ></textarea>
-              <span
-                class="groups-counter groups-counter--bottom"
-                id="groupDetailEditDescriptionCount"
-                >0/160</span
-              >
-            </div>
-            <div class="group-detail-edit-actions">
-              <button
-                class="button button--secondary"
-                id="groupDetailEditCancelButton"
-                type="button"
-              >
-                Vazgeç
-              </button>
-              <button
-                class="button button--primary groups-submit"
-                id="groupDetailEditSaveButton"
-                type="button"
-              >
-                Kaydet
-              </button>
-            </div>
-          </div>
-          <p class="error-text" id="groupDetailEditError" hidden></p>
-        </section>
+				<section
+					class="groups-form-card hidden"
+					id="groupDetailEditForm"
+					aria-label="Masayı düzenle"
+				>
+					<div class="groups-form-title">Masayı Düzenle</div>
+					<div class="groups-form-fields">
+						<div class="groups-avatar-editor">
+							<button
+								class="profile-color-button"
+								id="groupDetailEditAvatarButton"
+								type="button"
+								title="Avatar rengini değiştir"
+								aria-label="Avatar rengini değiştir"
+							>
+								<span
+									class="avatar groups-avatar-preview"
+									id="groupDetailEditAvatarPreview"
+									>M</span
+								>
+								<span
+									class="profile-color-badge"
+									data-lucide="palette"
+									aria-hidden="true"
+								></span>
+								<input
+									id="groupDetailEditAvatarColorInput"
+									class="settings-color-input"
+									type="color"
+									value="#2563eb"
+									aria-label="Masa avatar rengi"
+								/>
+							</button>
+							<label
+								class="settings-field settings-field--compact groups-avatar-char-field"
+							>
+								<span>Avatar karakteri</span>
+								<input
+									id="groupDetailEditAvatarCharInput"
+									name="ge_avatar_char"
+									type="text"
+									maxlength="1"
+									placeholder="Otomatik"
+								/>
+							</label>
+						</div>
+						<div class="groups-field">
+							<input
+								id="groupDetailEditNameInput"
+								name="ge_name"
+								type="text"
+								maxlength="48"
+								placeholder="Masa adı"
+							/>
+							<span
+								class="groups-counter"
+								id="groupDetailEditNameCount"
+								>0/48</span
+							>
+						</div>
+						<div class="groups-field">
+							<textarea
+								id="groupDetailEditDescriptionInput"
+								name="ge_desc"
+								maxlength="160"
+								rows="2"
+								placeholder="Bu masa ne hakkında?"
+							></textarea>
+							<span
+								class="groups-counter groups-counter--bottom"
+								id="groupDetailEditDescriptionCount"
+								>0/160</span
+							>
+						</div>
+						<div class="group-detail-edit-actions">
+							<button
+								class="button button--secondary"
+								id="groupDetailEditCancelButton"
+								type="button"
+							>
+								Vazgeç
+							</button>
+							<button
+								class="button button--primary groups-submit"
+								id="groupDetailEditSaveButton"
+								type="button"
+							>
+								Kaydet
+							</button>
+						</div>
+					</div>
+					<p class="error-text" id="groupDetailEditError" hidden></p>
+				</section>
 
-        <p class="error-text" id="groupDetailError" hidden></p>
-        <div class="group-list-heading" style="padding: 0 18px">Üyeler</div>
-        <section
-          class="feed-list"
-          id="groupDetailMembersList"
-          aria-live="polite"
-        ></section>
-      </main>
+				<p class="error-text" id="groupDetailError" hidden></p>
+				<div class="group-list-heading" style="padding: 0 18px">
+					Üyeler
+				</div>
+				<section
+					class="feed-list"
+					id="groupDetailMembersList"
+					aria-live="polite"
+				></section>
+			</main>
 
-      <main class="timeline hidden" id="search">
-        <header class="topbar">
-          <button
-            class="button button--ghost mobile-menu-button"
-            type="button"
-            aria-label="Menüyü aç"
-          >
-            <span data-lucide="menu"></span>
-          </button>
-          <div>
-            <h1>Ara</h1>
-          </div>
-        </header>
+			<main class="timeline hidden" id="search">
+				<header class="topbar">
+					<button
+						class="button button--ghost mobile-menu-button"
+						type="button"
+						aria-label="Menüyü aç"
+					>
+						<span data-lucide="menu"></span>
+					</button>
+					<div>
+						<h1>Ara</h1>
+					</div>
+				</header>
 
-        <section class="search" id="searchPanel" aria-label="Arama">
-          <div class="search-box">
-            <input
-              class="input"
-              id="searchInput"
-              type="search"
-              placeholder="Post, kişi, etiket veya masa ara..."
-            />
-            <span class="search-hint"
-              ><b>@</b>kişi · <b>-</b>masa · <b>#</b>etiket</span
-            >
-          </div>
-          <div id="searchResults" class="search-list"></div>
-        </section>
-      </main>
+				<section class="search" id="searchPanel" aria-label="Arama">
+					<div class="search-box">
+						<input
+							class="input"
+							id="searchInput"
+							type="search"
+							placeholder="Post, kişi, etiket veya masa ara..."
+						/>
+						<span class="search-hint"
+							><b>@</b>kişi · <b>-</b>masa · <b>#</b>etiket</span
+						>
+					</div>
+					<div id="searchResults" class="search-list"></div>
+				</section>
+			</main>
 
-      <main class="timeline hidden" id="settingsPanel">
-        <header class="topbar">
-          <button
-            class="button button--ghost mobile-menu-button"
-            type="button"
-            aria-label="Menüyü aç"
-          >
-            <span data-lucide="menu"></span>
-          </button>
-          <div>
-            <h1>Hesap</h1>
-          </div>
-        </header>
+			<main class="timeline hidden" id="settingsPanel">
+				<header class="topbar">
+					<button
+						class="button button--ghost mobile-menu-button"
+						type="button"
+						aria-label="Menüyü aç"
+					>
+						<span data-lucide="menu"></span>
+					</button>
+					<div>
+						<h1>Hesap</h1>
+					</div>
+				</header>
 
-        <section class="settings-panel panel--surface">
-          <div class="settings-section section--group">
-            <div class="section-heading">
-              <h3>Profil</h3>
-              <p>Görünen adını ve avatar rengini güncelle.</p>
-            </div>
-            <div class="profile-card">
-              <button
-                class="profile-color-button"
-                id="settingsAvatarButton"
-                type="button"
-                title="Rengi değiştir"
-                aria-label="Rengi değiştir"
-              >
-                <span class="profile-avatar" id="settingsProfileAvatar"
-                  >NA</span
-                >
-                <span
-                  class="profile-color-badge"
-                  data-lucide="palette"
-                  aria-hidden="true"
-                ></span>
-                <input
-                  id="settingsAvatarInput"
-                  class="settings-color-input"
-                  type="color"
-                  value="#2563eb"
-                  aria-label="Avatar rengi"
-                />
-              </button>
-              <div class="profile-card__body">
-                <label class="settings-field settings-field--compact">
-                  <span>Görünen ad</span>
-                  <input
-                    id="settingsNameInput"
-                    type="text"
-                    maxlength="32"
-                    placeholder="Adın"
-                  />
-                </label>
-                <div class="settings-actions settings-actions--profile">
-                  <button
-                    class="button button--secondary"
-                    id="saveProfileButton"
-                    type="button"
-                  >
-                    Profili Kaydet
-                  </button>
-                </div>
-              </div>
-            </div>
-            <input id="settingsEmail" type="email" hidden />
-          </div>
+				<section class="settings-panel panel--surface">
+					<div class="settings-section section--group">
+						<div class="section-heading">
+							<h3>Profil</h3>
+							<p>Görünen adını ve avatar rengini güncelle.</p>
+						</div>
+						<div class="profile-card">
+							<button
+								class="profile-color-button"
+								id="settingsAvatarButton"
+								type="button"
+								title="Rengi değiştir"
+								aria-label="Rengi değiştir"
+							>
+								<span
+									class="profile-avatar"
+									id="settingsProfileAvatar"
+									>NA</span
+								>
+								<span
+									class="profile-color-badge"
+									data-lucide="palette"
+									aria-hidden="true"
+								></span>
+								<input
+									id="settingsAvatarInput"
+									class="settings-color-input"
+									type="color"
+									value="#2563eb"
+									aria-label="Avatar rengi"
+								/>
+							</button>
+							<div class="profile-card__body">
+								<label
+									class="settings-field settings-field--compact"
+								>
+									<span>Görünen ad</span>
+									<input
+										id="settingsNameInput"
+										type="text"
+										maxlength="32"
+										placeholder="Adın"
+									/>
+								</label>
+								<div
+									class="settings-actions settings-actions--profile"
+								>
+									<button
+										class="button button--secondary"
+										id="saveProfileButton"
+										type="button"
+									>
+										Profili Kaydet
+									</button>
+								</div>
+							</div>
+						</div>
+						<input id="settingsEmail" type="email" hidden />
+					</div>
 
-          <div class="settings-section section--group">
-            <div class="section-heading">
-              <h3>Güvenlik</h3>
-              <p>Hesabının temel bilgilerini burada yönetebilirsin.</p>
-            </div>
-            <div class="settings-actions">
-              <button
-                class="button button--secondary"
-                id="changePasswordButton"
-                type="button"
-              >
-                Şifreyi Değiştir
-              </button>
-              <button
-                class="button button--secondary"
-                id="logoutButton"
-                type="button"
-              >
-                Çıkış Yap
-              </button>
-            </div>
-          </div>
+					<div class="settings-section section--group">
+						<div class="section-heading">
+							<h3>Güvenlik</h3>
+							<p>
+								Hesabının temel bilgilerini burada
+								yönetebilirsin.
+							</p>
+						</div>
+						<div class="settings-actions">
+							<button
+								class="button button--secondary"
+								id="changePasswordButton"
+								type="button"
+							>
+								Şifreyi Değiştir
+							</button>
+							<button
+								class="button button--secondary"
+								id="logoutButton"
+								type="button"
+							>
+								Çıkış Yap
+							</button>
+						</div>
+					</div>
 
-          <div class="settings-section section--group">
-            <div class="section-heading">
-              <h3>Tehlikeli İşlemler</h3>
-              <p>Bu adımlar geri alınamaz ve hesap verilerini etkiler.</p>
-            </div>
-            <div class="settings-actions">
-              <button
-                class="button button--danger"
-                id="deleteAccountButton"
-                type="button"
-              >
-                Hesabı Sil
-              </button>
-            </div>
-          </div>
-        </section>
-      </main>
+					<div class="settings-section section--group">
+						<div class="section-heading">
+							<h3>Tehlikeli İşlemler</h3>
+							<p>
+								Bu adımlar geri alınamaz ve hesap verilerini
+								etkiler.
+							</p>
+						</div>
+						<div class="settings-actions">
+							<button
+								class="button button--danger"
+								id="deleteAccountButton"
+								type="button"
+							>
+								Hesabı Devre Dışı Bırak
+							</button>
+						</div>
+					</div>
+				</section>
+			</main>
 
-      <aside class="right-panel" aria-label="Öneriler"></aside>
-    </div>
+			<aside class="right-panel" aria-label="Öneriler"></aside>
+		</div>
 
-    <dialog class="settings-dialog" id="authDialog">
-      <form method="dialog" class="settings-card">
-        <div class="dialog-heading">
-          <h2 id="authTitle">Giriş yap</h2>
-          <button
-            class="icon-button button button--icon"
-            value="cancel"
-            aria-label="Kapat"
-          >
-            ×
-          </button>
-        </div>
-        <div
-          class="auth-switch segmented-control"
-          role="tablist"
-          aria-label="Hesap modu"
-        >
-          <button
-            class="switch-button segmented-control__item active button button--secondary"
-            id="loginMode"
-            type="button"
-          >
-            Giriş
-          </button>
-          <button
-            class="switch-button segmented-control__item button button--secondary"
-            id="registerMode"
-            type="button"
-          >
-            Kayıt
-          </button>
-        </div>
-        <label class="auth-field" id="authNameField">
-          <span>Görünen ad</span>
-          <input class="input" id="authName" type="text" autocomplete="name" />
-        </label>
-        <label class="auth-field">
-          <span>E-posta</span>
-          <input
-            class="input"
-            id="authEmail"
-            type="email"
-            autocomplete="email"
-          />
-        </label>
-        <label class="auth-field">
-          <span>Şifre</span>
-          <input
-            class="input"
-            id="authPassword"
-            type="password"
-            minlength="8"
-            autocomplete="current-password"
-          />
-        </label>
-        <p class="password-hint" id="passwordHint">
-          Şifre: 8+ karakter, büyük, küçük, sayı, sembol
-        </p>
-        <button
-          class="button button--primary button--full"
-          id="submitAuth"
-          type="button"
-        >
-          Giriş yap
-        </button>
-        <p class="error-text" id="authError"></p>
-      </form>
-    </dialog>
+		<dialog class="settings-dialog" id="authDialog">
+			<form method="dialog" class="settings-card">
+				<div class="dialog-heading">
+					<h2 id="authTitle">Giriş yap</h2>
+					<button
+						class="icon-button button button--icon"
+						value="cancel"
+						aria-label="Kapat"
+					>
+						×
+					</button>
+				</div>
+				<div
+					class="auth-switch segmented-control"
+					role="tablist"
+					aria-label="Hesap modu"
+				>
+					<button
+						class="switch-button segmented-control__item active button button--secondary"
+						id="loginMode"
+						type="button"
+					>
+						Giriş
+					</button>
+					<button
+						class="switch-button segmented-control__item button button--secondary"
+						id="registerMode"
+						type="button"
+					>
+						Kayıt
+					</button>
+				</div>
+				<label class="auth-field" id="authNameField">
+					<span>Görünen ad</span>
+					<input
+						class="input"
+						id="authName"
+						type="text"
+						autocomplete="name"
+					/>
+				</label>
+				<label class="auth-field">
+					<span>E-posta</span>
+					<input
+						class="input"
+						id="authEmail"
+						type="email"
+						autocomplete="email"
+					/>
+				</label>
+				<label class="auth-field">
+					<span>Şifre</span>
+					<div class="password-input-wrapper">
+						<input
+							class="input"
+							id="authPassword"
+							type="password"
+							minlength="8"
+							autocomplete="current-password"
+						/>
+						<button
+							type="button"
+							class="password-toggle"
+							id="authPasswordToggle"
+							aria-label="Şifreyi göster"
+						>
+							<span aria-hidden="true">👁</span>
+						</button>
+					</div>
+				</label>
+				<p class="password-hint" id="passwordHint">
+					Şifre: 8+ karakter, büyük, küçük, sayı, sembol
+				</p>
+				<button
+					class="button button--primary button--full"
+					id="submitAuth"
+					type="button"
+				>
+					Giriş yap
+				</button>
+				<p class="error-text" id="authError"></p>
+			</form>
+		</dialog>
 
-    <script type="module" src="assets/script/app.js"></script>
-    <script
-      async
-      src="https://scripts.simpleanalyticscdn.com/latest.js"
-    ></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-      lucide.createIcons();
-    </script>
-  </body>
+		<script type="module" src="assets/script/app.js"></script>
+		<script
+			async
+			src="https://scripts.simpleanalyticscdn.com/latest.js"
+		></script>
+		<script src="https://unpkg.com/lucide@latest"></script>
+		<script>
+			lucide.createIcons();
+		</script>
+	</body>
 </html>

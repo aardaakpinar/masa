@@ -93,15 +93,26 @@
 
           <div class="login-field">
             <label for="authPassword">Şifre</label>
-            <input
-              class="input"
-              id="authPassword"
-              type="password"
-              minlength="8"
-              autocomplete="current-password"
-              placeholder="••••••••"
-              required
-            />
+            <div class="password-wrapper">
+              <input
+                class="input"
+                id="authPassword"
+                type="password"
+                minlength="8"
+                autocomplete="current-password"
+                placeholder="••••••••"
+                required
+              />
+
+              <button
+                type="button"
+                class="password-toggle"
+                id="togglePassword"
+                aria-label="Şifreyi göster"
+              >
+                <i data-lucide="eye"></i>
+              </button>
+            </div>
             <p class="login-password-hint" id="passwordHint" hidden>
               8+ karakter, büyük/küçük harf, sayı ve sembol (@$!%*?&) içermeli.
             </p>
