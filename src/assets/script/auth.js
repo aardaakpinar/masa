@@ -39,7 +39,6 @@ function buildAnonymousProfile(deletedAt) {
 	return {
 		name: "Silinmiş kullanıcı",
 		color: "#94a3b8",
-		email: "deleted@anonymous.local",
 		isDisabled: true,
 		deletedAt,
 	};
@@ -153,9 +152,11 @@ export async function loadOrCreateProfile(user) {
 		};
 		await set(userRef, {
 			...state.profile,
-			email: user.email,
 			createdAt: serverTimestamp(),
 			isDisabled: false,
+		});
+		await set(ref(state.db, `users_private/${user.uid}`), {
+			email: user.email,
 		});
 	}
 
@@ -214,7 +215,7 @@ export async function submitAuth() {
 	}
 
 	const passwordRegex =
-		/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]+$/;
+		/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/;
 
 	if (password.length < 8) {
 		elements.authError.textContent = "Şifre en az 8 karakter olmalı.";
@@ -254,9 +255,11 @@ export async function submitAuth() {
 			await set(ref(state.db, `users/${credential.user.uid}`), {
 				name,
 				color: "#2563eb",
-				email,
 				createdAt: serverTimestamp(),
 				isDisabled: false,
+			});
+			await set(ref(state.db, `users_private/${credential.user.uid}`), {
+				email,
 			});
 		} else {
 			const credential = await signInWithEmailAndPassword(
@@ -429,7 +432,7 @@ export function openChangePasswordDialog() {
 	if (!newPassword) return;
 
 	const passwordRegex =
-		/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]+$/;
+		/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/;
 
 	if (newPassword.length < 8) {
 		console.warn("Şifre en az 8 karakter olmalı.");
@@ -480,6 +483,9 @@ export async function confirmDeleteAccount() {
 			ref(state.db, `users/${state.authUser.uid}`),
 			anonymousProfile,
 		);
+		await set(ref(state.db, `users_private/${state.authUser.uid}`), {
+			email: "deleted@anonymous.local",
+		});
 		await anonymizeUserContent(state.authUser.uid, anonymousProfile);
 
 		state.profile = {

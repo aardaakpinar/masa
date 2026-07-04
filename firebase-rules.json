@@ -7,15 +7,10 @@
 			".read": "auth != null",
 			".indexOn": ["name"],
 			"$uid": {
-				".read": "auth != null && (auth.uid === $uid || data.child('isDisabled').val() !== true)",
 				".write": "auth != null && auth.uid === $uid",
-				".validate": "newData.hasChildren(['name', 'email', 'color', 'createdAt', 'isDisabled']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 50 && newData.child('email').isString() && newData.child('color').isString() && newData.child('color').val().matches(/^#[0-9a-fA-F]{3,8}$/) && newData.child('createdAt').isNumber() && newData.child('isDisabled').isBoolean() && (!newData.child('updatedAt').exists() || newData.child('updatedAt').isNumber()) && (!newData.child('deletedAt').exists() || newData.child('deletedAt').isNumber())",
+				".validate": "newData.hasChildren(['name', 'color', 'createdAt', 'isDisabled']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 50 && newData.child('color').isString() && newData.child('color').val().matches(/^#[0-9a-fA-F]{3,8}$/) && newData.child('createdAt').isNumber() && newData.child('isDisabled').isBoolean() && (!newData.child('updatedAt').exists() || newData.child('updatedAt').isNumber()) && (!newData.child('deletedAt').exists() || newData.child('deletedAt').isNumber()) && !newData.hasChild('email')",
 				"name": {
 					".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 50"
-				},
-				"email": {
-					".read": "auth != null && auth.uid === $uid",
-					".validate": "newData.isString()"
 				},
 				"color": {
 					".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{3,8}$/)"
@@ -27,11 +22,21 @@
 					".validate": "newData.isNumber()"
 				},
 				"isDisabled": {
-					".read": "auth != null && auth.uid === $uid",
 					".validate": "newData.isBoolean()"
 				},
 				"deletedAt": {
 					".validate": "newData.isNumber()"
+				}
+			}
+		},
+
+		"users_private": {
+			"$uid": {
+				".read": "auth != null && auth.uid === $uid",
+				".write": "auth != null && auth.uid === $uid",
+				".validate": "newData.hasChildren(['email']) && newData.child('email').isString() && newData.child('email').val().matches(/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/) && newData.child('email').val().length <= 254",
+				"email": {
+					".validate": "newData.isString() && newData.val().matches(/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/) && newData.val().length <= 254"
 				}
 			}
 		},
@@ -41,7 +46,7 @@
 			".indexOn": ["authorId"],
 			"$postId": {
 				".write": "auth != null && root.child('users').child(auth.uid).child('isDisabled').val() !== true && (!data.exists() || data.child('authorId').val() === auth.uid)",
-				".validate": "newData.hasChildren(['text', 'authorId', 'createdAt']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 280 && newData.child('authorId').val() === auth.uid && newData.child('createdAt').isNumber()",
+				".validate": "newData.hasChildren(['text', 'authorId', 'createdAt']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 280 && newData.child('authorId').val() === auth.uid && newData.child('createdAt').isNumber() && (!newData.child('groupId').exists() || newData.child('groupId').val() === '' || (newData.child('groupId').isString() && (root.child('groups').child(newData.child('groupId').val()).child('ownerId').val() === auth.uid || root.child('groups').child(newData.child('groupId').val()).child('members').child(auth.uid).exists())))",
 				"text": {
 					".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 280"
 				},
@@ -53,6 +58,9 @@
 				},
 				"authorColor": {
 					".validate": "newData.isString()"
+				},
+				"groupId": {
+					".validate": "newData.isString() && newData.val().length <= 40"
 				},
 				"createdAt": {
 					".validate": "newData.isNumber()"
@@ -120,9 +128,9 @@
 				"members": {
 					"$uid": {
 						".write": "auth != null && root.child('users').child(auth.uid).child('isDisabled').val() !== true && (auth.uid === $uid || root.child('groups').child($groupId).child('ownerId').val() === auth.uid)",
-						".validate": "!newData.exists() || newData.hasChildren(['role', 'joinedAt']) && newData.child('role').isString() && (newData.child('role').val() === 'owner' || newData.child('role').val() === 'member') && newData.child('joinedAt').isNumber()",
+						".validate": "!newData.exists() || newData.hasChildren(['role', 'joinedAt']) && newData.child('role').isString() && (newData.child('role').val() === 'member' || (newData.child('role').val() === 'owner' && root.child('groups').child($groupId).child('ownerId').val() === $uid)) && newData.child('joinedAt').isNumber()",
 						"role": {
-							".validate": "newData.isString() && (newData.val() === 'owner' || newData.val() === 'member')"
+							".validate": "newData.isString() && (newData.val() === 'member' || (newData.val() === 'owner' && root.child('groups').child($groupId).child('ownerId').val() === $uid))"
 						},
 						"joinedAt": {
 							".validate": "newData.isNumber()"
