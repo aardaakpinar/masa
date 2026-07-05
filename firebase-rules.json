@@ -62,6 +62,36 @@
 				"groupId": {
 					".validate": "newData.isString() && newData.val().length <= 40"
 				},
+				"tags": {
+					"$tag": {
+						".validate": "newData.isBoolean() && newData.val() === true"
+					}
+				},
+				"media": {
+					".validate": "newData.hasChildren(['type', 'dataUrl'])",
+					"type": {
+						".validate": "newData.isString()"
+					},
+					"dataUrl": {
+						".validate": "newData.isString() && newData.val().length <= 2000000"
+					}
+				},
+				"poll": {
+					"options": {
+						"$optionId": {
+							".validate": "newData.hasChild('text')",
+							"text": {
+								".validate": "newData.isString() && newData.val().length <= 60"
+							},
+							"votes": {
+								"$uid": {
+									".write": "auth != null && auth.uid === $uid && root.child('users').child(auth.uid).child('isDisabled').val() !== true",
+									".validate": "!newData.exists() || (newData.isBoolean() && newData.val() === true)"
+								}
+							}
+						}
+					}
+				},
 				"createdAt": {
 					".validate": "newData.isNumber()"
 				},
@@ -106,7 +136,7 @@
 			".indexOn": ["createdAt"],
 			"$groupId": {
 				".write": "auth != null && root.child('users').child(auth.uid).child('isDisabled').val() !== true && (!data.exists() || data.child('ownerId').val() === auth.uid)",
-				".validate": "newData.hasChildren(['name', 'description', 'color', 'ownerId', 'ownerName', 'createdAt', 'members']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 48 && newData.child('description').isString() && newData.child('description').val().length <= 160 && newData.child('color').isString() && newData.child('color').val().matches(/^#[0-9a-fA-F]{3,8}$/) && newData.child('ownerId').val() === auth.uid && newData.child('ownerName').isString() && newData.child('createdAt').isNumber()",
+				".validate": "newData.hasChildren(['name', 'description', 'color', 'ownerId', 'ownerName', 'createdAt', 'members']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 48 && newData.child('description').isString() && newData.child('description').val().length <= 160 && newData.child('color').isString() && newData.child('color').val().matches(/^#[0-9a-fA-F]{3,8}$/) && newData.child('ownerId').isString() && newData.child('ownerName').isString() && newData.child('createdAt').isNumber()",
 				"name": {
 					".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 48"
 				},

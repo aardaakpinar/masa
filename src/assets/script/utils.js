@@ -72,6 +72,28 @@ export function authMessage(code) {
 }
 
 const TOKEN_REGEX = /(https?:\/\/[^\s]+|#[\p{L}\p{N}_]+)/gu;
+const HASHTAG_REGEX = /#[\p{L}\p{N}_]+/gu;
+
+// Türkçe karakterler (İ/I/ı/i) için tutarlı, locale-duyarlı küçük harfe çevirme.
+export function trLower(value) {
+  return String(value || "").toLocaleLowerCase("tr-TR");
+}
+
+// Bir metindeki tüm #etiketleri (küçük harfe çevrilmiş, tekilleştirilmiş) döndürür.
+export function extractHashtags(text) {
+  const value = String(text || "");
+  const matches = value.match(HASHTAG_REGEX) || [];
+  const seen = new Set();
+  const tags = [];
+  matches.forEach((raw) => {
+    const tag = trLower(raw);
+    if (!seen.has(tag)) {
+      seen.add(tag);
+      tags.push(tag);
+    }
+  });
+  return tags;
+}
 
 export function createRichTextFragment(text) {
   const fragment = document.createDocumentFragment();

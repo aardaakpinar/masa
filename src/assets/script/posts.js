@@ -5,6 +5,7 @@ import {
   formatTime,
   createRichTextFragment,
   getContrastColor,
+  extractHashtags,
 } from "./utils.js";
 import {
   ref,
@@ -30,6 +31,38 @@ let hasMorePosts = true;
 let isLoadingMore = false;
 let activeCommentPostId = null;
 let liveWindowPostIds = new Set();
+
+// Composer'da beklemede olan medya/anket taslağı (henüz gönderilmemiş)
+let pendingMedia = null; // { dataUrl } | null
+let pendingPollOptions = null; // string[] | null
+
+export function setPendingMedia(dataUrl) {
+  pendingMedia = dataUrl ? { dataUrl } : null;
+}
+
+export function clearPendingMedia() {
+  pendingMedia = null;
+}
+
+export function getPendingMedia() {
+  return pendingMedia;
+}
+
+export function setPendingPollOptions(options) {
+  pendingPollOptions = options;
+}
+
+export function clearPendingPoll() {
+  pendingPollOptions = null;
+}
+
+export function getPendingPollOptions() {
+  return pendingPollOptions;
+}
+
+export function hasPendingAttachment() {
+  return Boolean(pendingMedia || pendingPollOptions);
+}
 
 export function subscribeToPosts() {
   if (!state.db) return;
@@ -246,6 +279,9 @@ export function createPostElement(post) {
   text.className = "post-text";
   text.append(createRichTextFragment(post.text || ""));
 
+  const mediaEl = post.media?.dataUrl ? createMediaElement(post.media) : null;
+  const pollEl = post.poll ? createPollElement(post) : null;
+
   const actions = document.createElement("div");
   actions.className = "post-actions";
 
@@ -299,9 +335,110 @@ export function createPostElement(post) {
     actions.append(deleteButton);
   }
 
-  body.append(header, text, actions);
+  body.append(header, text);
+  if (mediaEl) body.append(mediaEl);
+  if (pollEl) body.append(pollEl);
+  body.append(actions);
   article.append(avatar, body);
   return article;
+}
+
+function createMediaElement(media) {
+  const wrap = document.createElement("div");
+  wrap.className = "post-media";
+  const img = document.createElement("img");
+  img.src = media.dataUrl;
+  img.alt = "Gönderi görseli";
+  img.loading = "lazy";
+  wrap.append(img);
+  return wrap;
+}
+
+function createPollElement(post) {
+  const wrap = document.createElement("div");
+  wrap.className = "post-poll";
+
+  const optionEntries = Object.entries(post.poll?.options || {}).sort(
+    (a, b) => Number(a[0]) - Number(b[0]),
+  );
+  const totalVotes = optionEntries.reduce(
+    (sum, [, option]) => sum + Object.keys(option.votes || {}).length,
+    0,
+  );
+  const myVoteKey = optionEntries.find(([, option]) =>
+    Boolean(state.authUser && option.votes?.[state.authUser.uid]),
+  )?.[0];
+
+  optionEntries.forEach(([key, option]) => {
+    const count = Object.keys(option.votes || {}).length;
+    const percent = totalVotes ? Math.round((count / totalVotes) * 100) : 0;
+    const voted = myVoteKey === key;
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `post-poll-option${voted ? " voted" : ""}`;
+
+    const fill = document.createElement("span");
+    fill.className = "post-poll-option-fill";
+    if (myVoteKey !== undefined) {
+      fill.style.width = `${percent}%`;
+    }
+
+    const label = document.createElement("span");
+    label.className = "post-poll-option-label";
+    const optionText = document.createElement("span");
+    optionText.textContent = option.text || "";
+    label.append(optionText);
+    if (myVoteKey !== undefined) {
+      const percentText = document.createElement("span");
+      percentText.textContent = `${percent}%`;
+      label.append(percentText);
+    }
+
+    button.append(fill, label);
+    button.addEventListener("click", () => {
+      if (!state.authUser) {
+        openAuth();
+        return;
+      }
+      voteOnPoll(post.id, key);
+    });
+
+    wrap.append(button);
+  });
+
+  const meta = document.createElement("div");
+  meta.className = "post-poll-meta";
+  meta.textContent = `${totalVotes} oy`;
+  wrap.append(meta);
+
+  return wrap;
+}
+
+export async function voteOnPoll(postId, optionKey) {
+  if (!state.authUser) {
+    openAuth();
+    return;
+  }
+  const post = state.posts[postId];
+  const options = post?.poll?.options;
+  if (!options || !options[optionKey]) return;
+
+  const uid = state.authUser.uid;
+  const updates = {};
+  Object.keys(options).forEach((key) => {
+    if (key === optionKey) {
+      updates[`posts/${postId}/poll/options/${key}/votes/${uid}`] = true;
+    } else if (options[key].votes?.[uid]) {
+      updates[`posts/${postId}/poll/options/${key}/votes/${uid}`] = null;
+    }
+  });
+
+  try {
+    await update(ref(state.db), updates);
+  } catch (error) {
+    console.error("Oy kullanılamadı:", error);
+  }
 }
 
 function createCommentsSection(post) {
@@ -488,7 +625,12 @@ export async function submitComposerText(text) {
     await createComment(activeCommentPostId, text);
     return;
   }
-  await createPost(text);
+  await createPost(text, {
+    media: pendingMedia,
+    pollOptions: pendingPollOptions,
+  });
+  clearPendingMedia();
+  clearPendingPoll();
 }
 
 function syncComposerMode() {
@@ -522,7 +664,7 @@ export function toggleLike(postId, liked) {
   });
 }
 
-export async function createPost(text) {
+export async function createPost(text, { media, pollOptions } = {}) {
   if (!state.authUser) {
     throw new Error("Post atmak için giriş yapmalısınız.");
   }
@@ -537,8 +679,13 @@ export async function createPost(text) {
     throw new Error("Bu masada paylaşım yapmak için üye olmalısın.");
   }
 
-  const postRef = push(ref(state.db, "posts"));
-  await set(postRef, {
+  const tags = extractHashtags(text);
+  const tagMap = {};
+  tags.forEach((tag) => {
+    tagMap[tag.replace(/^#/, "")] = true;
+  });
+
+  const payload = {
     text,
     authorId: state.authUser.uid,
     authorName: state.profile.name,
@@ -546,7 +693,30 @@ export async function createPost(text) {
     createdAt: serverTimestamp(),
     likes: {},
     groupId: isGroupPost ? groupId : "",
-  });
+  };
+
+  if (Object.keys(tagMap).length) {
+    payload.tags = tagMap;
+  }
+
+  if (media?.dataUrl) {
+    payload.media = { type: "image", dataUrl: media.dataUrl };
+  }
+
+  const cleanOptions = (pollOptions || [])
+    .map((option) => (option || "").trim())
+    .filter(Boolean)
+    .slice(0, 4);
+  if (cleanOptions.length >= 2) {
+    const options = {};
+    cleanOptions.forEach((optionText, index) => {
+      options[String(index)] = { text: optionText, votes: {} };
+    });
+    payload.poll = { options };
+  }
+
+  const postRef = push(ref(state.db, "posts"));
+  await set(postRef, payload);
 }
 
 export async function createComment(postId, text) {

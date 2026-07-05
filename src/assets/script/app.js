@@ -26,14 +26,18 @@ import {
 	closeComments,
 	renderGroupDetailPosts,
 	renderPosts,
+	setPendingMedia,
+	clearPendingMedia,
+	setPendingPollOptions,
+	clearPendingPoll,
 } from "./posts.js";
 import {
 	submitGroupForm,
 	syncGroupFormCounts,
 	renderGroupDetail,
 	deleteGroup,
-	openGroupEditForm,
-	closeGroupEditForm,
+	openGroupSettingsPanel,
+	closeGroupSettingsPanel,
 	submitGroupEditForm,
 	syncGroupEditFormCounts,
 } from "./groups.js";
@@ -58,11 +62,164 @@ function closeMobileMenu() {
 	}
 }
 
+const COMPOSER_MAX_ROWS = 5;
+
+// Yazı yazıldıkça textarea'yı büyütür (rows=1 -> rows=5'e kadar).
+function autoGrowComposer() {
+	const el = elements.postText;
+	if (!el) return;
+
+	const style = window.getComputedStyle(el);
+	const lineHeight = parseFloat(style.lineHeight) || 24;
+	const maxHeight = lineHeight * COMPOSER_MAX_ROWS;
+
+	el.style.height = "auto";
+	const nextHeight = Math.min(el.scrollHeight, maxHeight);
+	el.style.height = `${Math.max(nextHeight, lineHeight)}px`;
+	el.style.overflowY = el.scrollHeight > maxHeight ? "auto" : "hidden";
+}
+
+// Composer'ı "aktif" gösterir (masa etiketleri bu durumda açılır):
+// yazı yazılıyor, odaklanılmış ya da medya/anket eklenmişse aktif kalır.
+function syncComposerActiveState() {
+	if (!elements.composerEl || !elements.postText) return;
+	const hasText = elements.postText.value.trim().length > 0;
+	const isFocused = document.activeElement === elements.postText;
+	const hasMedia = !elements.composerMediaPreview?.classList.contains("hidden");
+	const hasPoll = !elements.composerPollFields?.classList.contains("hidden");
+	elements.composerEl.classList.toggle(
+		"active",
+		hasText || isFocused || hasMedia || hasPoll,
+	);
+}
+
+function resizeImageFile(file, maxDimension = 1080, quality = 0.78) {
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onerror = () => reject(new Error("Görsel okunamadı."));
+		reader.onload = () => {
+			const img = new Image();
+			img.onerror = () => reject(new Error("Görsel işlenemedi."));
+			img.onload = () => {
+				const scale = Math.min(
+					1,
+					maxDimension / Math.max(img.width, img.height),
+				);
+				const width = Math.round(img.width * scale);
+				const height = Math.round(img.height * scale);
+
+				const canvas = document.createElement("canvas");
+				canvas.width = width;
+				canvas.height = height;
+				const ctx = canvas.getContext("2d");
+				ctx.drawImage(img, 0, 0, width, height);
+				resolve(canvas.toDataURL("image/jpeg", quality));
+			};
+			img.src = reader.result;
+		};
+		reader.readAsDataURL(file);
+	});
+}
+
+function showMediaPreview(dataUrl) {
+	if (!elements.composerMediaPreview) return;
+	const img = document.getElementById("composerMediaImage");
+	if (img) img.src = dataUrl;
+	elements.composerMediaPreview.classList.remove("hidden");
+	syncComposerActiveState();
+}
+
+function hideMediaPreview() {
+	if (!elements.composerMediaPreview) return;
+	elements.composerMediaPreview.classList.add("hidden");
+	const img = document.getElementById("composerMediaImage");
+	if (img) img.src = "";
+	syncComposerActiveState();
+}
+
+const MAX_POLL_OPTIONS = 4;
+const MIN_POLL_OPTIONS = 2;
+
+function createPollOptionRow(index, value = "") {
+	const row = document.createElement("div");
+	row.className = "composer-poll-option-row";
+
+	const input = document.createElement("input");
+	input.type = "text";
+	input.maxLength = 60;
+	input.placeholder = `Seçenek ${index + 1}`;
+	input.value = value;
+	input.addEventListener("input", syncPendingPollFromInputs);
+
+	row.append(input);
+
+	if (index >= MIN_POLL_OPTIONS) {
+		const removeButton = document.createElement("button");
+		removeButton.type = "button";
+		removeButton.className = "composer-poll-option-remove";
+		removeButton.setAttribute("aria-label", "Seçeneği kaldır");
+		removeButton.textContent = "×";
+		removeButton.addEventListener("click", () => {
+			row.remove();
+			renumberPollOptions();
+			syncPendingPollFromInputs();
+		});
+		row.append(removeButton);
+	}
+
+	return row;
+}
+
+function renumberPollOptions() {
+	const rows = elements.composerPollOptions?.querySelectorAll(
+		".composer-poll-option-row",
+	);
+	rows?.forEach((row, index) => {
+		const input = row.querySelector("input");
+		if (input) input.placeholder = `Seçenek ${index + 1}`;
+	});
+}
+
+function syncPendingPollFromInputs() {
+	const inputs = elements.composerPollOptions?.querySelectorAll("input") || [];
+	setPendingPollOptions(Array.from(inputs).map((input) => input.value));
+}
+
+function openPollFields() {
+	if (!elements.composerPollFields || !elements.composerPollOptions) return;
+	elements.composerPollOptions.replaceChildren(
+		createPollOptionRow(0),
+		createPollOptionRow(1),
+	);
+	elements.composerPollFields.classList.remove("hidden");
+	elements.composerPollButton?.classList.add("active");
+	syncPendingPollFromInputs();
+	syncComposerActiveState();
+}
+
+function closePollFields() {
+	if (!elements.composerPollFields || !elements.composerPollOptions) return;
+	elements.composerPollFields.classList.add("hidden");
+	elements.composerPollOptions.replaceChildren();
+	elements.composerPollButton?.classList.remove("active");
+	clearPendingPoll();
+	syncComposerActiveState();
+}
+
+function resetComposerAttachments() {
+	clearPendingMedia();
+	hideMediaPreview();
+	if (elements.composerMediaInput) elements.composerMediaInput.value = "";
+	closePollFields();
+}
+
 syncAuthMode();
 syncAuthUi();
 syncComposer();
 syncGroupFormCounts();
 setupDiscover();
+autoGrowComposer();
+syncComposerActiveState();
 
 const storedConfig = localStorage.getItem(storageKeys.config);
 if (storedConfig) {
@@ -141,8 +298,8 @@ bind(elements.groupAvatarCharInput, "input", (event) => {
 			char || initials(elements.groupNameInput?.value || "") || "M";
 	}
 });
-bind(elements.groupDetailEditButton, "click", openGroupEditForm);
-bind(elements.groupDetailEditCancelButton, "click", closeGroupEditForm);
+bind(elements.groupDetailSettingsButton, "click", openGroupSettingsPanel);
+bind(elements.groupDetailEditCancelButton, "click", closeGroupSettingsPanel);
 bind(elements.groupDetailEditSaveButton, "click", submitGroupEditForm);
 bind(elements.groupDetailEditNameInput, "input", syncGroupEditFormCounts);
 bind(
@@ -223,10 +380,58 @@ if (elements.authPasswordToggle && elements.authPassword) {
 	});
 }
 
-bind(elements.postText, "input", syncComposer);
+bind(elements.postText, "input", () => {
+	syncComposer();
+	autoGrowComposer();
+	syncComposerActiveState();
+});
+bind(elements.postText, "focus", syncComposerActiveState);
+bind(elements.postText, "blur", () => {
+	// Bir sonraki tık işlenene kadar bekle, böylece chip tıklaması sırasında
+	// composer aniden kapanmasın.
+	setTimeout(syncComposerActiveState, 120);
+});
 bind(elements.postGroupSelect, "change", () => {
 	renderPosts();
 });
+
+bind(elements.composerMediaButton, "click", () => {
+	elements.composerMediaInput?.click();
+});
+bind(elements.composerMediaInput, "change", async (event) => {
+	const file = event.target.files?.[0];
+	if (!file) return;
+	try {
+		const dataUrl = await resizeImageFile(file);
+		setPendingMedia(dataUrl);
+		showMediaPreview(dataUrl);
+	} catch (error) {
+		console.warn("Görsel eklenemedi: " + error.message);
+	}
+});
+bind(elements.composerMediaRemove, "click", () => {
+	clearPendingMedia();
+	hideMediaPreview();
+	if (elements.composerMediaInput) elements.composerMediaInput.value = "";
+});
+
+bind(elements.composerPollButton, "click", () => {
+	const isOpen = !elements.composerPollFields?.classList.contains("hidden");
+	if (isOpen) {
+		closePollFields();
+	} else {
+		openPollFields();
+	}
+});
+bind(elements.composerPollAddOption, "click", () => {
+	const rows =
+		elements.composerPollOptions?.querySelectorAll(".composer-poll-option-row")
+			.length || 0;
+	if (rows >= MAX_POLL_OPTIONS) return;
+	elements.composerPollOptions?.append(createPollOptionRow(rows));
+	syncPendingPollFromInputs();
+});
+bind(elements.composerPollRemove, "click", closePollFields);
 
 window.addEventListener("resize", () => {
 	if (window.innerWidth > 760) {
@@ -242,11 +447,16 @@ bind(elements.sendPost, "click", async () => {
 
 	try {
 		await submitComposerText(text);
-		if (elements.postText) elements.postText.value = "";
+		if (elements.postText) {
+			elements.postText.value = "";
+			autoGrowComposer();
+		}
+		resetComposerAttachments();
 	} catch (error) {
 		console.warn("Post paylaşılamadı: " + error.message);
 	} finally {
 		syncComposer();
+		syncComposerActiveState();
 		elements.sendPost.disabled = false;
 	}
 });
