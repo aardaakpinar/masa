@@ -8,6 +8,7 @@ import { trLower, extractHashtags } from "./utils.js";
 let queryText = "";
 
 const TRENDING_LIMIT = 8;
+const TRENDING_SCAN_LIMIT = 150;
 
 function getPosts() {
 	return Object.entries(state.posts || {})
@@ -137,11 +138,13 @@ export function renderDiscover() {
 export function getTrendingTags(limit = TRENDING_LIMIT) {
 	const counts = new Map();
 
-	getPosts().forEach((post) => {
-		extractHashtags(post.text || "").forEach((tag) => {
-			counts.set(tag, (counts.get(tag) || 0) + 1);
+	getPosts()
+		.slice(0, TRENDING_SCAN_LIMIT)
+		.forEach((post) => {
+			extractHashtags(post.text || "").forEach((tag) => {
+				counts.set(tag, (counts.get(tag) || 0) + 1);
+			});
 		});
-	});
 
 	return Array.from(counts.entries())
 		.sort((a, b) => b[1] - a[1])
