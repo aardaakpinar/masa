@@ -158,9 +158,9 @@
 				"members": {
 					"$uid": {
 						".write": "auth != null && root.child('users').child(auth.uid).child('isDisabled').val() !== true && (auth.uid === $uid || root.child('groups').child($groupId).child('ownerId').val() === auth.uid)",
-						".validate": "!newData.exists() || newData.hasChildren(['role', 'joinedAt']) && newData.child('role').isString() && (newData.child('role').val() === 'member' || (newData.child('role').val() === 'owner' && root.child('groups').child($groupId).child('ownerId').val() === $uid)) && newData.child('joinedAt').isNumber()",
+						".validate": "!newData.exists() || newData.hasChildren(['role', 'joinedAt']) && newData.child('role').isString() && (newData.child('role').val() === 'member' || (newData.child('role').val() === 'owner' && newData.parent().parent().child('ownerId').val() === $uid)) && newData.child('joinedAt').isNumber()",
 						"role": {
-							".validate": "newData.isString() && (newData.val() === 'member' || (newData.val() === 'owner' && root.child('groups').child($groupId).child('ownerId').val() === $uid))"
+							".validate": "newData.isString() && (newData.val() === 'member' || (newData.val() === 'owner' && newData.parent().parent().parent().child('ownerId').val() === $uid))"
 						},
 						"joinedAt": {
 							".validate": "newData.isNumber()"

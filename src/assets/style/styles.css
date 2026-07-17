@@ -1481,7 +1481,7 @@ img {
 	display: grid;
 	gap: 6px;
 	padding: 14px 16px 16px;
-	min-width: 0;
+	width: 100%;
 }
 
 .group-card__content h4 {
