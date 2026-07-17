@@ -1600,7 +1600,7 @@ img {
 }
 
 .group-detail-info {
-	min-width: 0;
+	width: 100%;
 	display: grid;
 	gap: 4px;
 	padding-top: 2px;
