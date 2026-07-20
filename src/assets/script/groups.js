@@ -1,6 +1,6 @@
 import { state } from "./state.js";
 import { elements } from "./elements.js";
-import { initials, cleanName, getContrastColor } from "./utils.js";
+import { initials, cleanName, getContrastColor, friendlyErrorMessage } from "./utils.js";
 import { openGroups } from "./ui.js";
 import { ref, push, set, get, onValue, off, query, orderByChild, limitToLast, serverTimestamp, update, remove } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 
@@ -394,9 +394,10 @@ export async function submitGroupEditForm() {
 		});
 		closeGroupSettingsPanel();
 	} catch (error) {
+		console.error("Masa güncellenemedi:", error);
 		if (elements.groupDetailEditError) {
 			elements.groupDetailEditError.hidden = false;
-			elements.groupDetailEditError.textContent = error.message || "Masa güncellenemedi.";
+			elements.groupDetailEditError.textContent = friendlyErrorMessage(error, "Masa güncellenemedi.");
 		}
 	} finally {
 		isSubmittingGroupEdit = false;
@@ -553,9 +554,9 @@ export async function joinGroup(groupId) {
 			joinedAt: serverTimestamp(),
 		});
 	} catch (error) {
-		const message = String(error?.message || "");
+		console.error("Topluluğa katılınamadı:", error);
 		if (elements.groupError) {
-			elements.groupError.textContent = "Topluluğa katılınamadı: " + error.message + (message.includes("Permission denied") ? " Rules içinde members/$uid/role için 'member' izni verin." : "");
+			elements.groupError.textContent = "Topluluğa katılınamadı. " + friendlyErrorMessage(error, "Lütfen tekrar dene.");
 		}
 		throw error;
 	}
@@ -575,9 +576,9 @@ export async function leaveGroup(groupId) {
 	try {
 		await remove(ref(state.db, `groups/${groupId}/members/${state.authUser.uid}`));
 	} catch (error) {
-		const message = String(error?.message || "");
+		console.error("Gruptan çıkılamadı:", error);
 		if (elements.groupError) {
-			elements.groupError.textContent = "Gruptan çıkılamadı: " + error.message + (message.includes("Permission denied") ? " Rules içinde members/$uid için silme izni verin." : "");
+			elements.groupError.textContent = "Gruptan çıkılamadı. " + friendlyErrorMessage(error, "Lütfen tekrar dene.");
 		}
 		throw error;
 	}
@@ -661,8 +662,9 @@ function createMemberRow(group, groupId, member, isOwnerViewer) {
 			try {
 				await removeMember(activeGroupId, member.uid);
 			} catch (error) {
+				console.error("Üye çıkarılamadı:", error);
 				if (elements.groupError) {
-					elements.groupError.textContent = "Üye çıkarılamadı: " + (error?.message || "Bilinmeyen hata");
+					elements.groupError.textContent = "Üye çıkarılamadı. " + friendlyErrorMessage(error, "Lütfen tekrar dene.");
 				}
 			} finally {
 				removeButton.disabled = false;

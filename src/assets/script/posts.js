@@ -6,6 +6,7 @@ import {
   createRichTextFragment,
   getContrastColor,
   extractHashtags,
+  friendlyErrorMessage,
 } from "./utils.js";
 import {
   ref,
@@ -102,10 +103,11 @@ export function subscribeToPosts() {
       renderGroupDetailPosts();
     },
     (error) => {
+      console.error("Postlar yüklenemedi:", error);
       if (elements.feedError) {
         elements.feedError.hidden = false;
         elements.feedError.textContent =
-          "Postlar yüklenemedi: " + error.message;
+          "Postlar yüklenemedi. " + friendlyErrorMessage(error, "Lütfen internet bağlantını kontrol edip tekrar dene.");
       }
     },
   );
@@ -166,10 +168,11 @@ export async function loadMorePosts() {
     renderPosts();
     renderGroupDetailPosts();
   } catch (error) {
+    console.error("Daha fazla post yüklenemedi:", error);
     if (elements.feedError) {
       elements.feedError.hidden = false;
       elements.feedError.textContent =
-        "Daha fazla post yüklenemedi: " + error.message;
+        "Daha fazla post yüklenemedi. " + friendlyErrorMessage(error, "Lütfen tekrar dene.");
     }
   } finally {
     hideLoadMoreIndicator();

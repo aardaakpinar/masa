@@ -71,6 +71,33 @@ export function authMessage(code) {
   );
 }
 
+// Firebase/JS hatalarını kullanıcıya gösterilecek kısa, anlaşılır bir mesaja çevirir.
+// Ham `error.message` / `error.code` metinleri (İngilizce, teknik, bazen çok uzun)
+// hiçbir zaman doğrudan arayüze basılmamalı; bunun yerine bu fonksiyon kullanılmalı.
+// Teknik detay geliştirici konsoluna (console.error/console.warn) ayrıca loglanmalıdır.
+export function friendlyErrorMessage(error, fallback = "Bir şeyler ters gitti. Lütfen tekrar deneyin.") {
+  const code = String(error?.code || "");
+  const raw = String(error?.message || "");
+
+  const knownCodes = {
+    "auth/network-request-failed": "Ağ bağlantısı kurulamadı. İnternetini kontrol edip tekrar dene.",
+    "auth/too-many-requests": "Çok fazla deneme yapıldı. Lütfen biraz sonra tekrar dene.",
+    "auth/user-disabled": "Bu hesap devre dışı bırakılmış.",
+    "auth/invalid-credential": "E-posta veya şifre hatalı.",
+    "auth/requires-recent-login": "Bu işlem için tekrar giriş yapman gerekiyor.",
+    PERMISSION_DENIED: "Bu işlem için yetkin yok.",
+  };
+
+  if (knownCodes[code]) return knownCodes[code];
+  if (/permission denied/i.test(raw)) return "Bu işlem için yetkin yok.";
+  if (/network|offline|failed to fetch/i.test(raw)) {
+    return "Ağ bağlantısı kurulamadı. İnternetini kontrol edip tekrar dene.";
+  }
+  if (code.startsWith("auth/")) return authMessage(code);
+
+  return fallback;
+}
+
 const TOKEN_REGEX = /(https?:\/\/[^\s]+|#[\p{L}\p{N}_]+)/gu;
 const HASHTAG_REGEX = /#[\p{L}\p{N}_]+/gu;
 

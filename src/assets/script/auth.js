@@ -5,6 +5,7 @@ import {
 	sanitizeEmail,
 	isValidEmail,
 	authMessage,
+	friendlyErrorMessage,
 } from "./utils.js";
 import {
 	onAuthStateChanged,
@@ -280,8 +281,14 @@ export async function submitAuth() {
 		recordAuthAttempt(true);
 	} catch (error) {
 		recordAuthAttempt(false);
-		elements.authError.textContent =
-			error.message || authMessage(error.code);
+		console.error("Giriş/kayıt hatası:", error);
+		// Firebase hataları (error.code) için hazır, kullanıcı dostu Türkçe metin kullan.
+		// error.message'ı doğrudan göstermek İngilizce/teknik metin sızdırır; bunun tek
+		// istisnası, kendi kodumuzun az önce fırlattığı ("Bu hesap devre dışı..." gibi)
+		// zaten Türkçe ve kullanıcıya uygun mesajlardır (bunların error.code'u yoktur).
+		elements.authError.textContent = error.code
+			? authMessage(error.code)
+			: error.message || "İşlem tamamlanamadı. Lütfen tekrar dene.";
 	} finally {
 		elements.submitAuth.disabled = false;
 	}
