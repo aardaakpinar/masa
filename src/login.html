@@ -1,163 +1,100 @@
 <!doctype html>
 <html lang="tr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="MASA - Giriş yap veya kayıt ol" />
-    <meta property="og:title" content="MASA - Giriş" />
-    <meta property="og:url" content="https://devnar.github.io/masa" />
-    <meta property="og:type" content="website" />
-    <meta
-      property="og:image"
-      content="https://aardaakpinar.github.io/assets/images/logos/masa.png"
-    />
-    <link
-      rel="icon"
-      href="https://aardaakpinar.github.io/assets/images/logos/masa.png"
-    />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <title>MASA - Giriş</title>
-    <link rel="stylesheet" href="assets/style/styles.css" />
-    <link rel="stylesheet" href="assets/style/login.css" />
-  </head>
-  <body class="login-bg">
-    <div class="login-card">
-      <div class="login-card-body">
-        <!-- Header -->
-        <div class="login-header">
-          <div class="login-logo">
-            <img
-              class="login-logo-img"
-              src="https://aardaakpinar.github.io/assets/images/logos/masa.png"
-              alt="MASA Logo"
-            />
-            <span class="login-logo-name">MASA</span>
-          </div>
-          <h1 class="login-title" id="loginTitle">Tekrar hoş geldin!</h1>
-          <p class="login-subtitle" id="loginSubtitle">
-            Masaya oturmak için giriş yap.
-          </p>
-        </div>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="description" content="MASA - Giriş yap veya kayıt ol" />
+		<meta property="og:title" content="MASA - Giriş" />
+		<meta property="og:url" content="https://devnar.github.io/masa" />
+		<meta property="og:type" content="website" />
+		<meta property="og:image" content="https://aardaakpinar.github.io/images/logos/masa.png" />
+		<link rel="icon" href="https://aardaakpinar.github.io/images/logos/masa.png" />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+		<title>MASA - Giriş</title>
+		<link rel="stylesheet" href="assets/style/styles.css" />
+		<link rel="stylesheet" href="assets/style/login.css" />
+	</head>
+	<body class="login-bg">
+		<div class="login-card">
+			<div class="login-card-body">
+				<!-- Header -->
+				<div class="login-header">
+					<div class="login-logo">
+						<img class="login-logo-img" src="https://aardaakpinar.github.io/images/logos/masa.png" alt="MASA Logo" />
+						<span class="login-logo-name">MASA</span>
+					</div>
+					<h1 class="login-title" id="loginTitle">Tekrar hoş geldin!</h1>
+					<p class="login-subtitle" id="loginSubtitle">Masaya oturmak için giriş yap.</p>
+				</div>
 
-        <!-- Mode tabs -->
-        <div class="login-tabs" role="tablist" aria-label="Hesap modu">
-          <button
-            class="login-tab active"
-            id="loginModeButton"
-            type="button"
-            role="tab"
-            aria-selected="true"
-          >
-            Giriş yap
-          </button>
-          <button
-            class="login-tab"
-            id="registerModeButton"
-            type="button"
-            role="tab"
-            aria-selected="false"
-          >
-            Kayıt ol
-          </button>
-        </div>
+				<!-- Mode tabs -->
+				<div class="login-tabs" role="tablist" aria-label="Hesap modu">
+					<button class="login-tab active" id="loginModeButton" type="button" role="tab" aria-selected="true">Giriş yap</button>
+					<button class="login-tab" id="registerModeButton" type="button" role="tab" aria-selected="false">Kayıt ol</button>
+				</div>
 
-        <!-- Form -->
-        <form class="login-form" id="authForm" method="post" novalidate>
-          <div class="login-field" id="authNameField" hidden>
-            <label for="authName">Görünen ad</label>
-            <input
-              class="input"
-              id="authName"
-              type="text"
-              autocomplete="name"
-              placeholder="Adın soyadın"
-            />
-          </div>
+				<!-- Form -->
+				<form class="login-form" id="authForm" method="post" novalidate>
+					<div class="login-field" id="authNameField" hidden>
+						<label for="authName">Görünen ad</label>
+						<input class="input" id="authName" type="text" autocomplete="name" placeholder="Adın soyadın" />
+					</div>
 
-          <div class="login-field">
-            <label for="authEmail">E-posta</label>
-            <input
-              class="input"
-              id="authEmail"
-              type="email"
-              autocomplete="email"
-              placeholder="ornek@email.com"
-              required
-            />
-          </div>
+					<div class="login-field">
+						<label for="authEmail">E-posta</label>
+						<input class="input" id="authEmail" type="email" autocomplete="email" placeholder="ornek@email.com" required />
+					</div>
 
-          <div class="login-field">
-            <label for="authPassword">Şifre</label>
-            <div class="password-wrapper">
-              <input
-                class="input"
-                id="authPassword"
-                type="password"
-                minlength="8"
-                autocomplete="current-password"
-                placeholder="••••••••"
-                required
-              />
+					<div class="login-field">
+						<label for="authPassword">Şifre</label>
+						<div class="password-wrapper">
+							<input class="input" id="authPassword" type="password" minlength="8" autocomplete="current-password" placeholder="••••••••" required />
 
-              <button
-                type="button"
-                class="password-toggle"
-                id="togglePassword"
-                aria-label="Şifreyi göster"
-              >
-                <i data-lucide="eye"></i>
-              </button>
-            </div>
-            <p class="login-password-hint" id="passwordHint" hidden>
-              8+ karakter, büyük/küçük harf, sayı ve sembol (@$!%*?&) içermeli.
-            </p>
-          </div>
+							<button type="button" class="password-toggle" id="togglePassword" aria-label="Şifreyi göster">
+								<i data-lucide="eye"></i>
+							</button>
+						</div>
+						<p class="login-password-hint" id="passwordHint" hidden>8+ karakter, büyük/küçük harf, sayı ve sembol (@$!%*?&) içermeli.</p>
+					</div>
 
-          <p class="login-error" id="authError"></p>
+					<p class="login-error" id="authError"></p>
 
-          <button class="login-submit" id="submitAuth" type="submit">
-            Giriş yap
-          </button>
-        </form>
-      </div>
-    </div>
+					<button class="login-submit" id="submitAuth" type="submit">Giriş yap</button>
+				</form>
+			</div>
+		</div>
 
-    <script type="module" src="assets/script/login.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-      lucide.createIcons();
+		<script type="module" src="assets/script/login.js"></script>
+		<script src="https://unpkg.com/lucide@latest"></script>
+		<script>
+			lucide.createIcons();
 
-      // Tab switching
-      const loginBtn = document.getElementById("loginModeButton");
-      const registerBtn = document.getElementById("registerModeButton");
-      const nameField = document.getElementById("authNameField");
-      const submitBtn = document.getElementById("submitAuth");
-      const title = document.getElementById("loginTitle");
-      const subtitle = document.getElementById("loginSubtitle");
-      const hint = document.getElementById("passwordHint");
+			// Tab switching
+			const loginBtn = document.getElementById("loginModeButton");
+			const registerBtn = document.getElementById("registerModeButton");
+			const nameField = document.getElementById("authNameField");
+			const submitBtn = document.getElementById("submitAuth");
+			const title = document.getElementById("loginTitle");
+			const subtitle = document.getElementById("loginSubtitle");
+			const hint = document.getElementById("passwordHint");
 
-      function setMode(mode) {
-        const isLogin = mode === "login";
-        loginBtn.classList.toggle("active", isLogin);
-        loginBtn.setAttribute("aria-selected", String(isLogin));
-        registerBtn.classList.toggle("active", !isLogin);
-        registerBtn.setAttribute("aria-selected", String(!isLogin));
-        nameField.hidden = isLogin;
-        hint.hidden = isLogin;
-        submitBtn.textContent = isLogin ? "Giriş yap" : "Kayıt ol";
-        title.textContent = isLogin ? "Tekrar hoş geldin!" : "Masaya katıl!";
-        subtitle.textContent = isLogin
-          ? "Masaya oturmak için giriş yap."
-          : "Hesap oluşturmak için birkaç saniye yeterli.";
-      }
+			function setMode(mode) {
+				const isLogin = mode === "login";
+				loginBtn.classList.toggle("active", isLogin);
+				loginBtn.setAttribute("aria-selected", String(isLogin));
+				registerBtn.classList.toggle("active", !isLogin);
+				registerBtn.setAttribute("aria-selected", String(!isLogin));
+				nameField.hidden = isLogin;
+				hint.hidden = isLogin;
+				submitBtn.textContent = isLogin ? "Giriş yap" : "Kayıt ol";
+				title.textContent = isLogin ? "Tekrar hoş geldin!" : "Masaya katıl!";
+				subtitle.textContent = isLogin ? "Masaya oturmak için giriş yap." : "Hesap oluşturmak için birkaç saniye yeterli.";
+			}
 
-      loginBtn.addEventListener("click", () => setMode("login"));
-      registerBtn.addEventListener("click", () => setMode("register"));
-    </script>
-  </body>
+			loginBtn.addEventListener("click", () => setMode("login"));
+			registerBtn.addEventListener("click", () => setMode("register"));
+		</script>
+	</body>
 </html>
