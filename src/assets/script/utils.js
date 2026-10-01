@@ -164,3 +164,20 @@ export function createRichTextFragment(text) {
 
   return fragment;
 }
+
+// Veritabanından gelen renk değerlerini CSS'e vermeden önce doğrula.
+// (url(...) gibi değerler izleme pikseli / CSS enjeksiyonu için kullanılabilir.)
+export function safeColor(value, fallback = "#2563eb") {
+  return /^#[0-9a-fA-F]{3,8}$/.test(String(value || "")) ? value : fallback;
+}
+
+// Şifre politikası tek yerde: kayıt, giriş sayfası ve şifre değiştirme aynı kuralı kullanır.
+export function validatePassword(password, { strict = true } = {}) {
+  const value = String(password || "");
+  if (value.length < 8) return "Şifre en az 8 karakter olmalı.";
+  if (value.length > 128) return "Şifre en fazla 128 karakter olabilir.";
+  if (strict && !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).+$/.test(value)) {
+    return "Şifre büyük harf, küçük harf, rakam ve sembol içermeli.";
+  }
+  return "";
+}

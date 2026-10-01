@@ -6,6 +6,7 @@ import {
 	isValidEmail,
 	authMessage,
 	friendlyErrorMessage,
+	validatePassword,
 } from "./utils.js";
 import {
 	onAuthStateChanged,
@@ -26,7 +27,7 @@ import {
 	orderByChild,
 	equalTo,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
-import { renderPosts } from "./posts.js";
+import { renderPosts, fetchOwnPostsWithPaths } from "./posts.js";
 import { renderGroups } from "./groups.js";
 import { syncAuthUi, syncComposer, syncAuthMode, closeSettings } from "./ui.js";
 
@@ -48,28 +49,11 @@ function buildAnonymousProfile(deletedAt) {
 async function anonymizeUserContent(uid, anonymousProfile) {
 	if (!state.db) return;
 
-	const userPostsQuery = query(
-		ref(state.db, "posts"),
-		orderByChild("authorId"),
-		equalTo(uid),
-	);
-	let postsSnapshot;
-	try {
-		postsSnapshot = await get(userPostsQuery);
-	} catch (error) {
-		if (String(error?.message || "").includes("Index not defined")) {
-			postsSnapshot = await get(ref(state.db, "posts"));
-		} else {
-			throw error;
-		}
-	}
+	const ownPosts = await fetchOwnPostsWithPaths(uid);
 
-	if (!postsSnapshot.exists()) return;
-
-	const userPosts = postsSnapshot.val();
-	for (const [postId, post] of Object.entries(userPosts)) {
+	for (const { path, post } of ownPosts) {
 		if (post?.authorId === uid) {
-			await update(ref(state.db, `posts/${postId}`), {
+			await update(ref(state.db, path), {
 				authorName: anonymousProfile.name,
 				authorColor: anonymousProfile.color,
 				isAnonymous: true,
@@ -80,15 +64,12 @@ async function anonymizeUserContent(uid, anonymousProfile) {
 		const comments = post?.comments || {};
 		for (const [commentId, comment] of Object.entries(comments)) {
 			if (comment?.authorId === uid) {
-				await update(
-					ref(state.db, `posts/${postId}/comments/${commentId}`),
-					{
-						authorName: anonymousProfile.name,
-						authorColor: anonymousProfile.color,
-						isAnonymous: true,
-						deletedAt: anonymousProfile.deletedAt,
-					},
-				);
+				await update(ref(state.db, `${path}/comments/${commentId}`), {
+					authorName: anonymousProfile.name,
+					authorColor: anonymousProfile.color,
+					isAnonymous: true,
+					deletedAt: anonymousProfile.deletedAt,
+				});
 			}
 		}
 	}
@@ -156,9 +137,6 @@ export async function loadOrCreateProfile(user) {
 			createdAt: serverTimestamp(),
 			isDisabled: false,
 		});
-		await set(ref(state.db, `users_private/${user.uid}`), {
-			email: user.email,
-		});
 	}
 
 	syncAuthUi();
@@ -215,16 +193,11 @@ export async function submitAuth() {
 		return;
 	}
 
-	const passwordRegex =
-		/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/;
-
-	if (password.length < 8) {
-		elements.authError.textContent = "Şifre en az 8 karakter olmalı.";
-		return;
-	}
-	if (state.authMode === "register" && !passwordRegex.test(password)) {
-		elements.authError.textContent =
-			"Şifre büyük, küçük, sayı ve sembol içermeli.";
+	const passwordProblem = validatePassword(password, {
+		strict: state.authMode === "register",
+	});
+	if (passwordProblem) {
+		elements.authError.textContent = passwordProblem;
 		return;
 	}
 
@@ -258,9 +231,6 @@ export async function submitAuth() {
 				color: "#2563eb",
 				createdAt: serverTimestamp(),
 				isDisabled: false,
-			});
-			await set(ref(state.db, `users_private/${credential.user.uid}`), {
-				email,
 			});
 		} else {
 			const credential = await signInWithEmailAndPassword(
@@ -337,46 +307,24 @@ export async function saveProfileSettings() {
 		});
 
 		// Keep historical posts/comments in sync with latest profile display.
-		const userPostsQuery = query(
-			ref(state.db, "posts"),
-			orderByChild("authorId"),
-			equalTo(state.authUser.uid),
-		);
-		let postsSnapshot;
-		try {
-			postsSnapshot = await get(userPostsQuery);
-		} catch (error) {
-			// Fallback for projects without indexOn authorId in RTDB rules.
-			if (String(error?.message || "").includes("Index not defined")) {
-				postsSnapshot = await get(ref(state.db, "posts"));
-			} else {
-				throw error;
+		const ownPosts = await fetchOwnPostsWithPaths(state.authUser.uid);
+		const updates = {};
+		for (const { path, post } of ownPosts) {
+			if (post?.authorId === state.authUser.uid) {
+				updates[`${path}/authorName`] = name;
+				updates[`${path}/authorColor`] = color;
+			}
+
+			const comments = post?.comments || {};
+			for (const [commentId, comment] of Object.entries(comments)) {
+				if (comment?.authorId === state.authUser.uid) {
+					updates[`${path}/comments/${commentId}/authorName`] = name;
+					updates[`${path}/comments/${commentId}/authorColor`] = color;
+				}
 			}
 		}
-		if (postsSnapshot.exists()) {
-			const updates = {};
-			const userPosts = postsSnapshot.val();
-			for (const [postId, post] of Object.entries(userPosts)) {
-				if (post?.authorId === state.authUser.uid) {
-					updates[`posts/${postId}/authorName`] = name;
-					updates[`posts/${postId}/authorColor`] = color;
-				}
-
-				const comments = post?.comments || {};
-				for (const [commentId, comment] of Object.entries(comments)) {
-					if (comment?.authorId === state.authUser.uid) {
-						updates[
-							`posts/${postId}/comments/${commentId}/authorName`
-						] = name;
-						updates[
-							`posts/${postId}/comments/${commentId}/authorColor`
-						] = color;
-					}
-				}
-			}
-			if (Object.keys(updates).length) {
-				await update(ref(state.db), updates);
-			}
+		if (Object.keys(updates).length) {
+			await update(ref(state.db), updates);
 		}
 
 		state.profile.name = name;
@@ -434,19 +382,13 @@ export function openChangePasswordDialog() {
 	}
 
 	const newPassword = prompt(
-		"Yeni şifreyi gir (8+ karakter, büyük, küçük, sayı, sembol):",
+		"Yeni şifreyi gir (8+ karakter, büyük harf, küçük harf, rakam, sembol):",
 	);
 	if (!newPassword) return;
 
-	const passwordRegex =
-		/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/;
-
-	if (newPassword.length < 8) {
-		console.warn("Şifre en az 8 karakter olmalı.");
-		return;
-	}
-	if (!passwordRegex.test(newPassword)) {
-		console.warn("Şifre büyük, küçük, sayı ve sembol içermeli.");
+	const passwordProblem = validatePassword(newPassword);
+	if (passwordProblem) {
+		alert(passwordProblem);
 		return;
 	}
 
@@ -486,14 +428,13 @@ export async function confirmDeleteAccount() {
 		const deletedAt = serverTimestamp();
 		const anonymousProfile = buildAnonymousProfile(deletedAt);
 
+		// Önce içerik anonimleştirilir: hesap devre dışı kalınca (isDisabled) kurallar
+		// kullanıcının kendi gönderilerine yazmasını zaten engeller.
+		await anonymizeUserContent(state.authUser.uid, anonymousProfile);
 		await update(
 			ref(state.db, `users/${state.authUser.uid}`),
 			anonymousProfile,
 		);
-		await set(ref(state.db, `users_private/${state.authUser.uid}`), {
-			email: "deleted@anonymous.local",
-		});
-		await anonymizeUserContent(state.authUser.uid, anonymousProfile);
 
 		state.profile = {
 			name: anonymousProfile.name,

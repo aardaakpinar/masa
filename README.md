@@ -5,7 +5,6 @@ MASA, Firebase Realtime Database kullanan, Vite tabanlı basit bir sosyal payla�
 ## Özellikler
 
 - E-posta/şifre ile kayıt ve giriş
-- `Beni hatırla` desteği (e-posta localStorage'da saklanır)
 - Post paylaşma, listeleme, silme
 - Post beğenme
 - Postlara yorum ekleme ve kendi yorumunu silme
@@ -32,20 +31,16 @@ MASA, Firebase Realtime Database kullanan, Vite tabanlı basit bir sosyal payla�
 npm install
 ```
 
-2. Kök dizinde `.env` dosyası oluştur ve Firebase değişkenlerini ekle:
+2. `.env` dosyası oluştur ve Firebase değişkenlerini ekle:
 
-```env
-VITE_FIREBASE_API_KEY=...
-VITE_FIREBASE_AUTH_DOMAIN=...
-VITE_FIREBASE_DATABASE_URL=...
-VITE_FIREBASE_PROJECT_ID=...
+```bash
+cp .env.example src/.env
 ```
 
 3. Firebase Console ayarları:
 
 - Authentication > Sign-in method > Email/Password etkin olsun.
-- Realtime Database oluşturulmuş olsun.
-- Realtime Database kurallarında `groups` yolu için okuma/yazma izni verin.
+- Realtime Database oluşturulmuş ve kuralları girilmiş olsun.
 
 4. Geliştirme sunucusunu başlat:
 
@@ -56,7 +51,7 @@ npm run dev
 5. Tarayıcıda aç:
 
 - Giriş ekranı: `/login.html`
-- Uygulama: `/index.html`
+- Uygulama: `/`
 
 ## Build
 

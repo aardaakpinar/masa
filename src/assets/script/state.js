@@ -22,6 +22,8 @@ export const state = {
   authMode: "login",
   posts: {},
   postsRef: null,
+  groupPosts: {},
+  groupPostRefs: {},
   groups: {},
   groupsRef: null,
   users: {},

@@ -10,6 +10,42 @@ let queryText = "";
 const TRENDING_LIMIT = 8;
 const TRENDING_SCAN_LIMIT = 150;
 
+const PREFIXES = ["@", "-", "#"];
+
+function stripPrefix(value) {
+	const v = value.trimStart();
+	return PREFIXES.includes(v[0]) ? v.slice(1) : v;
+}
+
+function setResultsTitle(text) {
+	if (elements.searchResultsTitle) elements.searchResultsTitle.textContent = text;
+}
+
+// Temizle düğmesi, aktif sekme ve gündem bölümünü sorguya göre günceller.
+function syncSearchUi() {
+	const raw = queryText.trimStart();
+	const prefix = PREFIXES.includes(raw[0]) ? raw[0] : "";
+
+	elements.searchClear?.classList.toggle("hidden", !queryText);
+	elements.searchTabs?.querySelectorAll(".search-tab").forEach((tab) => {
+		const active = tab.dataset.prefix === prefix;
+		tab.classList.toggle("active", active);
+		tab.setAttribute("aria-selected", String(active));
+	});
+
+	const showTrending = !stripPrefix(raw) && (prefix === "" || prefix === "#");
+	elements.searchTrendingSection?.classList.toggle("hidden", !showTrending);
+}
+
+function applyQuery(value, { focus = true } = {}) {
+	queryText = value;
+	if (elements.searchInput) {
+		elements.searchInput.value = value;
+		if (focus) elements.searchInput.focus();
+	}
+	renderDiscover();
+}
+
 function getPosts() {
 	return Object.entries(state.posts || {})
 		.map(([id, post]) => ({ id, ...post }))
@@ -34,11 +70,13 @@ function renderGroupResults(groupQuery) {
 	if (!groups.length) {
 		const empty = document.createElement("div");
 		empty.className = "empty-state";
-		empty.textContent = "Masa bulunamadı.";
+		empty.textContent = q ? `“${groupQuery.trim()}” için masa bulunamadı.` : "Henüz masa yok.";
+		setResultsTitle("");
 		elements.searchResults.replaceChildren(empty);
 		return;
 	}
 
+	setResultsTitle(q ? `${groups.length} masa` : "Tüm masalar");
 	elements.searchResults.replaceChildren(
 		...groups.map((group) => createGroupCard(group, { compact: true })),
 	);
@@ -73,6 +111,7 @@ export function renderDiscover() {
 	if (!elements.searchResults) return;
 
 	const rawQuery = queryText.trim();
+	syncSearchUi();
 
 	if (rawQuery.startsWith("-")) {
 		renderGroupResults(rawQuery.slice(1));
@@ -119,11 +158,13 @@ export function renderDiscover() {
 	if (!results.length) {
 		const empty = document.createElement("div");
 		empty.className = "empty-state";
-		empty.textContent = "Sonuç bulunamadı.";
+		empty.textContent = `“${rawQuery}” için sonuç bulunamadı.`;
+		setResultsTitle("");
 		elements.searchResults.replaceChildren(empty);
 		return;
 	}
 
+	setResultsTitle(q ? `${results.length} sonuç` : "Son paylaşımlar");
 	elements.searchResults.replaceChildren(
 		...results.map((item) => createPostElement(item)),
 	);
@@ -187,9 +228,7 @@ function createTrendingCloud(trending) {
 
 export function renderTrending() {
 	const trending = getTrendingTags();
-	const targets = [elements.trendingList, elements.searchTrendingList].filter(
-		Boolean,
-	);
+	const targets = [elements.searchTrendingList].filter(Boolean);
 
 	targets.forEach((target) => {
 		if (!trending.length) {
@@ -205,9 +244,24 @@ export function renderTrending() {
 }
 
 export function setupDiscover() {
+	let timer;
 	elements.searchInput?.addEventListener("input", (event) => {
 		queryText = event.target.value || "";
-		renderDiscover();
+		syncSearchUi();
+		clearTimeout(timer);
+		timer = setTimeout(renderDiscover, 120);
+	});
+
+	elements.searchInput?.addEventListener("keydown", (event) => {
+		if (event.key === "Escape" && queryText) applyQuery("");
+	});
+
+	elements.searchClear?.addEventListener("click", () => applyQuery(""));
+
+	elements.searchTabs?.addEventListener("click", (event) => {
+		const tab = event.target.closest(".search-tab");
+		if (!tab) return;
+		applyQuery(tab.dataset.prefix + stripPrefix(queryText));
 	});
 
 	window.addEventListener("posts:updated", () => {
@@ -216,10 +270,8 @@ export function setupDiscover() {
 	});
 	window.addEventListener("search:query", (event) => {
 		openSearch();
-		queryText = event.detail?.query || "";
-		if (elements.searchInput) {
-			elements.searchInput.value = queryText;
-		}
-		renderDiscover();
+		applyQuery(event.detail?.query || "", { focus: false });
 	});
+
+	syncSearchUi();
 }

@@ -5,6 +5,7 @@ import {
   formatTime,
   createRichTextFragment,
   getContrastColor,
+  safeColor,
   extractHashtags,
   friendlyErrorMessage,
 } from "./utils.js";
@@ -22,6 +23,8 @@ import {
   limitToLast,
   endAt,
   get,
+  orderByChild,
+  equalTo,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 import { openAuth } from "./ui.js";
 import { canViewGroup, getGroupName } from "./groups.js";
@@ -32,6 +35,129 @@ let hasMorePosts = true;
 let isLoadingMore = false;
 let activeCommentPostId = null;
 let liveWindowPostIds = new Set();
+let publicPosts = {};
+
+const GROUP_POSTS_LIMIT = 100;
+
+// Herkese açık gönderiler + üyesi olunan masaların gönderileri tek haritada birleşir.
+// __path alanı yalnızca bellekte tutulur ve veritabanına yazılmaz.
+function rebuildPosts() {
+  const merged = {};
+  Object.entries(publicPosts).forEach(([id, post]) => {
+    merged[id] = { ...post, __path: `posts/${id}` };
+  });
+  Object.entries(state.groupPosts).forEach(([groupId, map]) => {
+    Object.entries(map).forEach(([id, post]) => {
+      merged[id] = { ...post, groupId, __path: `group_posts/${groupId}/${id}` };
+    });
+  });
+  state.posts = merged;
+}
+
+// Bir gönderinin veritabanındaki yolu (herkese açık: posts/…, masa: group_posts/<masa>/…).
+export function postPath(postId) {
+  return state.posts[postId]?.__path || `posts/${postId}`;
+}
+
+function refreshPostViews() {
+  renderPosts();
+  renderGroupDetailPosts();
+}
+
+// Üyesi olunan her masa için group_posts/<masa> dinlenir; üyelikten çıkınca dinleme kapanır.
+export function syncGroupPostSubscriptions() {
+  if (!state.db) return;
+  const uid = state.authUser?.uid;
+  const wanted = new Set(
+    uid
+      ? Object.entries(state.groups || {})
+          .filter(([, group]) => group.ownerId === uid || group.members?.[uid])
+          .map(([id]) => id)
+      : [],
+  );
+
+  let changed = false;
+
+  Object.keys(state.groupPostRefs).forEach((groupId) => {
+    if (wanted.has(groupId)) return;
+    off(state.groupPostRefs[groupId]);
+    delete state.groupPostRefs[groupId];
+    delete state.groupPosts[groupId];
+    changed = true;
+  });
+
+  wanted.forEach((groupId) => {
+    if (state.groupPostRefs[groupId]) return;
+    const groupQuery = query(
+      ref(state.db, `group_posts/${groupId}`),
+      orderByKey(),
+      limitToLast(GROUP_POSTS_LIMIT),
+    );
+    state.groupPostRefs[groupId] = groupQuery;
+    onValue(
+      groupQuery,
+      (snapshot) => {
+        state.groupPosts[groupId] = snapshot.val() || {};
+        rebuildPosts();
+        refreshPostViews();
+      },
+      (error) => {
+        console.error("Masa gönderileri yüklenemedi:", error);
+        state.groupPosts[groupId] = {};
+        rebuildPosts();
+        refreshPostViews();
+      },
+    );
+  });
+
+  if (changed) {
+    rebuildPosts();
+    refreshPostViews();
+  }
+}
+
+window.addEventListener("groups:updated", syncGroupPostSubscriptions);
+
+// Kullanıcının kendi gönderileri (herkese açık + üyesi olduğu masalar) ve yolları.
+export async function fetchOwnPostsWithPaths(uid) {
+  const results = [];
+  if (!state.db) return results;
+
+  let publicSnapshot;
+  try {
+    publicSnapshot = await get(
+      query(ref(state.db, "posts"), orderByChild("authorId"), equalTo(uid)),
+    );
+  } catch (error) {
+    if (String(error?.message || "").includes("Index not defined")) {
+      publicSnapshot = await get(ref(state.db, "posts"));
+    } else {
+      throw error;
+    }
+  }
+  Object.entries(publicSnapshot.val() || {}).forEach(([id, post]) => {
+    results.push({ path: `posts/${id}`, post });
+  });
+
+  const groupIds = Object.entries(state.groups || {})
+    .filter(([, group]) => group.ownerId === uid || group.members?.[uid])
+    .map(([id]) => id);
+
+  for (const groupId of groupIds) {
+    try {
+      const snapshot = await get(
+        query(ref(state.db, `group_posts/${groupId}`), orderByChild("authorId"), equalTo(uid)),
+      );
+      Object.entries(snapshot.val() || {}).forEach(([id, post]) => {
+        results.push({ path: `group_posts/${groupId}/${id}`, post });
+      });
+    } catch (error) {
+      console.warn("Masa gönderileri okunamadı:", error?.message || error);
+    }
+  }
+
+  return results;
+}
 
 // Composer'da beklemede olan medya/anket taslağı (henüz gönderilmemiş)
 let pendingMedia = null; // { dataUrl } | null
@@ -69,7 +195,9 @@ export function subscribeToPosts() {
   if (!state.db) return;
 
   stopPostSubscription();
+  publicPosts = {};
   state.posts = {};
+  state.groupPosts = {};
   oldestLoadedKey = null;
   hasMorePosts = true;
   isLoadingMore = false;
@@ -89,18 +217,18 @@ export function subscribeToPosts() {
       // Remove posts that disappeared from the live window (e.g. deleted).
       liveWindowPostIds.forEach((id) => {
         if (!incomingIds.has(id)) {
-          delete state.posts[id];
+          delete publicPosts[id];
         }
       });
 
-      state.posts = { ...state.posts, ...incomingPosts };
+      publicPosts = { ...publicPosts, ...incomingPosts };
       liveWindowPostIds = incomingIds;
-      const keys = Object.keys(state.posts);
+      const keys = Object.keys(publicPosts);
       if (keys.length) {
         oldestLoadedKey = keys.sort()[0];
       }
-      renderPosts();
-      renderGroupDetailPosts();
+      rebuildPosts();
+      refreshPostViews();
     },
     (error) => {
       console.error("Postlar yüklenemedi:", error);
@@ -118,6 +246,9 @@ export function stopPostSubscription() {
     off(state.postsRef);
   }
   state.postsRef = null;
+
+  Object.values(state.groupPostRefs).forEach((groupRef) => off(groupRef));
+  state.groupPostRefs = {};
 }
 
 let loadMoreIndicator = null;
@@ -157,10 +288,11 @@ export async function loadMorePosts() {
       return;
     }
 
-    state.posts = {
+    publicPosts = {
       ...Object.fromEntries(filtered),
-      ...state.posts,
+      ...publicPosts,
     };
+    rebuildPosts();
     oldestLoadedKey = filtered.map(([id]) => id).sort()[0];
     if (filtered.length < POSTS_PAGE_SIZE) {
       hasMorePosts = false;
@@ -247,8 +379,8 @@ export function createPostElement(post) {
 
   const avatar = document.createElement("div");
   avatar.className = "avatar";
-  avatar.style.background = post.authorColor || "#2563eb";
-  avatar.style.color = getContrastColor(post.authorColor || "#2563eb");
+  avatar.style.background = safeColor(post.authorColor);
+  avatar.style.color = getContrastColor(safeColor(post.authorColor));
   avatar.textContent = initials(post.authorName);
 
   const body = document.createElement("div");
@@ -333,7 +465,7 @@ export function createPostElement(post) {
     deleteIcon.setAttribute("data-lucide", "trash-2");
     deleteButton.append(deleteIcon);
     deleteButton.addEventListener("click", () =>
-      remove(ref(state.db, `posts/${post.id}`)),
+      remove(ref(state.db, postPath(post.id))),
     );
     actions.append(deleteButton);
   }
@@ -346,7 +478,11 @@ export function createPostElement(post) {
   return article;
 }
 
+// Yalnızca gömülü (data:) görselleri göster; harici URL'ler izleme pikseli olarak kullanılabilir.
+const SAFE_IMAGE_DATA_URL = /^data:image\/(jpeg|png|webp);base64,/;
+
 function createMediaElement(media) {
+  if (!SAFE_IMAGE_DATA_URL.test(String(media?.dataUrl || ""))) return null;
   const wrap = document.createElement("div");
   wrap.className = "post-media";
   const img = document.createElement("img");
@@ -357,6 +493,30 @@ function createMediaElement(media) {
   return wrap;
 }
 
+// Oylar: yeni model poll.votes[uid] = seçenek anahtarı (kullanıcı başına tek oy, kurallarla zorunlu).
+// Eski gönderilerdeki options[x].votes[uid] kayıtları yalnızca okunur; yeni oy bunları geçersiz kılar.
+function getPollVotes(post) {
+  const voteByUser = {};
+  Object.entries(post.poll?.options || {}).forEach(([key, option]) => {
+    Object.keys(option.votes || {}).forEach((uid) => {
+      voteByUser[uid] = key;
+    });
+  });
+  Object.entries(post.poll?.votes || {}).forEach(([uid, key]) => {
+    voteByUser[uid] = String(key);
+  });
+
+  const counts = {};
+  Object.values(voteByUser).forEach((key) => {
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  return {
+    counts,
+    total: Object.keys(voteByUser).length,
+    mine: state.authUser ? voteByUser[state.authUser.uid] : undefined,
+  };
+}
+
 function createPollElement(post) {
   const wrap = document.createElement("div");
   wrap.className = "post-poll";
@@ -364,16 +524,10 @@ function createPollElement(post) {
   const optionEntries = Object.entries(post.poll?.options || {}).sort(
     (a, b) => Number(a[0]) - Number(b[0]),
   );
-  const totalVotes = optionEntries.reduce(
-    (sum, [, option]) => sum + Object.keys(option.votes || {}).length,
-    0,
-  );
-  const myVoteKey = optionEntries.find(([, option]) =>
-    Boolean(state.authUser && option.votes?.[state.authUser.uid]),
-  )?.[0];
+  const { counts, total: totalVotes, mine: myVoteKey } = getPollVotes(post);
 
   optionEntries.forEach(([key, option]) => {
-    const count = Object.keys(option.votes || {}).length;
+    const count = counts[key] || 0;
     const percent = totalVotes ? Math.round((count / totalVotes) * 100) : 0;
     const voted = myVoteKey === key;
 
@@ -428,17 +582,10 @@ export async function voteOnPoll(postId, optionKey) {
   if (!options || !options[optionKey]) return;
 
   const uid = state.authUser.uid;
-  const updates = {};
-  Object.keys(options).forEach((key) => {
-    if (key === optionKey) {
-      updates[`posts/${postId}/poll/options/${key}/votes/${uid}`] = true;
-    } else if (options[key].votes?.[uid]) {
-      updates[`posts/${postId}/poll/options/${key}/votes/${uid}`] = null;
-    }
-  });
 
   try {
-    await update(ref(state.db), updates);
+    // Tek düğüm = tek oy: aynı kullanıcı birden fazla şıkka oy veremez.
+    await set(ref(state.db, `${postPath(postId)}/poll/votes/${uid}`), String(optionKey));
   } catch (error) {
     console.error("Oy kullanılamadı:", error);
   }
@@ -482,8 +629,8 @@ function createCommentsSection(post) {
       avatar.style.height = "36px";
       avatar.style.fontSize = "13px";
       avatar.style.flexShrink = "0";
-      avatar.style.background = comment.authorColor || "#2563eb";
-      avatar.style.color = getContrastColor(comment.authorColor || "#2563eb");
+      avatar.style.background = safeColor(comment.authorColor);
+      avatar.style.color = getContrastColor(safeColor(comment.authorColor));
       avatar.textContent = initials(comment.authorName);
 
       const threadLine = document.createElement("div");
@@ -535,7 +682,7 @@ function createCommentsSection(post) {
         }
         const likeRef = ref(
           state.db,
-          `posts/${post.id}/comments/${comment.id}/likes/${state.authUser.uid}`,
+          `${postPath(post.id)}/comments/${comment.id}/likes/${state.authUser.uid}`,
         );
         try {
           if (liked) {
@@ -558,7 +705,7 @@ function createCommentsSection(post) {
         commentDeleteIcon.setAttribute("data-lucide", "trash-2");
         del.append(commentDeleteIcon);
         del.addEventListener("click", () =>
-          remove(ref(state.db, `posts/${post.id}/comments/${comment.id}`)),
+          remove(ref(state.db, `${postPath(post.id)}/comments/${comment.id}`)),
         );
         actions.append(del);
       }
@@ -657,12 +804,12 @@ export function toggleLike(postId, liked) {
     return Promise.resolve();
   }
 
-  const likeRef = ref(state.db, `posts/${postId}/likes/${state.authUser.uid}`);
+  const likeRef = ref(state.db, `${postPath(postId)}/likes/${state.authUser.uid}`);
   if (liked) {
     return remove(likeRef);
   }
 
-  return update(ref(state.db, `posts/${postId}/likes`), {
+  return update(ref(state.db, `${postPath(postId)}/likes`), {
     [state.authUser.uid]: true,
   });
 }
@@ -718,8 +865,13 @@ export async function createPost(text, { media, pollOptions } = {}) {
     payload.poll = { options };
   }
 
-  const postRef = push(ref(state.db, "posts"));
-  await set(postRef, payload);
+  // Masa gönderileri yalnızca üyelerin okuyabildiği group_posts altına yazılır.
+  const postKey = push(
+    ref(state.db, isGroupPost ? `group_posts/${groupId}` : "posts"),
+  ).key;
+  const path = isGroupPost ? `group_posts/${groupId}/${postKey}` : `posts/${postKey}`;
+
+  await set(ref(state.db, path), payload);
 }
 
 export async function createComment(postId, text) {
@@ -731,7 +883,7 @@ export async function createComment(postId, text) {
   }
   if (!text) return;
 
-  const commentRef = push(ref(state.db, `posts/${postId}/comments`));
+  const commentRef = push(ref(state.db, `${postPath(postId)}/comments`));
   await set(commentRef, {
     text: text.slice(0, 180),
     authorId: state.authUser.uid,

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="transparent"/>
+  <path d="M 75,264 423,263 376,132 123,132 Z" fill="#fff"/>
+  <path d="M 120,282 120,393 164,393 164,282 Z" fill="#fff"/>
+  <path d="M 327,282 327,393 368,393 368,282 Z" fill="#fff"/>
+  <path d="M 293,282 293,339 318,339 318,282 Z" fill="#fff"/>
+  <path d="M 173,282 173,339 198,339 198,282 Z" fill="#fff"/>
+</svg>

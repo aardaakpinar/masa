@@ -1,6 +1,6 @@
 import { state } from "./state.js";
 import { elements } from "./elements.js";
-import { initials, getContrastColor } from "./utils.js";
+import { initials, getContrastColor, safeColor } from "./utils.js";
 
 export function syncComposer() {
   if (!elements.postText || !elements.charCount || !elements.sendPost) return;
@@ -121,8 +121,8 @@ export function syncAuthUi() {
       elements.settingsAvatarButton.querySelector(".profile-avatar") ||
       elements.settingsAvatarButton;
     avatar.textContent = initials(name);
-    avatar.style.background = color;
-    avatar.style.color = getContrastColor(color);
+    avatar.style.background = safeColor(color);
+    avatar.style.color = getContrastColor(safeColor(color));
   }
   if (elements.settingsProfileName) {
     setText(

@@ -1,9 +1,10 @@
 import { state } from "./state.js";
 import { elements } from "./elements.js";
-import { initials, cleanName, getContrastColor, friendlyErrorMessage } from "./utils.js";
+import { initials, cleanName, getContrastColor, friendlyErrorMessage, safeColor } from "./utils.js";
 import { openGroups } from "./ui.js";
 import { ref, push, set, get, onValue, off, query, orderByChild, limitToLast, serverTimestamp, update, remove } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 
+let groupFilter = "mine";
 let isSubmittingGroup = false;
 let isSubmittingGroupEdit = false;
 let isGroupSettingsOpen = false;
@@ -91,8 +92,8 @@ export function createGroupCard(group, { compact = false } = {}) {
 
 	const avatar = document.createElement("div");
 	avatar.className = "avatar group-card__avatar";
-	avatar.style.background = group.color || "#2563eb";
-	avatar.style.color = getContrastColor(group.color || "#2563eb");
+	avatar.style.background = safeColor(group.color);
+	avatar.style.color = getContrastColor(safeColor(group.color));
 	avatar.textContent = group.avatarChar || initials(group.name);
 
 	const content = document.createElement("span");
@@ -209,9 +210,51 @@ function renderInto(container, groups, emptyText) {
 	);
 }
 
+const GROUP_EMPTY_TEXT = {
+	mine: "Henüz hiçbir masaya üye değilsin. “Oluştur” sekmesinden ilk masanı aç.",
+};
+
+function isMine(group) {
+	return Boolean(state.authUser && (group.ownerId === state.authUser.uid || isMember(group)));
+}
+
+function filterGroups(groups) {
+	if (groupFilter === "mine") return groups.filter(isMine);
+	return groups;
+}
+
+// Masalar ekranı iki sekmeli: "mine" (liste) ve "create" (yeni masa formu).
+export function setGroupsTab(filter = "mine") {
+	groupFilter = filter === "create" ? "create" : "mine";
+	const isCreate = groupFilter === "create";
+
+	document.querySelectorAll("#groupsTabs .search-tab").forEach((button) => {
+		const active = button.dataset.filter === groupFilter;
+		button.classList.toggle("active", active);
+		button.setAttribute("aria-selected", String(active));
+	});
+
+	if (elements.groupsList) elements.groupsList.hidden = isCreate;
+	const formCard = elements.createGroupButton?.closest(".groups-form-card");
+	if (formCard) formCard.hidden = !isCreate;
+
+	if (isCreate) {
+		elements.groupNameInput?.focus();
+	} else {
+		renderGroups();
+	}
+}
+
+document.querySelector("#groupsTabs")?.addEventListener("click", (event) => {
+	const tab = event.target.closest(".search-tab");
+	if (tab) setGroupsTab(tab.dataset.filter);
+});
+
 export function renderGroups() {
+	// Masa gönderileri üyeliğe bağlı olarak dinlenir; posts.js bu olayı dinler.
+	window.dispatchEvent(new Event("groups:updated"));
 	const groups = getGroups();
-	renderInto(elements.groupsList, groups, "Henüz bir masa yok. İlkini sen oluştur.");
+	renderInto(elements.groupsList, filterGroups(groups), GROUP_EMPTY_TEXT[groupFilter]);
 	syncComposerGroupOptions();
 	updateGroupStats();
 }
@@ -255,8 +298,8 @@ export function renderGroupDetail() {
 
 	if (elements.groupDetailAvatar) {
 		elements.groupDetailAvatar.textContent = group.avatarChar || initials(group.name);
-		elements.groupDetailAvatar.style.background = group.color || "#2563eb";
-		elements.groupDetailAvatar.style.color = getContrastColor(group.color || "#2563eb");
+		elements.groupDetailAvatar.style.background = safeColor(group.color);
+		elements.groupDetailAvatar.style.color = getContrastColor(safeColor(group.color));
 	}
 	if (elements.groupDetailTitle) {
 		elements.groupDetailTitle.textContent = group.name || "Masa";
@@ -321,12 +364,29 @@ export function openGroupSettingsPanel() {
 	renderGroupDetailMembers();
 	elements.groupDetailSettingsPanel?.classList.remove("hidden");
 	elements.groupDetailPostsSection?.classList.add("hidden");
+	syncSettingsButtonState();
+}
+
+function syncSettingsButtonState() {
+	const button = elements.groupDetailSettingsButton;
+	if (!button) return;
+	button.setAttribute("aria-expanded", String(isGroupSettingsOpen));
+	button.classList.toggle("active", isGroupSettingsOpen);
+}
+
+export function toggleGroupSettingsPanel() {
+	if (isGroupSettingsOpen) {
+		closeGroupSettingsPanel();
+	} else {
+		openGroupSettingsPanel();
+	}
 }
 
 export function closeGroupSettingsPanel() {
 	isGroupSettingsOpen = false;
 	elements.groupDetailSettingsPanel?.classList.add("hidden");
 	elements.groupDetailPostsSection?.classList.remove("hidden");
+	syncSettingsButtonState();
 }
 
 export function syncGroupEditFormCounts() {
@@ -437,14 +497,62 @@ function syncComposerGroupOptions() {
 	renderComposerGroupChips(groups);
 }
 
+// Ana sayfadaki sekmeler: "Akış" + katıldığın masalar. Seçim, gizli
+// #postGroupSelect üzerinden hem akışı filtreler hem paylaşım hedefini belirler.
+function renderFeedTabs(groups, selectedId) {
+	const bar = elements.feedTabs;
+	if (!bar) return;
+
+	bar.classList.toggle("hidden", groups.length === 0);
+
+	const items = [{ id: "", name: "Akış", color: null }, ...groups.map((g) => ({ id: g.id, name: g.name, color: g.color }))];
+	const activeItem = items.find((item) => item.id === selectedId) || items[0];
+
+	bar.replaceChildren(
+		...items.map(({ id, name, color }) => {
+			const tab = document.createElement("button");
+			tab.type = "button";
+			tab.setAttribute("role", "tab");
+			const active = id === activeItem.id;
+			tab.className = `search-tab${active ? " active" : ""}`;
+			tab.setAttribute("aria-selected", String(active));
+
+			if (color) {
+				const dot = document.createElement("span");
+				dot.className = "feed-tab__dot";
+				dot.style.background = safeColor(color);
+				tab.append(dot);
+			}
+
+			tab.append(document.createTextNode(name));
+			tab.addEventListener("click", () => {
+				if (elements.postGroupSelect.value === id) return;
+				elements.postGroupSelect.value = id;
+				elements.postGroupSelect.dispatchEvent(new Event("change"));
+				renderComposerGroupChips(groups);
+			});
+			return tab;
+		}),
+	);
+
+	bar.querySelector(".active")?.scrollIntoView({ inline: "center", block: "nearest" });
+
+	if (elements.postText) {
+		elements.postText.placeholder = activeItem.id ? `${activeItem.name} masasına yaz…` : "Masada neler oluyor?";
+	}
+}
+
 // Composer'ın üstünde, hangi masaya paylaşım yapılacağını seçmek için
 // tıklanabilir masa etiketleri (chip) gösterir. Seçilen chip, gizli
 // #postGroupSelect elemanının değerini günceller ve "change" tetikler.
 export function renderComposerGroupChips(memberGroups) {
-	if (!elements.composerGroupChips || !elements.postGroupSelect) return;
+	if (!elements.postGroupSelect) return;
 
 	const groups = memberGroups || getGroups().filter(isMember);
 	const selectedId = elements.postGroupSelect.value || "";
+
+	renderFeedTabs(groups, selectedId);
+	if (!elements.composerGroupChips) return;
 
 	const chips = [
 		{ id: "", name: "Akış", color: null },
@@ -464,7 +572,7 @@ export function renderComposerGroupChips(memberGroups) {
 			if (color) {
 				const dot = document.createElement("span");
 				dot.className = "chip-dot";
-				dot.style.background = color;
+				dot.style.background = safeColor(color);
 				chip.append(dot);
 			}
 
@@ -592,7 +700,11 @@ export async function deleteGroup(groupId) {
 	const confirmed = confirm(`"${group.name}" topluluğunu silmek istediğine emin misin?`);
 	if (!confirmed) return;
 
-	await remove(ref(state.db, `groups/${groupId}`));
+	// Masa silinirken gönderileri de temizlenir (yetim veri kalmasın).
+	await update(ref(state.db), {
+		[`groups/${groupId}`]: null,
+		[`group_posts/${groupId}`]: null,
+	});
 	if (state.activeGroupId === groupId) {
 		state.activeGroupId = "";
 		closeGroupSettingsPanel();
@@ -632,8 +744,8 @@ function createMemberRow(group, groupId, member, isOwnerViewer) {
 	const avatar = document.createElement("div");
 	avatar.className = "avatar member-row__avatar";
 	const color = memberProfile.color;
-	avatar.style.background = color;
-	avatar.style.color = getContrastColor(color);
+	avatar.style.background = safeColor(color);
+	avatar.style.color = getContrastColor(safeColor(color));
 	avatar.textContent = initials(memberProfile.name || "Üye");
 
 	const info = document.createElement("div");
@@ -753,6 +865,7 @@ export async function submitGroupForm() {
 			elements.groupAvatarPreview.style.background = "#2563eb";
 			elements.groupAvatarPreview.style.color = getContrastColor("#2563eb");
 		}
+		setGroupsTab("mine");
 	} catch (error) {
 		console.error("Masa oluşturulamadı:", error);
 	} finally {

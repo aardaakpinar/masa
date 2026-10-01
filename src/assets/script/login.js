@@ -4,6 +4,7 @@ import {
 	sanitizeEmail,
 	isValidEmail,
 	authMessage,
+	validatePassword,
 } from "./utils.js";
 import {
 	createUserWithEmailAndPassword,
@@ -20,20 +21,15 @@ import { connectToFirebase } from "./firebase.js";
 import { saveRememberMe, getRememberedEmail } from "./auth.js";
 
 // Initialize Firebase
-const storedConfig = localStorage.getItem(storageKeys.config);
-if (storedConfig) {
-	connectToFirebase(storedConfig);
-} else {
-	const defaultConfigText = JSON.stringify(firebaseConfig, null, 2);
-	connectToFirebase(defaultConfigText);
-}
+// Yapılandırma yalnızca build sırasındaki ortam değişkenlerinden gelir.
+connectToFirebase(JSON.stringify(firebaseConfig, null, 2));
 
 // Wait a bit for Firebase to initialize and check auth state
 setTimeout(() => {
 	if (state.auth) {
 		onAuthStateChanged(state.auth, (user) => {
 			if (user) {
-				window.location.href = "index.html";
+				window.location.href = "./";
 			}
 		});
 	}
@@ -131,18 +127,12 @@ async function submitLoginAuth() {
 		return;
 	}
 
-	if (password.length < 8) {
-		authError.textContent = "Şifre en az 8 karakter olmalı.";
+	const passwordProblem = validatePassword(password, {
+		strict: currentAuthMode === "register",
+	});
+	if (passwordProblem) {
+		authError.textContent = passwordProblem;
 		return;
-	}
-	if (currentAuthMode === "register") {
-		const passwordRegex =
-			/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/;
-		if (!passwordRegex.test(password)) {
-			authError.textContent =
-				"Şifre büyük, küçük, sayı ve sembol içermeli.";
-			return;
-		}
 	}
 
 	submitAuth.disabled = true;
@@ -161,15 +151,15 @@ async function submitLoginAuth() {
 			await set(ref(state.db, `users/${credential.user.uid}`), {
 				name,
 				color: "#2563eb",
-				email,
-				createdAt: serverTimestamp()
+				createdAt: serverTimestamp(),
+				isDisabled: false,
 			});
 			saveRememberMe(email, shouldRemember);
-			window.location.href = "index.html";
+			window.location.href = "./";
 		} else {
 			await signInWithEmailAndPassword(state.auth, email, password);
 			saveRememberMe(email, shouldRemember);
-			window.location.href = "index.html";
+			window.location.href = "./";
 		}
 	} catch (error) {
 		authError.textContent = authMessage(error.code);

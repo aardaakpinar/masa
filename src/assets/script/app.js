@@ -36,13 +36,23 @@ import {
 	syncGroupFormCounts,
 	renderGroupDetail,
 	deleteGroup,
-	openGroupSettingsPanel,
+	toggleGroupSettingsPanel,
 	closeGroupSettingsPanel,
+	setGroupsTab,
 	submitGroupEditForm,
 	syncGroupEditFormCounts,
 } from "./groups.js";
 import { setupDiscover } from "./discover.js";
 import { initials, getContrastColor } from "./utils.js";
+
+// Adres çubuğunda /index.html görünmesin: /masa/index.html -> /masa/
+if (/\/index\.html$/.test(window.location.pathname)) {
+	history.replaceState(
+		history.state,
+		"",
+		window.location.pathname.replace(/index\.html$/, "") + window.location.search + window.location.hash,
+	);
+}
 
 function bind(element, eventName, handler) {
 	element?.addEventListener(eventName, handler);
@@ -221,13 +231,9 @@ setupDiscover();
 autoGrowComposer();
 syncComposerActiveState();
 
-const storedConfig = localStorage.getItem(storageKeys.config);
-if (storedConfig) {
-	connectToFirebase(storedConfig);
-} else {
-	const defaultConfigText = JSON.stringify(firebaseConfig, null, 2);
-	connectToFirebase(defaultConfigText);
-}
+// Yapılandırma yalnızca build sırasındaki ortam değişkenlerinden gelir.
+// (localStorage aynı origin'deki başka sitelerle paylaşıldığı için kullanılmaz.)
+connectToFirebase(JSON.stringify(firebaseConfig, null, 2));
 
 elements.mobileMenuButtons.forEach((button) => {
 	bind(button, "click", () => {
@@ -253,6 +259,7 @@ bind(elements.searchButton, "click", () => {
 	closeMobileMenu();
 });
 bind(elements.groupsButton, "click", () => {
+	setGroupsTab("mine");
 	openGroups();
 	closeMobileMenu();
 });
@@ -298,7 +305,7 @@ bind(elements.groupAvatarCharInput, "input", (event) => {
 			char || initials(elements.groupNameInput?.value || "") || "M";
 	}
 });
-bind(elements.groupDetailSettingsButton, "click", openGroupSettingsPanel);
+bind(elements.groupDetailSettingsButton, "click", toggleGroupSettingsPanel);
 bind(elements.groupDetailEditCancelButton, "click", closeGroupSettingsPanel);
 bind(elements.groupDetailEditSaveButton, "click", submitGroupEditForm);
 bind(elements.groupDetailEditNameInput, "input", syncGroupEditFormCounts);

@@ -271,6 +271,7 @@ img {
 
 .button {
 	display: inline-flex;
+	white-space: nowrap;
 	align-items: center;
 	gap: 8px;
 	min-height: 42px;
@@ -350,6 +351,10 @@ img {
 	font-weight: 700;
 }
 
+.topbar img {
+	display: none;
+}
+
 .timeline > .auth-gate,
 .timeline > .composer,
 .timeline > .feed-list,
@@ -405,7 +410,6 @@ img {
 .search-box .input {
 	width: 100%;
 	border: 1px solid var(--line);
-	border-radius: 12px;
 	background: var(--bg);
 	color: var(--text);
 	outline: none;
@@ -1249,10 +1253,6 @@ img {
 	gap: 10px;
 }
 
-.settings-actions .button {
-	min-width: 170px;
-}
-
 .settings-field {
 	display: grid;
 	gap: 8px;
@@ -1954,7 +1954,15 @@ img {
 	}
 
 	.topbar h1 {
-		font-size: 19px;
+		display: none;
+	}
+
+	.topbar img {
+		display: block;
+		width: 32px;
+		height: 32px;
+		border-radius: 50%;
+		object-fit: cover;
 	}
 
 	.mobile-menu-button {
