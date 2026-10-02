@@ -166,7 +166,22 @@ export function openAuth() {
   window.location.href = "login.html";
 }
 
+let currentView = "feed";
+
+export function getMainView() {
+  return currentView;
+}
+
+export function showMainView(view) {
+  setMainView(view);
+}
+
 function setMainView(view) {
+  if (currentView === "profile" && view !== "profile") {
+    window.dispatchEvent(new Event("profile:left"));
+  }
+  currentView = view;
+  elements.profileView?.classList.toggle("hidden", view !== "profile");
   elements.feed?.classList.toggle("hidden", view !== "feed");
   elements.groupsView?.classList.toggle("hidden", view !== "groups");
   elements.groupDetail?.classList.toggle("hidden", view !== "groupDetail");
@@ -179,7 +194,10 @@ function setMainView(view) {
     "active",
     view === "groups" || view === "groupDetail",
   );
-  elements.authButton?.classList.toggle("active", view === "settings");
+  elements.authButton?.classList.toggle(
+    "active",
+    view === "settings" || (view === "profile" && state.profileUid === state.authUser?.uid),
+  );
 }
 
 export function openFeed() {

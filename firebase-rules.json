@@ -4,7 +4,9 @@
 		".write": false,
 		"users": {
 			".read": "auth != null",
-			".indexOn": ["name"],
+			".indexOn": [
+				"name"
+			],
 			"$uid": {
 				".write": "auth != null && auth.uid === $uid",
 				".validate": "newData.hasChildren(['name', 'color', 'createdAt', 'isDisabled']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 50 && newData.child('color').isString() && newData.child('color').val().matches(/^#[0-9a-fA-F]{3,8}$/) && newData.child('createdAt').isNumber() && newData.child('isDisabled').isBoolean() && (!newData.child('updatedAt').exists() || newData.child('updatedAt').isNumber()) && (!newData.child('deletedAt').exists() || newData.child('deletedAt').isNumber()) && !newData.hasChild('email')",
@@ -33,18 +35,20 @@
 		},
 		"posts": {
 			".read": "auth != null && root.child('users').child(auth.uid).child('isDisabled').val() !== true",
-			".indexOn": ["authorId"],
+			".indexOn": [
+				"authorId"
+			],
 			"$postId": {
 				".write": "auth != null && root.child('users').child(auth.uid).child('isDisabled').val() !== true && (!data.exists() || data.child('authorId').val() === auth.uid)",
-				".validate": "newData.hasChildren(['text', 'authorId', 'createdAt']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 280 && newData.child('authorId').val() === auth.uid && newData.child('createdAt').isNumber() && (!newData.child('groupId').exists() || newData.child('groupId').val() === '')",
+				".validate": "newData.hasChildren(['text', 'authorId', 'createdAt']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 280 && newData.child('authorId').val() === (data.child('authorId').exists() ? data.child('authorId').val() : auth.uid) && newData.child('createdAt').isNumber() && (data.exists() || !newData.child('groupId').exists() || newData.child('groupId').val() === '')",
 				"text": {
 					".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 280"
 				},
 				"authorId": {
-					".validate": "newData.val() === auth.uid"
+					".validate": "newData.val() === (data.exists() ? data.val() : auth.uid)"
 				},
 				"authorName": {
-					".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 50 && (newData.val() === root.child('users').child(auth.uid).child('name').val() || newData.val() === 'Silinmiş kullanıcı')"
+					".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 50 && ((data.exists() && newData.val() === data.val()) || newData.val() === root.child('users').child(auth.uid).child('name').val() || newData.val() === 'Silinmiş kullanıcı')"
 				},
 				"authorColor": {
 					".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{3,8}$/)"
@@ -66,7 +70,7 @@
 						".validate": "newData.isString() && newData.val().length <= 2000000 && (newData.val().beginsWith('data:image/jpeg;base64,') || newData.val().beginsWith('data:image/png;base64,') || newData.val().beginsWith('data:image/webp;base64,'))"
 					},
 					"$other": {
-						".validate": false
+						".validate": "data.exists()"
 					}
 				},
 				"poll": {
@@ -82,12 +86,12 @@
 								}
 							},
 							"$other": {
-								".validate": false
+								".validate": "data.exists()"
 							}
 						}
 					},
 					"$other": {
-						".validate": false
+						".validate": "data.exists()"
 					},
 					"votes": {
 						"$uid": {
@@ -107,52 +111,42 @@
 				},
 				"comments": {
 					"$commentId": {
-						".write": "auth != null && root.child('users').child(auth.uid).child('isDisabled').val() !== true",
-
-						".validate": "newData.hasChildren(['text', 'authorId', 'createdAt']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 180 && newData.child('authorId').val() === auth.uid && newData.child('createdAt').isNumber()",
-
+						".write": "auth != null && root.child('users').child(auth.uid).child('isDisabled').val() !== true && (!data.exists() || data.child('authorId').val() === auth.uid)",
+						".validate": "newData.hasChildren(['text', 'authorId', 'createdAt']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 180 && newData.child('authorId').val() === (data.child('authorId').exists() ? data.child('authorId').val() : auth.uid) && newData.child('createdAt').isNumber()",
 						"text": {
 							".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 180"
 						},
-
 						"authorId": {
-							".validate": "newData.val() === auth.uid"
+							".validate": "newData.val() === (data.exists() ? data.val() : auth.uid)"
 						},
-
 						"authorName": {
-							".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 50 && (newData.val() === root.child('users').child(auth.uid).child('name').val() || newData.val() === 'Silinmiş kullanıcı')"
+							".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 50 && ((data.exists() && newData.val() === data.val()) || newData.val() === root.child('users').child(auth.uid).child('name').val() || newData.val() === 'Silinmiş kullanıcı')"
 						},
-
 						"authorColor": {
 							".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{3,8}$/)"
 						},
-
 						"createdAt": {
 							".validate": "newData.isNumber() && (data.exists() ? newData.val() === data.val() : newData.val() <= now + 60000)"
 						},
-
 						"likes": {
 							"$uid": {
 								".write": "auth != null && auth.uid === $uid && root.child('users').child(auth.uid).child('isDisabled').val() !== true",
 								".validate": "!newData.exists() || (newData.isBoolean() && newData.val() === true)"
 							}
 						},
-
 						"isAnonymous": {
 							".validate": "newData.isBoolean() && newData.val() === true"
 						},
-
 						"deletedAt": {
 							".validate": "newData.isNumber()"
 						},
-
 						"$other": {
-							".validate": false
+							".validate": "data.exists()"
 						}
 					}
 				},
 				"$other": {
-					".validate": false
+					".validate": "data.exists()"
 				},
 				"isAnonymous": {
 					".validate": "newData.isBoolean() && newData.val() === true"
@@ -164,7 +158,9 @@
 		},
 		"groups": {
 			".read": "auth != null && root.child('users').child(auth.uid).child('isDisabled').val() !== true",
-			".indexOn": ["createdAt"],
+			".indexOn": [
+				"createdAt"
+			],
 			"$groupId": {
 				".write": "auth != null && root.child('users').child(auth.uid).child('isDisabled').val() !== true && (!data.exists() || data.child('ownerId').val() === auth.uid)",
 				".validate": "newData.hasChildren(['name', 'description', 'color', 'ownerId', 'ownerName', 'createdAt', 'members']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 48 && newData.child('description').isString() && newData.child('description').val().length <= 160 && newData.child('color').isString() && newData.child('color').val().matches(/^#[0-9a-fA-F]{3,8}$/) && newData.child('ownerId').isString() && newData.child('ownerName').isString() && newData.child('createdAt').isNumber()",
@@ -213,18 +209,20 @@
 			"$gid": {
 				".read": "auth != null && root.child('users').child(auth.uid).child('isDisabled').val() !== true && (root.child('groups').child($gid).child('ownerId').val() === auth.uid || root.child('groups').child($gid).child('members').child(auth.uid).exists())",
 				".write": "auth != null && root.child('users').child(auth.uid).child('isDisabled').val() !== true && !newData.exists() && root.child('groups').child($gid).child('ownerId').val() === auth.uid",
-				".indexOn": ["authorId"],
+				".indexOn": [
+					"authorId"
+				],
 				"$postId": {
 					".write": "auth != null && root.child('users').child(auth.uid).child('isDisabled').val() !== true && (root.child('groups').child($gid).child('ownerId').val() === auth.uid || root.child('groups').child($gid).child('members').child(auth.uid).exists()) && (!data.exists() || data.child('authorId').val() === auth.uid)",
-					".validate": "newData.hasChildren(['text', 'authorId', 'createdAt']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 280 && newData.child('authorId').val() === auth.uid && newData.child('createdAt').isNumber() && newData.child('groupId').val() === $gid",
+					".validate": "newData.hasChildren(['text', 'authorId', 'createdAt']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 280 && newData.child('authorId').val() === (data.child('authorId').exists() ? data.child('authorId').val() : auth.uid) && newData.child('createdAt').isNumber() && newData.child('groupId').val() === $gid",
 					"text": {
 						".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 280"
 					},
 					"authorId": {
-						".validate": "newData.val() === auth.uid"
+						".validate": "newData.val() === (data.exists() ? data.val() : auth.uid)"
 					},
 					"authorName": {
-						".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 50 && (newData.val() === root.child('users').child(auth.uid).child('name').val() || newData.val() === 'Silinmiş kullanıcı')"
+						".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 50 && ((data.exists() && newData.val() === data.val()) || newData.val() === root.child('users').child(auth.uid).child('name').val() || newData.val() === 'Silinmiş kullanıcı')"
 					},
 					"authorColor": {
 						".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{3,8}$/)"
@@ -246,7 +244,7 @@
 							".validate": "newData.isString() && newData.val().length <= 2000000 && (newData.val().beginsWith('data:image/jpeg;base64,') || newData.val().beginsWith('data:image/png;base64,') || newData.val().beginsWith('data:image/webp;base64,'))"
 						},
 						"$other": {
-							".validate": false
+							".validate": "data.exists()"
 						}
 					},
 					"poll": {
@@ -257,12 +255,12 @@
 									".validate": "newData.isString() && newData.val().length <= 60"
 								},
 								"$other": {
-									".validate": false
+									".validate": "data.exists()"
 								}
 							}
 						},
 						"$other": {
-							".validate": false
+							".validate": "data.exists()"
 						},
 						"votes": {
 							"$uid": {
@@ -283,15 +281,15 @@
 					"comments": {
 						"$commentId": {
 							".write": "auth != null && root.child('users').child(auth.uid).child('isDisabled').val() !== true && (!data.exists() || data.child('authorId').val() === auth.uid) && (root.child('groups').child($gid).child('ownerId').val() === auth.uid || root.child('groups').child($gid).child('members').child(auth.uid).exists())",
-							".validate": "newData.hasChildren(['text', 'authorId', 'createdAt']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 180 && newData.child('authorId').val() === auth.uid && newData.child('createdAt').isNumber()",
+							".validate": "newData.hasChildren(['text', 'authorId', 'createdAt']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 180 && newData.child('authorId').val() === (data.child('authorId').exists() ? data.child('authorId').val() : auth.uid) && newData.child('createdAt').isNumber()",
 							"text": {
 								".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 180"
 							},
 							"authorId": {
-								".validate": "newData.val() === auth.uid"
+								".validate": "newData.val() === (data.exists() ? data.val() : auth.uid)"
 							},
 							"authorName": {
-								".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 50 && (newData.val() === root.child('users').child(auth.uid).child('name').val() || newData.val() === 'Silinmiş kullanıcı')"
+								".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 50 && ((data.exists() && newData.val() === data.val()) || newData.val() === root.child('users').child(auth.uid).child('name').val() || newData.val() === 'Silinmiş kullanıcı')"
 							},
 							"authorColor": {
 								".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{3,8}$/)"
@@ -306,7 +304,7 @@
 								}
 							},
 							"$other": {
-								".validate": false
+								".validate": "data.exists()"
 							},
 							"isAnonymous": {
 								".validate": "newData.isBoolean() && newData.val() === true"
@@ -317,7 +315,7 @@
 						}
 					},
 					"$other": {
-						".validate": false
+						".validate": "data.exists()"
 					},
 					"isAnonymous": {
 						".validate": "newData.isBoolean() && newData.val() === true"

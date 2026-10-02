@@ -28,6 +28,7 @@ import {
 	equalTo,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 import { renderPosts, fetchOwnPostsWithPaths } from "./posts.js";
+import { subscribeToUsers, stopUsersSubscription } from "./users.js";
 import { renderGroups } from "./groups.js";
 import { syncAuthUi, syncComposer, syncAuthMode, closeSettings } from "./ui.js";
 
@@ -79,6 +80,7 @@ export function subscribeToAuth() {
 	onAuthStateChanged(state.auth, async (user) => {
 		state.authUser = user;
 		if (user) {
+			subscribeToUsers();
 			try {
 				await loadOrCreateProfile(user);
 			} catch (error) {
@@ -94,6 +96,7 @@ export function subscribeToAuth() {
 				elements.authDialog.close();
 			}
 		} else {
+			stopUsersSubscription();
 			state.profile = {
 				name: "User",
 				color: "#2563eb",
@@ -306,27 +309,7 @@ export async function saveProfileSettings() {
 			updatedAt: serverTimestamp(),
 		});
 
-		// Keep historical posts/comments in sync with latest profile display.
-		const ownPosts = await fetchOwnPostsWithPaths(state.authUser.uid);
-		const updates = {};
-		for (const { path, post } of ownPosts) {
-			if (post?.authorId === state.authUser.uid) {
-				updates[`${path}/authorName`] = name;
-				updates[`${path}/authorColor`] = color;
-			}
-
-			const comments = post?.comments || {};
-			for (const [commentId, comment] of Object.entries(comments)) {
-				if (comment?.authorId === state.authUser.uid) {
-					updates[`${path}/comments/${commentId}/authorName`] = name;
-					updates[`${path}/comments/${commentId}/authorColor`] = color;
-				}
-			}
-		}
-		if (Object.keys(updates).length) {
-			await update(ref(state.db), updates);
-		}
-
+		// Gönderi ve yorumlarda ad/renk saklanmaz; herkes güncel profili users/ altından okur.
 		state.profile.name = name;
 		state.profile.color = color;
 		syncAuthUi();

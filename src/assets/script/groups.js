@@ -1,4 +1,5 @@
 import { state } from "./state.js";
+import { resolveUserName } from "./users.js";
 import { elements } from "./elements.js";
 import { initials, cleanName, getContrastColor, friendlyErrorMessage, safeColor } from "./utils.js";
 import { openGroups } from "./ui.js";
@@ -94,7 +95,7 @@ export function createGroupCard(group, { compact = false } = {}) {
 	avatar.className = "avatar group-card__avatar";
 	avatar.style.background = safeColor(group.color);
 	avatar.style.color = getContrastColor(safeColor(group.color));
-	avatar.textContent = group.avatarChar || initials(group.name);
+	avatar.textContent = initials(group.name);
 
 	const content = document.createElement("span");
 	content.className = "group-card__content";
@@ -105,7 +106,7 @@ export function createGroupCard(group, { compact = false } = {}) {
 	const meta = document.createElement("span");
 	meta.className = "group-card__meta";
 	const memberCount = Object.keys(group.members || {}).length;
-	meta.textContent = `${memberCount} üye · ${group.ownerName || "Anonim"} oluşturdu`;
+	meta.textContent = `${memberCount} üye · ${resolveUserName(group.ownerId, group.ownerName)} oluşturdu`;
 
 	const description = document.createElement("p");
 	description.className = "group-card__description";
@@ -297,7 +298,7 @@ export function renderGroupDetail() {
 	}
 
 	if (elements.groupDetailAvatar) {
-		elements.groupDetailAvatar.textContent = group.avatarChar || initials(group.name);
+		elements.groupDetailAvatar.textContent = initials(group.name);
 		elements.groupDetailAvatar.style.background = safeColor(group.color);
 		elements.groupDetailAvatar.style.color = getContrastColor(safeColor(group.color));
 	}
@@ -312,7 +313,7 @@ export function renderGroupDetail() {
 	}
 	if (elements.groupDetailMeta) {
 		const memberCount = Object.keys(group.members || {}).length;
-		elements.groupDetailMeta.textContent = `${memberCount} üye · ${group.ownerName || "Anonim"} oluşturdu`;
+		elements.groupDetailMeta.textContent = `${memberCount} üye · ${resolveUserName(group.ownerId, group.ownerName)} oluşturdu`;
 	}
 
 	if (elements.groupDetailOwnerActions) {
@@ -334,15 +335,12 @@ function fillGroupEditForm(group) {
 	if (elements.groupDetailEditDescriptionInput) {
 		elements.groupDetailEditDescriptionInput.value = group.description || "";
 	}
-	if (elements.groupDetailEditAvatarCharInput) {
-		elements.groupDetailEditAvatarCharInput.value = group.avatarChar || "";
-	}
 	if (elements.groupDetailEditAvatarColorInput) {
 		elements.groupDetailEditAvatarColorInput.value = group.color || "#2563eb";
 	}
 	if (elements.groupDetailEditAvatarPreview) {
 		const color = group.color || "#2563eb";
-		elements.groupDetailEditAvatarPreview.textContent = group.avatarChar || initials(group.name) || "M";
+		elements.groupDetailEditAvatarPreview.textContent = initials(group.name) || "M";
 		elements.groupDetailEditAvatarPreview.style.background = color;
 		elements.groupDetailEditAvatarPreview.style.color = getContrastColor(color);
 	}
@@ -398,7 +396,7 @@ export function syncGroupEditFormCounts() {
 	}
 }
 
-export async function updateGroup(groupId, { name, description, avatarChar, color }) {
+export async function updateGroup(groupId, { name, description, color }) {
 	if (!state.authUser) {
 		throw new Error("Masayı düzenlemek için giriş yapmalısın.");
 	}
@@ -415,10 +413,6 @@ export async function updateGroup(groupId, { name, description, avatarChar, colo
 	const groupDescription = String(description || "")
 		.trim()
 		.slice(0, 160);
-	const groupAvatarChar = String(avatarChar || "")
-		.trim()
-		.slice(0, 1)
-		.toUpperCase();
 	const groupColor = /^#[0-9a-fA-F]{6}$/.test(color || "") ? color : group.color || "#2563eb";
 
 	if (!groupName) {
@@ -428,7 +422,6 @@ export async function updateGroup(groupId, { name, description, avatarChar, colo
 	await update(ref(state.db, `groups/${groupId}`), {
 		name: groupName,
 		description: groupDescription,
-		avatarChar: groupAvatarChar || null,
 		color: groupColor,
 	});
 }
@@ -449,7 +442,6 @@ export async function submitGroupEditForm() {
 		await updateGroup(state.activeGroupId, {
 			name: elements.groupDetailEditNameInput?.value || "",
 			description: elements.groupDetailEditDescriptionInput?.value || "",
-			avatarChar: elements.groupDetailEditAvatarCharInput?.value || "",
 			color: elements.groupDetailEditAvatarColorInput?.value || "",
 		});
 		closeGroupSettingsPanel();
@@ -602,12 +594,12 @@ function updateGroupStats() {
 	if (elements.groupDescriptionCount) {
 		elements.groupDescriptionCount.textContent = `${elements.groupDescriptionInput?.value.length || 0}/160`;
 	}
-	if (elements.groupAvatarPreview && !elements.groupAvatarCharInput?.value) {
+	if (elements.groupAvatarPreview) {
 		elements.groupAvatarPreview.textContent = initials(elements.groupNameInput?.value || "") || "M";
 	}
 }
 
-export async function createGroup({ name, description, avatarChar, color }) {
+export async function createGroup({ name, description, color }) {
 	if (!state.authUser) {
 		throw new Error("Masa oluşturmak için giriş yapmalısın.");
 	}
@@ -619,10 +611,6 @@ export async function createGroup({ name, description, avatarChar, color }) {
 	const groupDescription = String(description || "")
 		.trim()
 		.slice(0, 160);
-	const groupAvatarChar = String(avatarChar || "")
-		.trim()
-		.slice(0, 1)
-		.toUpperCase();
 	const groupColor = /^#[0-9a-fA-F]{6}$/.test(color || "") ? color : state.profile.color || "#2563eb";
 
 	if (!groupName) {
@@ -633,7 +621,6 @@ export async function createGroup({ name, description, avatarChar, color }) {
 	await set(groupRef, {
 		name: groupName,
 		description: groupDescription,
-		avatarChar: groupAvatarChar || null,
 		color: groupColor,
 		ownerId: state.authUser.uid,
 		ownerName: state.profile.name,
@@ -833,7 +820,7 @@ export function canViewGroup(groupId) {
 }
 
 export function getGroupName(groupId) {
-	return state.groups?.[groupId]?.avatarChar + " " + state.groups?.[groupId]?.name || "Masa";
+	return state.groups?.[groupId]?.name || "Masa";
 }
 
 export function getMemberGroups() {
@@ -852,13 +839,11 @@ export async function submitGroupForm() {
 		await createGroup({
 			name: elements.groupNameInput?.value || "",
 			description: elements.groupDescriptionInput?.value || "",
-			avatarChar: elements.groupAvatarCharInput?.value || "",
 			color: elements.groupAvatarColorInput?.value || "",
 		});
 
 		if (elements.groupNameInput) elements.groupNameInput.value = "";
 		if (elements.groupDescriptionInput) elements.groupDescriptionInput.value = "";
-		if (elements.groupAvatarCharInput) elements.groupAvatarCharInput.value = "";
 		if (elements.groupAvatarColorInput) elements.groupAvatarColorInput.value = "#2563eb";
 		if (elements.groupAvatarPreview) {
 			elements.groupAvatarPreview.textContent = "M";
@@ -880,3 +865,16 @@ export function syncGroupFormCounts() {
 	3;
 	updateGroupStats();
 }
+
+// Üyelerden biri adını/rengini değiştirince masa listesi ve üye satırları güncellenir.
+window.addEventListener("users:updated", () => {
+	renderGroups();
+	if (state.activeGroupId) {
+		const group = state.groups?.[state.activeGroupId];
+		if (group && elements.groupDetailMeta) {
+			const memberCount = Object.keys(group.members || {}).length;
+			elements.groupDetailMeta.textContent = `${memberCount} üye · ${resolveUserName(group.ownerId, group.ownerName)} oluşturdu`;
+		}
+		renderGroupDetailMembers();
+	}
+});

@@ -136,18 +136,12 @@
 				<section class="feed-list groups-feed-list" id="groupsList" aria-live="polite"></section>
 				<section class="groups-form-card" aria-label="Masa oluştur" hidden>
 					<div class="groups-form-fields">
-						<div class="groups-avatar-editor">
+						<div class="groups-field">
 							<button class="profile-color-button" id="groupAvatarButton" type="button" title="Avatar rengini değiştir" aria-label="Avatar rengini değiştir">
 								<span class="avatar groups-avatar-preview" id="groupAvatarPreview">M</span>
 								<span class="profile-color-badge" data-lucide="palette" aria-hidden="true"></span>
 								<input id="groupAvatarColorInput" class="settings-color-input" type="color" value="#2563eb" aria-label="Masa avatar rengi" />
 							</button>
-							<label class="settings-field settings-field--compact groups-avatar-char-field">
-								<span>Avatar karakteri</span>
-								<input id="groupAvatarCharInput" name="g_avatar_char" type="text" maxlength="1" placeholder="Otomatik" />
-							</label>
-						</div>
-						<div class="groups-field">
 							<input id="groupNameInput" name="g_name" type="text" maxlength="48" placeholder="Masa adı" />
 							<span class="groups-counter" id="groupNameCount">0/48</span>
 						</div>
@@ -200,10 +194,6 @@
 									<span class="profile-color-badge" data-lucide="palette" aria-hidden="true"></span>
 									<input id="groupDetailEditAvatarColorInput" class="settings-color-input" type="color" value="#2563eb" aria-label="Masa avatar rengi" />
 								</button>
-								<label class="settings-field settings-field--compact groups-avatar-char-field">
-									<span>Avatar karakteri</span>
-									<input id="groupDetailEditAvatarCharInput" name="ge_avatar_char" type="text" maxlength="1" placeholder="Otomatik" />
-								</label>
 							</div>
 							<div class="groups-field">
 								<input id="groupDetailEditNameInput" name="ge_name" type="text" maxlength="48" placeholder="Masa adı" />
@@ -231,6 +221,35 @@
 					<div class="group-list-heading" style="padding: 0 18px">Paylaşımlar</div>
 					<section class="feed-list" id="groupDetailPostList" aria-live="polite"></section>
 				</div>
+			</main>
+
+			<main class="timeline hidden" id="profileView">
+				<header class="topbar">
+					<button class="button button--ghost mobile-menu-button" type="button" aria-label="Menüyü aç">
+						<span data-lucide="menu"></span>
+					</button>
+					<button class="icon-button button button--ghost" id="profileBack" type="button" aria-label="Geri dön">
+						<span data-lucide="arrow-left"></span>
+					</button>
+					<div>
+						<h1 id="profileTitle">Profil</h1>
+						<img class="brand-image" src="assets/logo.svg" alt="MASA Logo" />
+					</div>
+				</header>
+
+				<section class="profile-header" id="profileHeader">
+					<div class="avatar profile-header__avatar" id="profileAvatar">?</div>
+					<div class="profile-header__info">
+						<div class="profile-header__row">
+							<h2 id="profileName">Profil</h2>
+							<button class="button button--secondary" id="profileEditButton" type="button" hidden>Profili düzenle</button>
+						</div>
+						<span class="profile-header__meta" id="profileMeta"></span>
+					</div>
+				</section>
+
+				<div class="search-section__title" id="profilePostsTitle">Gönderiler</div>
+				<section class="feed-list" id="profilePostList" aria-live="polite"></section>
 			</main>
 
 			<main class="timeline hidden" id="search">
@@ -297,6 +316,7 @@
 								</label>
 								<div class="settings-actions settings-actions--profile">
 									<button class="button button--secondary" id="saveProfileButton" type="button">Profili Kaydet</button>
+									<button class="button button--secondary" id="viewProfileButton" type="button">Profilimi gör</button>
 								</div>
 							</div>
 						</div>

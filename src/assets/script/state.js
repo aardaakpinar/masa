@@ -27,5 +27,6 @@ export const state = {
   groups: {},
   groupsRef: null,
   users: {},
+  profileUid: null,
   activeGroupId: null,
 };

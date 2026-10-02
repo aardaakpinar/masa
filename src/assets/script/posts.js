@@ -1,5 +1,6 @@
 import { state } from "./state.js";
 import { elements } from "./elements.js";
+import { resolveAuthor } from "./users.js";
 import {
   initials,
   formatTime,
@@ -36,6 +37,8 @@ let isLoadingMore = false;
 let activeCommentPostId = null;
 let liveWindowPostIds = new Set();
 let publicPosts = {};
+let extraPosts = {};
+let extraRef = null;
 
 const GROUP_POSTS_LIMIT = 100;
 
@@ -45,6 +48,10 @@ function rebuildPosts() {
   const merged = {};
   Object.entries(publicPosts).forEach(([id, post]) => {
     merged[id] = { ...post, __path: `posts/${id}` };
+  });
+  // Profil sayfasında açılan kullanıcının eski gönderileri (akışta görünmez: __extra).
+  Object.entries(extraPosts).forEach(([id, post]) => {
+    if (!merged[id]) merged[id] = { ...post, __path: `posts/${id}`, __extra: true };
   });
   Object.entries(state.groupPosts).forEach(([groupId, map]) => {
     Object.entries(map).forEach(([id, post]) => {
@@ -62,6 +69,58 @@ export function postPath(postId) {
 function refreshPostViews() {
   renderPosts();
   renderGroupDetailPosts();
+  window.dispatchEvent(new Event("profile:refresh"));
+}
+
+// Profil sayfası: seçilen kullanıcının son 30 herkese açık gönderisi canlı dinlenir.
+export function subscribeProfilePosts(uid) {
+  stopProfilePosts();
+  if (!state.db || !uid) return;
+  extraRef = query(
+    ref(state.db, "posts"),
+    orderByChild("authorId"),
+    equalTo(uid),
+    limitToLast(30),
+  );
+  onValue(
+    extraRef,
+    (snapshot) => {
+      extraPosts = snapshot.val() || {};
+      rebuildPosts();
+      refreshPostViews();
+    },
+    (error) => console.warn("Profil gönderileri yüklenemedi: " + error.message),
+  );
+}
+
+export function stopProfilePosts() {
+  if (extraRef) off(extraRef);
+  const hadPosts = Object.keys(extraPosts).length > 0;
+  extraRef = null;
+  extraPosts = {};
+  if (hadPosts) {
+    rebuildPosts();
+    refreshPostViews();
+  }
+}
+
+function openProfileOf(uid) {
+  if (uid) window.dispatchEvent(new CustomEvent("profile:open", { detail: { uid } }));
+}
+
+// Ad / avatar tıklanınca profil açılır.
+function makeProfileLink(element, uid) {
+  if (!uid) return;
+  element.classList.add("is-profile-link");
+  element.setAttribute("role", "link");
+  element.tabIndex = 0;
+  element.addEventListener("click", (event) => {
+    event.stopPropagation();
+    openProfileOf(uid);
+  });
+  element.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") openProfileOf(uid);
+  });
 }
 
 // Üyesi olunan her masa için group_posts/<masa> dinlenir; üyelikten çıkınca dinleme kapanır.
@@ -117,6 +176,8 @@ export function syncGroupPostSubscriptions() {
 }
 
 window.addEventListener("groups:updated", syncGroupPostSubscriptions);
+// Bir kullanıcı adını/rengini değiştirince gönderi ve yorumlar yeniden çizilir.
+window.addEventListener("users:updated", () => refreshPostViews());
 
 // Kullanıcının kendi gönderileri (herkese açık + üyesi olduğu masalar) ve yolları.
 export async function fetchOwnPostsWithPaths(uid) {
@@ -321,6 +382,7 @@ export function renderPosts() {
 
   const posts = Object.entries(state.posts)
     .map(([id, post]) => ({ id, ...post }))
+    .filter((post) => !post.__extra || post.id === activeCommentPostId)
     .filter((post) => canViewGroup(post.groupId))
     .filter((post) => !selectedGroupId || post.groupId === selectedGroupId)
     .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -374,14 +436,16 @@ export function renderGroupDetailPosts() {
 }
 
 export function createPostElement(post) {
+  const author_ = resolveAuthor(post);
   const article = document.createElement("article");
   article.className = "post";
 
   const avatar = document.createElement("div");
   avatar.className = "avatar";
-  avatar.style.background = safeColor(post.authorColor);
-  avatar.style.color = getContrastColor(safeColor(post.authorColor));
-  avatar.textContent = initials(post.authorName);
+  avatar.style.background = author_.color;
+  avatar.style.color = getContrastColor(author_.color);
+  avatar.textContent = initials(author_.name);
+  makeProfileLink(avatar, post.authorId);
 
   const body = document.createElement("div");
   const header = document.createElement("div");
@@ -389,7 +453,8 @@ export function createPostElement(post) {
 
   const author = document.createElement("span");
   author.className = "post-author";
-  author.textContent = post.authorName || "Anonim";
+  author.textContent = author_.name;
+  makeProfileLink(author, post.authorId);
 
   const meta = document.createElement("div");
   meta.className = "post-meta";
@@ -629,9 +694,11 @@ function createCommentsSection(post) {
       avatar.style.height = "36px";
       avatar.style.fontSize = "13px";
       avatar.style.flexShrink = "0";
-      avatar.style.background = safeColor(comment.authorColor);
-      avatar.style.color = getContrastColor(safeColor(comment.authorColor));
-      avatar.textContent = initials(comment.authorName);
+      const commentAuthor = resolveAuthor(comment);
+      avatar.style.background = commentAuthor.color;
+      avatar.style.color = getContrastColor(commentAuthor.color);
+      avatar.textContent = initials(commentAuthor.name);
+      makeProfileLink(avatar, comment.authorId);
 
       const threadLine = document.createElement("div");
       threadLine.className = "comment-thread-line";
@@ -647,7 +714,8 @@ function createCommentsSection(post) {
 
       const commenter = document.createElement("span");
       commenter.className = "comment-author";
-      commenter.textContent = comment.authorName || "Anonim";
+      commenter.textContent = commentAuthor.name;
+      makeProfileLink(commenter, comment.authorId);
 
       const commentTime = document.createElement("time");
       commentTime.className = "comment-time";
@@ -758,6 +826,10 @@ export function openComments(postId) {
   activeCommentPostId = postId;
   syncComposerMode();
   renderPosts();
+  // Yorumlar akış görünümünde açılır; arama/profilden gelindiyse akışa geç.
+  if (elements.feed?.classList.contains("hidden")) {
+    window.dispatchEvent(new Event("feed:open"));
+  }
 }
 
 export function closeComments() {
@@ -838,8 +910,6 @@ export async function createPost(text, { media, pollOptions } = {}) {
   const payload = {
     text,
     authorId: state.authUser.uid,
-    authorName: state.profile.name,
-    authorColor: state.profile.color,
     createdAt: serverTimestamp(),
     likes: {},
     groupId: isGroupPost ? groupId : "",
@@ -887,8 +957,6 @@ export async function createComment(postId, text) {
   await set(commentRef, {
     text: text.slice(0, 180),
     authorId: state.authUser.uid,
-    authorName: state.profile.name,
-    authorColor: state.profile.color,
     createdAt: serverTimestamp(),
   });
 }

@@ -29,7 +29,7 @@ function cspPlugin() {
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         "font-src 'self' https://fonts.gstatic.com data:",
         "img-src 'self' data: blob: https://queue.simpleanalyticscdn.com",
-        `connect-src 'self' ${firebase.join(" ")} https://www.google.com/recaptcha/ https://queue.simpleanalyticscdn.com`,
+        `connect-src 'self' ${firebase.join(" ")} https://www.google.com/recaptcha/ https://www.gstatic.com https://unpkg.com https://scripts.simpleanalyticscdn.com https://queue.simpleanalyticscdn.com`,
         "frame-src https://*.firebaseapp.com https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/",
         "object-src 'none'",
         "base-uri 'self'",

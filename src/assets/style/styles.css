@@ -1164,23 +1164,11 @@ img {
 	font-size: 19px;
 }
 
-.groups-avatar-char-field {
-	flex: 1 1 0;
-	min-width: 0;
-	margin-bottom: 0;
-}
-
-.groups-avatar-char-field input {
-	min-height: 42px;
-	padding: 0 12px;
-	width: 100%;
-	max-width: 120px;
-	text-transform: uppercase;
-	text-align: center;
-}
-
 .groups-field {
+	display: flex;
 	position: relative;
+	gap: 10px;
+	flex-direction: row;
 }
 
 .groups-field input,
@@ -2081,10 +2069,6 @@ img {
 		font-size: 17px;
 	}
 
-	.groups-avatar-char-field input {
-		max-width: 100%;
-	}
-
 	.settings-panel {
 		margin: 0;
 		border-radius: 0;
@@ -2143,10 +2127,6 @@ img {
 
 	.groups-avatar-editor {
 		gap: 12px;
-	}
-
-	.groups-avatar-char-field input {
-		max-width: 96px;
 	}
 
 	.profile-card {

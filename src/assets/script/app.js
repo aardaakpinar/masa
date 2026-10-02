@@ -43,6 +43,7 @@ import {
 	syncGroupEditFormCounts,
 } from "./groups.js";
 import { setupDiscover } from "./discover.js";
+import { setupProfile } from "./profile.js";
 import { initials, getContrastColor } from "./utils.js";
 
 // Adres çubuğunda /index.html görünmesin: /masa/index.html -> /masa/
@@ -228,6 +229,7 @@ syncAuthUi();
 syncComposer();
 syncGroupFormCounts();
 setupDiscover();
+setupProfile();
 autoGrowComposer();
 syncComposerActiveState();
 
@@ -297,14 +299,6 @@ bind(elements.groupAvatarColorInput, "input", (event) => {
 		);
 	}
 });
-bind(elements.groupAvatarCharInput, "input", (event) => {
-	const char = (event.target.value || "").trim().slice(0, 1).toUpperCase();
-	event.target.value = char;
-	if (elements.groupAvatarPreview) {
-		elements.groupAvatarPreview.textContent =
-			char || initials(elements.groupNameInput?.value || "") || "M";
-	}
-});
 bind(elements.groupDetailSettingsButton, "click", toggleGroupSettingsPanel);
 bind(elements.groupDetailEditCancelButton, "click", closeGroupSettingsPanel);
 bind(elements.groupDetailEditSaveButton, "click", submitGroupEditForm);
@@ -324,16 +318,6 @@ bind(elements.groupDetailEditAvatarColorInput, "input", (event) => {
 		elements.groupDetailEditAvatarPreview.style.color = getContrastColor(
 			event.target.value,
 		);
-	}
-});
-bind(elements.groupDetailEditAvatarCharInput, "input", (event) => {
-	const char = (event.target.value || "").trim().slice(0, 1).toUpperCase();
-	event.target.value = char;
-	if (elements.groupDetailEditAvatarPreview) {
-		elements.groupDetailEditAvatarPreview.textContent =
-			char ||
-			initials(elements.groupDetailEditNameInput?.value || "") ||
-			"M";
 	}
 });
 bind(elements.groupDetailDeleteButton, "click", () => {

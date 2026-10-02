@@ -944,3 +944,41 @@ h4,
 .groups-feed-list[hidden] { display: none; }
 
 #groupDetailSettingsButton[aria-expanded="true"] { background: var(--hover); color: var(--text); }
+
+/* ---------- Profil sayfası ---------- */
+.profile-header { display: flex; align-items: center; gap: 16px; padding: 20px; border-bottom: 1px solid var(--line); }
+.profile-header__avatar { flex: 0 0 76px; width: 76px; height: 76px; border-radius: 50%; font-size: 28px; font-weight: 600; }
+.profile-header__info { display: grid; gap: 4px; min-width: 0; flex: 1; }
+.profile-header__row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.profile-header__row h2 { margin: 0; font-size: 22px; font-weight: 700; overflow-wrap: anywhere; }
+.profile-header__meta { font-size: 14px; color: var(--text-soft); }
+.profile-header__row .button[hidden] { display: none; }
+#profilePostsTitle:empty { display: none; }
+
+/* Tıklanabilir yazar adı / avatar */
+.is-profile-link { cursor: pointer; }
+.post-author.is-profile-link:hover,
+.comment-author.is-profile-link:hover { text-decoration: underline; }
+.avatar.is-profile-link:hover { filter: brightness(0.92); }
+
+/* Kişi arama sonuçları */
+.person-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	width: 100%;
+	padding: 12px 20px;
+	border: 0;
+	border-bottom: 1px solid var(--line);
+	background: transparent;
+	color: var(--text);
+	text-align: left;
+	cursor: pointer;
+}
+
+.person-row:hover { background: var(--hover); }
+.person-row__avatar { flex: 0 0 44px; width: 44px; height: 44px; border-radius: 50%; font-size: 16px; font-weight: 600; }
+.person-row__info { display: grid; min-width: 0; gap: 2px; }
+.person-row__name { font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
+.person-row__meta { font-size: 14px; color: var(--text-soft); }
+.people-section .search-section__title { padding-top: 10px; }

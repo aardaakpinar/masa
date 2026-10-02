@@ -1,9 +1,10 @@
 import { elements } from "./elements.js";
+import { resolveAuthor } from "./users.js";
 import { state } from "./state.js";
 import { createPostElement } from "./posts.js";
 import { createGroupCard, canViewGroup } from "./groups.js";
 import { openSearch } from "./ui.js";
-import { trLower, extractHashtags } from "./utils.js";
+import { trLower, extractHashtags, initials, getContrastColor, safeColor } from "./utils.js";
 
 let queryText = "";
 
@@ -49,8 +50,67 @@ function applyQuery(value, { focus = true } = {}) {
 function getPosts() {
 	return Object.entries(state.posts || {})
 		.map(([id, post]) => ({ id, ...post }))
-		.filter((post) => canViewGroup(post.groupId))
+		.filter((post) => !post.__extra && canViewGroup(post.groupId))
 		.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+}
+
+// Kullanıcı (profil) araması: ada göre; adı sorguyla başlayanlar öne gelir.
+function searchPeople(term, limit) {
+	const needle = trLower(term.trim());
+	const list = Object.entries(state.users || {})
+		.filter(([, user]) => user?.name && !user.isDisabled && user.name !== "Silinmiş kullanıcı")
+		.filter(([, user]) => !needle || trLower(user.name).includes(needle))
+		.map(([uid, user]) => ({ uid, ...user }))
+		.sort((a, b) => {
+			const aStarts = needle && trLower(a.name).startsWith(needle) ? 0 : 1;
+			const bStarts = needle && trLower(b.name).startsWith(needle) ? 0 : 1;
+			return aStarts - bStarts || a.name.localeCompare(b.name, "tr");
+		});
+	return limit ? list.slice(0, limit) : list;
+}
+
+function createPersonRow(user) {
+	const row = document.createElement("button");
+	row.type = "button";
+	row.className = "person-row";
+
+	const avatar = document.createElement("div");
+	avatar.className = "avatar person-row__avatar";
+	avatar.textContent = initials(user.name);
+	avatar.style.background = safeColor(user.color);
+	avatar.style.color = getContrastColor(safeColor(user.color));
+
+	const info = document.createElement("div");
+	info.className = "person-row__info";
+	const name = document.createElement("span");
+	name.className = "person-row__name";
+	name.textContent = user.name + (user.uid === state.authUser?.uid ? " (sen)" : "");
+	info.append(name);
+	if (user.createdAt) {
+		const meta = document.createElement("span");
+		meta.className = "person-row__meta";
+		meta.textContent = `${new Intl.DateTimeFormat("tr-TR", { month: "long", year: "numeric" }).format(new Date(user.createdAt))} tarihinde katıldı`;
+		info.append(meta);
+	}
+
+	row.append(avatar, info);
+	row.addEventListener("click", () => {
+		window.dispatchEvent(new CustomEvent("profile:open", { detail: { uid: user.uid } }));
+	});
+	return row;
+}
+
+function createPeopleSection(users, title) {
+	const wrap = document.createElement("div");
+	wrap.className = "people-section";
+	if (title) {
+		const heading = document.createElement("div");
+		heading.className = "search-section__title";
+		heading.textContent = title;
+		wrap.append(heading);
+	}
+	users.forEach((user) => wrap.append(createPersonRow(user)));
+	return wrap;
 }
 
 function getGroups() {
@@ -88,7 +148,9 @@ function renderGroupResults(groupQuery) {
 
 // Bir gönderinin (post) ya da yorumun ilgili sorguyla eşleşip eşleşmediğini
 // doğrudan post-text (ve yorum metni) içeriğine bakarak kontrol eder.
-function matchesQuery({ text, authorName }, q, qWithoutHash, qWithoutAt) {
+function matchesQuery(item, q, qWithoutHash, qWithoutAt) {
+	const { text } = item;
+	const authorName = resolveAuthor(item).name;
 	if (q.startsWith("@")) {
 		return trLower(authorName || "").includes(qWithoutAt);
 	}
@@ -115,6 +177,23 @@ export function renderDiscover() {
 
 	if (rawQuery.startsWith("-")) {
 		renderGroupResults(rawQuery.slice(1));
+		return;
+	}
+
+	// "@" / Kişiler sekmesi: yalnızca kişiler (profil araması).
+	if (rawQuery.startsWith("@")) {
+		const term = rawQuery.slice(1);
+		const people = searchPeople(term, 40);
+		if (!people.length) {
+			const empty = document.createElement("div");
+			empty.className = "empty-state";
+			empty.textContent = term.trim() ? `“${term.trim()}” adında kişi bulunamadı.` : "Henüz kişi yok.";
+			setResultsTitle("");
+			elements.searchResults.replaceChildren(empty);
+			return;
+		}
+		setResultsTitle(term.trim() ? `${people.length} kişi` : "Tüm kişiler");
+		elements.searchResults.replaceChildren(createPeopleSection(people));
 		return;
 	}
 
@@ -155,7 +234,10 @@ export function renderDiscover() {
 		}));
 	}
 
-	if (!results.length) {
+	// Düz aramada (önek yok) eşleşen kişiler de en üstte gösterilir.
+	const people = q && !q.startsWith("#") ? searchPeople(rawQuery, 3) : [];
+
+	if (!results.length && !people.length) {
 		const empty = document.createElement("div");
 		empty.className = "empty-state";
 		empty.textContent = `“${rawQuery}” için sonuç bulunamadı.`;
@@ -164,8 +246,9 @@ export function renderDiscover() {
 		return;
 	}
 
-	setResultsTitle(q ? `${results.length} sonuç` : "Son paylaşımlar");
+	setResultsTitle(q ? (results.length ? `${results.length} sonuç` : "") : "Son paylaşımlar");
 	elements.searchResults.replaceChildren(
+		...(people.length ? [createPeopleSection(people, "Kişiler")] : []),
 		...results.map((item) => createPostElement(item)),
 	);
 
@@ -244,6 +327,10 @@ export function renderTrending() {
 }
 
 export function setupDiscover() {
+	window.addEventListener("users:updated", () => {
+		if (queryText) renderDiscover();
+	});
+
 	let timer;
 	elements.searchInput?.addEventListener("input", (event) => {
 		queryText = event.target.value || "";
