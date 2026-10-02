@@ -982,3 +982,28 @@ h4,
 .person-row__name { font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
 .person-row__meta { font-size: 14px; color: var(--text-soft); }
 .people-section .search-section__title { padding-top: 10px; }
+
+/* ---------- Katılım modu ve istekler ---------- */
+.groups-field--select { display: grid; gap: 6px; }
+.groups-select-label { font-size: 13px; font-weight: 600; color: var(--text-soft); }
+.groups-field--select select { min-height: 44px; border-radius: 12px; padding: 0 12px; cursor: pointer; }
+
+.request-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 20px;
+	border-bottom: 1px solid var(--line);
+}
+
+.request-row__avatar { flex: 0 0 40px; width: 40px; height: 40px; border-radius: 50%; font-size: 15px; font-weight: 600; }
+.request-row__info { display: grid; flex: 1; min-width: 0; gap: 2px; }
+.request-row__name { font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
+.request-row__meta { font-size: 13px; color: var(--text-soft); }
+.request-row__actions { display: flex; gap: 8px; flex: 0 0 auto; }
+.request-row__actions .group-action { position: static; }
+
+@media (max-width: 480px) {
+	.request-row { flex-wrap: wrap; }
+	.request-row__actions { width: 100%; justify-content: flex-end; }
+}

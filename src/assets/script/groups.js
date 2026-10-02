@@ -67,6 +67,10 @@ function getGroups() {
 		.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 }
 
+function isApprovalGroup(group) {
+	return group?.joinMode === "approval";
+}
+
 function isMember(group) {
 	return Boolean(state.authUser && group.members && group.members[state.authUser.uid]);
 }
@@ -127,22 +131,38 @@ export function createGroupCard(group, { compact = false } = {}) {
 	if (state.authUser) {
 		const joined = isMember(group);
 		const isOwner = isOwnerViewer;
-		status.textContent = isOwner || joined ? "üye" : "öneri";
+		const approval = isApprovalGroup(group);
+		const pending = Boolean(state.myJoinRequests?.[group.id]);
+		const pendingCount = Object.keys(state.groupRequests?.[group.id] || {}).length;
+
+		if (isOwner || joined) {
+			status.textContent = isOwner && pendingCount ? `${pendingCount} yeni istek` : "üye";
+		} else if (approval) {
+			status.textContent = pending ? "istek bekliyor" : "onaylı";
+		} else {
+			status.textContent = "öneri";
+		}
 
 		if (!joined && !isOwner) {
+			const idleLabel = approval ? (pending ? "İsteği geri çek" : "İstek gönder") : "Katıl";
+			const busyLabel = approval ? (pending ? "Geri çekiliyor…" : "Gönderiliyor…") : "Katılınıyor…";
 			const joinButton = document.createElement("button");
 			joinButton.type = "button";
 			joinButton.className = "button button--secondary group-action";
-			joinButton.textContent = "Katıl";
+			joinButton.textContent = idleLabel;
 			joinButton.addEventListener("click", async (event) => {
 				event.stopPropagation();
 				joinButton.disabled = true;
-				joinButton.textContent = "Katılınıyor…";
+				joinButton.textContent = busyLabel;
 				try {
-					await joinGroup(group.id);
+					if (approval && pending) {
+						await cancelJoinRequest(group.id);
+					} else {
+						await joinGroup(group.id);
+					}
 				} finally {
 					joinButton.disabled = false;
-					joinButton.textContent = "Katıl";
+					joinButton.textContent = idleLabel;
 				}
 			});
 			actions.append(joinButton);
@@ -326,9 +346,13 @@ export function renderGroupDetail() {
 	}
 
 	renderGroupDetailMembers();
+	renderGroupRequests();
 }
 
 function fillGroupEditForm(group) {
+	if (elements.groupDetailEditJoinModeSelect) {
+		elements.groupDetailEditJoinModeSelect.value = group.joinMode === "approval" ? "approval" : "open";
+	}
 	if (elements.groupDetailEditNameInput) {
 		elements.groupDetailEditNameInput.value = group.name || "";
 	}
@@ -396,7 +420,7 @@ export function syncGroupEditFormCounts() {
 	}
 }
 
-export async function updateGroup(groupId, { name, description, color }) {
+export async function updateGroup(groupId, { name, description, color, joinMode }) {
 	if (!state.authUser) {
 		throw new Error("Masayı düzenlemek için giriş yapmalısın.");
 	}
@@ -419,11 +443,22 @@ export async function updateGroup(groupId, { name, description, color }) {
 		throw new Error("Masa adı gerekli.");
 	}
 
-	await update(ref(state.db, `groups/${groupId}`), {
-		name: groupName,
-		description: groupDescription,
-		color: groupColor,
-	});
+	const mode = joinMode === "approval" ? "approval" : "open";
+	const updates = {
+		[`groups/${groupId}/name`]: groupName,
+		[`groups/${groupId}/description`]: groupDescription,
+		[`groups/${groupId}/color`]: groupColor,
+		[`groups/${groupId}/joinMode`]: mode,
+	};
+
+	// Masa herkese açık yapılınca bekleyen istekler anlamını yitirir; temizlenir.
+	if (mode === "open") {
+		Object.keys(state.groupRequests?.[groupId] || {}).forEach((uid) => {
+			updates[`group_requests/${groupId}/${uid}`] = null;
+		});
+	}
+
+	await update(ref(state.db), updates);
 }
 
 export async function submitGroupEditForm() {
@@ -443,6 +478,7 @@ export async function submitGroupEditForm() {
 			name: elements.groupDetailEditNameInput?.value || "",
 			description: elements.groupDetailEditDescriptionInput?.value || "",
 			color: elements.groupDetailEditAvatarColorInput?.value || "",
+			joinMode: elements.groupDetailEditJoinModeSelect?.value || "open",
 		});
 		closeGroupSettingsPanel();
 	} catch (error) {
@@ -599,7 +635,7 @@ function updateGroupStats() {
 	}
 }
 
-export async function createGroup({ name, description, color }) {
+export async function createGroup({ name, description, color, joinMode }) {
 	if (!state.authUser) {
 		throw new Error("Masa oluşturmak için giriş yapmalısın.");
 	}
@@ -622,6 +658,7 @@ export async function createGroup({ name, description, color }) {
 		name: groupName,
 		description: groupDescription,
 		color: groupColor,
+		joinMode: joinMode === "approval" ? "approval" : "open",
 		ownerId: state.authUser.uid,
 		ownerName: state.profile.name,
 		createdAt: serverTimestamp(),
@@ -643,6 +680,10 @@ export async function joinGroup(groupId) {
 	if (!group) return;
 	if (group.members?.[state.authUser.uid]) return;
 
+	if (isApprovalGroup(group)) {
+		return requestToJoin(groupId);
+	}
+
 	try {
 		await update(ref(state.db, `groups/${groupId}/members/${state.authUser.uid}`), {
 			role: "member",
@@ -656,6 +697,185 @@ export async function joinGroup(groupId) {
 		throw error;
 	}
 }
+
+// ---- Katılma istekleri (onaylı masalar) ----
+// İstekler groups/ altında değil group_requests/ altında tutulur: groups herkese okunabilir,
+// istek listesi ise yalnızca masa sahibine açıktır.
+export async function requestToJoin(groupId) {
+	if (!state.authUser || !state.db) return;
+	try {
+		await set(ref(state.db, `group_requests/${groupId}/${state.authUser.uid}`), {
+			requestedAt: serverTimestamp(),
+		});
+		state.myJoinRequests[groupId] = true;
+		renderGroups();
+	} catch (error) {
+		console.error("Katılma isteği gönderilemedi:", error);
+		if (elements.groupError) {
+			elements.groupError.textContent = "İstek gönderilemedi. " + friendlyErrorMessage(error, "Lütfen tekrar dene.");
+		}
+		throw error;
+	}
+}
+
+export async function cancelJoinRequest(groupId) {
+	if (!state.authUser || !state.db) return;
+	await remove(ref(state.db, `group_requests/${groupId}/${state.authUser.uid}`));
+	delete state.myJoinRequests[groupId];
+	renderGroups();
+}
+
+export async function approveJoinRequest(groupId, uid) {
+	const group = state.groups?.[groupId];
+	if (!state.authUser || !state.db || !group || group.ownerId !== state.authUser.uid) return;
+	// Üyelik ve isteğin silinmesi tek atomik yazmada.
+	await update(ref(state.db), {
+		[`groups/${groupId}/members/${uid}`]: { role: "member", joinedAt: serverTimestamp() },
+		[`group_requests/${groupId}/${uid}`]: null,
+	});
+}
+
+export async function rejectJoinRequest(groupId, uid) {
+	const group = state.groups?.[groupId];
+	if (!state.authUser || !state.db || !group || group.ownerId !== state.authUser.uid) return;
+	await remove(ref(state.db, `group_requests/${groupId}/${uid}`));
+}
+
+function createRequestRow(groupId, uid, request) {
+	const row = document.createElement("div");
+	row.className = "request-row";
+
+	const avatar = document.createElement("div");
+	avatar.className = "avatar request-row__avatar";
+	const profile = state.users?.[uid];
+	const name = resolveUserName(uid, "Anonim");
+	avatar.textContent = initials(name);
+	avatar.style.background = safeColor(profile?.color);
+	avatar.style.color = getContrastColor(safeColor(profile?.color));
+
+	const info = document.createElement("div");
+	info.className = "request-row__info";
+	const nameEl = document.createElement("span");
+	nameEl.className = "request-row__name";
+	nameEl.textContent = name;
+	info.append(nameEl);
+	if (request?.requestedAt) {
+		const meta = document.createElement("span");
+		meta.className = "request-row__meta";
+		meta.textContent = new Intl.DateTimeFormat("tr-TR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(new Date(request.requestedAt));
+		info.append(meta);
+	}
+
+	const actions = document.createElement("div");
+	actions.className = "request-row__actions";
+	const handler = (button, label, fn) => async () => {
+		actions.querySelectorAll("button").forEach((b) => (b.disabled = true));
+		button.textContent = label;
+		try {
+			await fn(groupId, uid);
+		} catch (error) {
+			console.error("İstek işlenemedi:", error);
+			actions.querySelectorAll("button").forEach((b) => (b.disabled = false));
+		}
+	};
+
+	const approve = document.createElement("button");
+	approve.type = "button";
+	approve.className = "button button--primary group-action";
+	approve.textContent = "Onayla";
+	approve.addEventListener("click", handler(approve, "Onaylanıyor…", approveJoinRequest));
+
+	const reject = document.createElement("button");
+	reject.type = "button";
+	reject.className = "button button--secondary group-action";
+	reject.textContent = "Reddet";
+	reject.addEventListener("click", handler(reject, "Reddediliyor…", rejectJoinRequest));
+
+	actions.append(approve, reject);
+	row.append(avatar, info, actions);
+	return row;
+}
+
+export function renderGroupRequests() {
+	const list = elements.groupDetailRequestsList;
+	const heading = elements.groupDetailRequestsHeading;
+	if (!list || !heading) return;
+
+	const groupId = state.activeGroupId;
+	const group = groupId ? state.groups?.[groupId] : null;
+	const isOwnerViewer = Boolean(group && state.authUser && group.ownerId === state.authUser.uid);
+	const requests = Object.entries(state.groupRequests?.[groupId] || {}).sort(
+		(a, b) => (a[1]?.requestedAt || 0) - (b[1]?.requestedAt || 0),
+	);
+
+	const visible = isOwnerViewer && requests.length > 0;
+	heading.classList.toggle("hidden", !visible);
+	list.classList.toggle("hidden", !visible);
+	if (!visible) {
+		list.replaceChildren();
+		return;
+	}
+
+	heading.textContent = `Katılma istekleri (${requests.length})`;
+	list.replaceChildren(...requests.map(([uid, request]) => createRequestRow(groupId, uid, request)));
+}
+
+// Onaylı masalar için istekler canlı dinlenir: sahibi olduğun masalarda tüm istekler,
+// üye olmadığın onaylı masalarda yalnızca kendi isteğin.
+function syncRefs(refs, wantedIds, makeRef, onData, onDrop) {
+	Object.keys(refs).forEach((id) => {
+		if (wantedIds.has(id)) return;
+		off(refs[id]);
+		delete refs[id];
+		onDrop(id);
+	});
+	wantedIds.forEach((id) => {
+		if (refs[id]) return;
+		const r = makeRef(id);
+		refs[id] = r;
+		onValue(
+			r,
+			(snapshot) => {
+				onData(id, snapshot.val());
+				renderGroups();
+				renderGroupRequests();
+			},
+			() => onData(id, null),
+		);
+	});
+}
+
+export function syncJoinRequestSubscriptions() {
+	if (!state.db) return;
+	const uid = state.authUser?.uid;
+	const owned = new Set();
+	const watching = new Set();
+
+	if (uid) {
+		Object.entries(state.groups || {}).forEach(([id, group]) => {
+			if (!isApprovalGroup(group)) return;
+			if (group.ownerId === uid) owned.add(id);
+			else if (!group.members?.[uid]) watching.add(id);
+		});
+	}
+
+	syncRefs(
+		state.groupRequestRefs,
+		owned,
+		(id) => ref(state.db, `group_requests/${id}`),
+		(id, value) => { state.groupRequests[id] = value || {}; },
+		(id) => { delete state.groupRequests[id]; },
+	);
+	syncRefs(
+		state.myJoinRequestRefs,
+		watching,
+		(id) => ref(state.db, `group_requests/${id}/${uid}`),
+		(id, value) => { state.myJoinRequests[id] = Boolean(value); },
+		(id) => { delete state.myJoinRequests[id]; },
+	);
+}
+
+window.addEventListener("groups:updated", syncJoinRequestSubscriptions);
 
 export async function leaveGroup(groupId) {
 	if (!state.authUser || !state.db) return;
@@ -840,8 +1060,10 @@ export async function submitGroupForm() {
 			name: elements.groupNameInput?.value || "",
 			description: elements.groupDescriptionInput?.value || "",
 			color: elements.groupAvatarColorInput?.value || "",
+			joinMode: elements.groupJoinModeSelect?.value || "open",
 		});
 
+		if (elements.groupJoinModeSelect) elements.groupJoinModeSelect.value = "open";
 		if (elements.groupNameInput) elements.groupNameInput.value = "";
 		if (elements.groupDescriptionInput) elements.groupDescriptionInput.value = "";
 		if (elements.groupAvatarColorInput) elements.groupAvatarColorInput.value = "#2563eb";

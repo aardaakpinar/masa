@@ -174,7 +174,7 @@
 					".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{3,8}$/)"
 				},
 				"ownerId": {
-					".validate": "newData.val() === auth.uid"
+					".validate": "newData.val() === (data.exists() ? data.val() : auth.uid)"
 				},
 				"ownerName": {
 					".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 50"
@@ -184,7 +184,7 @@
 				},
 				"members": {
 					"$uid": {
-						".write": "auth != null && root.child('users').child(auth.uid).child('isDisabled').val() !== true && (auth.uid === $uid || root.child('groups').child($groupId).child('ownerId').val() === auth.uid)",
+						".write": "auth != null && root.child('users').child(auth.uid).child('isDisabled').val() !== true && (root.child('groups').child($groupId).child('ownerId').val() === auth.uid || (auth.uid === $uid && (!newData.exists() || root.child('groups').child($groupId).child('joinMode').val() !== 'approval')))",
 						".validate": "!newData.exists() || newData.hasChildren(['role', 'joinedAt']) && newData.child('role').isString() && (newData.child('role').val() === 'member' || (newData.child('role').val() === 'owner' && newData.parent().parent().child('ownerId').val() === $uid)) && newData.child('joinedAt').isNumber()",
 						"role": {
 							".validate": "newData.isString() && (newData.val() === 'member' || (newData.val() === 'owner' && newData.parent().parent().parent().child('ownerId').val() === $uid))"
@@ -193,15 +193,18 @@
 							".validate": "newData.isNumber()"
 						},
 						"$other": {
-							".validate": false
+							".validate": "data.exists()"
 						}
 					}
 				},
 				"avatarChar": {
 					".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 4"
 				},
+				"joinMode": {
+					".validate": "newData.isString() && (newData.val() === 'open' || newData.val() === 'approval')"
+				},
 				"$other": {
-					".validate": false
+					".validate": "data.exists()"
 				}
 			}
 		},
@@ -322,6 +325,22 @@
 					},
 					"deletedAt": {
 						".validate": "newData.isNumber()"
+					}
+				}
+			}
+		},
+		"group_requests": {
+			"$gid": {
+				".read": "auth != null && root.child('users').child(auth.uid).child('isDisabled').val() !== true && root.child('groups').child($gid).child('ownerId').val() === auth.uid",
+				"$uid": {
+					".read": "auth != null && auth.uid === $uid",
+					".write": "auth != null && root.child('users').child(auth.uid).child('isDisabled').val() !== true && (root.child('groups').child($gid).child('ownerId').val() === auth.uid ? !newData.exists() : (auth.uid === $uid && root.child('groups').child($gid).child('joinMode').val() === 'approval' && !root.child('groups').child($gid).child('members').child(auth.uid).exists()))",
+					".validate": "!newData.exists() || (newData.hasChildren(['requestedAt']) && newData.child('requestedAt').isNumber())",
+					"requestedAt": {
+						".validate": "newData.isNumber() && (data.exists() ? newData.val() === data.val() : newData.val() <= now + 60000)"
+					},
+					"$other": {
+						".validate": false
 					}
 				}
 			}

@@ -149,6 +149,13 @@
 							<textarea id="groupDescriptionInput" name="g_desc" maxlength="160" rows="2" placeholder="Bu masa ne hakkında?"></textarea>
 							<span class="groups-counter groups-counter--bottom" id="groupDescriptionCount">0/160</span>
 						</div>
+						<div class="groups-field groups-field--select">
+							<label class="groups-select-label" for="groupJoinModeSelect">Katılım</label>
+							<select id="groupJoinModeSelect" class="input">
+								<option value="open">Herkese açık: isteyen katılır</option>
+								<option value="approval">Onaylı: katılmak için istek gerekir</option>
+							</select>
+						</div>
 						<button class="button button--primary groups-submit" id="createGroupButton" type="button">Oluştur</button>
 					</div>
 				</section>
@@ -203,6 +210,13 @@
 								<textarea id="groupDetailEditDescriptionInput" name="ge_desc" maxlength="160" rows="2" placeholder="Bu masa ne hakkında?"></textarea>
 								<span class="groups-counter groups-counter--bottom" id="groupDetailEditDescriptionCount">0/160</span>
 							</div>
+							<div class="groups-field groups-field--select">
+								<label class="groups-select-label" for="groupDetailEditJoinModeSelect">Katılım</label>
+								<select id="groupDetailEditJoinModeSelect" class="input">
+									<option value="open">Herkese açık: isteyen katılır</option>
+									<option value="approval">Onaylı: katılmak için istek gerekir</option>
+								</select>
+							</div>
 							<div class="group-detail-edit-actions">
 								<button class="button button--secondary" id="groupDetailEditCancelButton" type="button">Kapat</button>
 								<button class="button button--primary groups-submit" id="groupDetailEditSaveButton" type="button">Kaydet</button>
@@ -211,6 +225,9 @@
 						</div>
 						<p class="error-text" id="groupDetailEditError" hidden></p>
 					</section>
+
+					<div class="group-list-heading hidden" id="groupDetailRequestsHeading" style="padding: 0 18px">Katılma istekleri</div>
+					<section class="feed-list hidden" id="groupDetailRequestsList" aria-live="polite"></section>
 
 					<div class="group-list-heading" style="padding: 0 18px">Üyeler</div>
 					<section class="feed-list" id="groupDetailMembersList" aria-live="polite"></section>
