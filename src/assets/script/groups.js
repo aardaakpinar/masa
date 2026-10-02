@@ -413,7 +413,7 @@ export function closeGroupSettingsPanel() {
 
 export function syncGroupEditFormCounts() {
 	if (elements.groupDetailEditNameCount) {
-		elements.groupDetailEditNameCount.textContent = `${elements.groupDetailEditNameInput?.value.length || 0}/48`;
+		elements.groupDetailEditNameCount.textContent = `${elements.groupDetailEditNameInput?.value.length || 0}/28`;
 	}
 	if (elements.groupDetailEditDescriptionCount) {
 		elements.groupDetailEditDescriptionCount.textContent = `${elements.groupDetailEditDescriptionInput?.value.length || 0}/160`;
@@ -433,7 +433,7 @@ export async function updateGroup(groupId, { name, description, color, joinMode 
 		throw new Error("Bu masayı düzenleme yetkin yok.");
 	}
 
-	const groupName = cleanName(name).slice(0, 48);
+	const groupName = cleanName(name).slice(0, 28);
 	const groupDescription = String(description || "")
 		.trim()
 		.slice(0, 160);
@@ -527,14 +527,100 @@ function syncComposerGroupOptions() {
 
 // Ana sayfadaki sekmeler: "Akış" + katıldığın masalar. Seçim, gizli
 // #postGroupSelect üzerinden hem akışı filtreler hem paylaşım hedefini belirler.
+let feedTabsSignature = "";
+let feedTabsActiveId = null;
+
+// Sağ/sol kenarda taşan içerik varsa soluk geçiş (fade) gösterilir.
+function updateTabsOverflow(bar) {
+	const max = bar.scrollWidth - bar.clientWidth;
+	bar.classList.toggle("has-overflow-left", bar.scrollLeft > 4);
+	bar.classList.toggle("has-overflow-right", max > 4 && bar.scrollLeft < max - 4);
+}
+
+// Çok masa olunca sekmeler yana kayar: dokunmatikte kaydırma, farede tekerlek ve sürükleme.
+function setupScrollableTabs(bar) {
+	if (bar.dataset.scrollable) return;
+	bar.dataset.scrollable = "1";
+
+	bar.addEventListener("scroll", () => updateTabsOverflow(bar), { passive: true });
+	window.addEventListener("resize", () => updateTabsOverflow(bar));
+
+	bar.addEventListener(
+		"wheel",
+		(event) => {
+			const max = bar.scrollWidth - bar.clientWidth;
+			if (max <= 0 || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+			const atStart = bar.scrollLeft <= 0 && event.deltaY < 0;
+			const atEnd = bar.scrollLeft >= max - 1 && event.deltaY > 0;
+			if (atStart || atEnd) return; // uçta sayfa normal kaysın
+			event.preventDefault();
+			bar.scrollLeft += event.deltaY;
+		},
+		{ passive: false },
+	);
+
+	let down = false;
+	let moved = false;
+	let startX = 0;
+	let startLeft = 0;
+
+	bar.addEventListener("pointerdown", (event) => {
+		if (event.pointerType !== "mouse" || event.button !== 0) return;
+		down = true;
+		moved = false;
+		startX = event.clientX;
+		startLeft = bar.scrollLeft;
+	});
+	window.addEventListener("pointermove", (event) => {
+		if (!down) return;
+		const dx = event.clientX - startX;
+		if (!moved && Math.abs(dx) > 5) {
+			moved = true;
+			bar.classList.add("is-dragging");
+		}
+		if (moved) bar.scrollLeft = startLeft - dx;
+	});
+	const endDrag = () => {
+		down = false;
+		bar.classList.remove("is-dragging");
+	};
+	window.addEventListener("pointerup", endDrag);
+	window.addEventListener("pointercancel", endDrag);
+	// Sürükleme sonrası bırakma, sekme tıklaması sayılmasın.
+	bar.addEventListener(
+		"click",
+		(event) => {
+			if (!moved) return;
+			event.stopPropagation();
+			event.preventDefault();
+			moved = false;
+		},
+		true,
+	);
+}
+
 function renderFeedTabs(groups, selectedId) {
 	const bar = elements.feedTabs;
 	if (!bar) return;
 
 	bar.classList.toggle("hidden", groups.length === 0);
+	setupScrollableTabs(bar);
 
 	const items = [{ id: "", name: "Akış", color: null }, ...groups.map((g) => ({ id: g.id, name: g.name, color: g.color }))];
 	const activeItem = items.find((item) => item.id === selectedId) || items[0];
+
+	if (elements.postText) {
+		elements.postText.placeholder = activeItem.id ? `${activeItem.name} masasına yaz…` : "Masada neler oluyor?";
+	}
+
+	// Gönderiler her güncellendiğinde sekmeleri yeniden kurma: kaydırma konumu sıfırlanmasın.
+	const signature = JSON.stringify([activeItem.id, items.map((i) => [i.id, i.name, i.color])]);
+	if (signature === feedTabsSignature) return;
+	feedTabsSignature = signature;
+
+	const previousScroll = bar.scrollLeft;
+	const activeChanged = feedTabsActiveId !== activeItem.id;
+	feedTabsActiveId = activeItem.id;
 
 	bar.replaceChildren(
 		...items.map(({ id, name, color }) => {
@@ -544,15 +630,13 @@ function renderFeedTabs(groups, selectedId) {
 			const active = id === activeItem.id;
 			tab.className = `search-tab${active ? " active" : ""}`;
 			tab.setAttribute("aria-selected", String(active));
+			tab.title = name;
 
-			if (color) {
-				const dot = document.createElement("span");
-				dot.className = "feed-tab__dot";
-				dot.style.background = safeColor(color);
-				tab.append(dot);
-			}
+			const label = document.createElement("span");
+			label.className = "feed-tab__label";
+			label.textContent = name;
+			tab.append(label);
 
-			tab.append(document.createTextNode(name));
 			tab.addEventListener("click", () => {
 				if (elements.postGroupSelect.value === id) return;
 				elements.postGroupSelect.value = id;
@@ -563,11 +647,16 @@ function renderFeedTabs(groups, selectedId) {
 		}),
 	);
 
-	bar.querySelector(".active")?.scrollIntoView({ inline: "center", block: "nearest" });
-
-	if (elements.postText) {
-		elements.postText.placeholder = activeItem.id ? `${activeItem.name} masasına yaz…` : "Masada neler oluyor?";
+	// Eski kaydırma konumunu koru; yalnızca seçili sekme değiştiyse onu görünür alana getir.
+	bar.scrollLeft = previousScroll;
+	if (activeChanged) {
+		const activeTab = bar.querySelector(".active");
+		if (activeTab) {
+			const target = activeTab.offsetLeft - (bar.clientWidth - activeTab.offsetWidth) / 2;
+			bar.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
+		}
 	}
+	requestAnimationFrame(() => updateTabsOverflow(bar));
 }
 
 // Composer'ın üstünde, hangi masaya paylaşım yapılacağını seçmek için
@@ -597,13 +686,6 @@ export function renderComposerGroupChips(memberGroups) {
 			chip.type = "button";
 			chip.className = `composer-group-chip${id === selectedId ? " active" : ""}`;
 
-			if (color) {
-				const dot = document.createElement("span");
-				dot.className = "chip-dot";
-				dot.style.background = safeColor(color);
-				chip.append(dot);
-			}
-
 			const label = document.createElement("span");
 			label.textContent = name;
 			chip.append(label);
@@ -625,7 +707,7 @@ function updateGroupStats() {
 		elements.groupCount.textContent = String(getGroups().length);
 	}
 	if (elements.groupNameCount) {
-		elements.groupNameCount.textContent = `${elements.groupNameInput?.value.length || 0}/48`;
+		elements.groupNameCount.textContent = `${elements.groupNameInput?.value.length || 0}/28`;
 	}
 	if (elements.groupDescriptionCount) {
 		elements.groupDescriptionCount.textContent = `${elements.groupDescriptionInput?.value.length || 0}/160`;
@@ -643,7 +725,7 @@ export async function createGroup({ name, description, color, joinMode }) {
 		throw new Error("Veritabanı bağlantısı kurulamadı.");
 	}
 
-	const groupName = cleanName(name).slice(0, 48);
+	const groupName = cleanName(name).slice(0, 28);
 	const groupDescription = String(description || "")
 		.trim()
 		.slice(0, 160);
@@ -804,9 +886,7 @@ export function renderGroupRequests() {
 	const groupId = state.activeGroupId;
 	const group = groupId ? state.groups?.[groupId] : null;
 	const isOwnerViewer = Boolean(group && state.authUser && group.ownerId === state.authUser.uid);
-	const requests = Object.entries(state.groupRequests?.[groupId] || {}).sort(
-		(a, b) => (a[1]?.requestedAt || 0) - (b[1]?.requestedAt || 0),
-	);
+	const requests = Object.entries(state.groupRequests?.[groupId] || {}).sort((a, b) => (a[1]?.requestedAt || 0) - (b[1]?.requestedAt || 0));
 
 	const visible = isOwnerViewer && requests.length > 0;
 	heading.classList.toggle("hidden", !visible);
@@ -863,15 +943,23 @@ export function syncJoinRequestSubscriptions() {
 		state.groupRequestRefs,
 		owned,
 		(id) => ref(state.db, `group_requests/${id}`),
-		(id, value) => { state.groupRequests[id] = value || {}; },
-		(id) => { delete state.groupRequests[id]; },
+		(id, value) => {
+			state.groupRequests[id] = value || {};
+		},
+		(id) => {
+			delete state.groupRequests[id];
+		},
 	);
 	syncRefs(
 		state.myJoinRequestRefs,
 		watching,
 		(id) => ref(state.db, `group_requests/${id}/${uid}`),
-		(id, value) => { state.myJoinRequests[id] = Boolean(value); },
-		(id) => { delete state.myJoinRequests[id]; },
+		(id, value) => {
+			state.myJoinRequests[id] = Boolean(value);
+		},
+		(id) => {
+			delete state.myJoinRequests[id];
+		},
 	);
 }
 

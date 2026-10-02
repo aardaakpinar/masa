@@ -638,12 +638,45 @@ h4,
 	background: color-mix(in srgb, var(--bg) 85%, transparent);
 	backdrop-filter: saturate(1.4) blur(10px);
 }
+.feed-tabs {
+	scroll-snap-type: x proximity;
+	overscroll-behavior-x: contain;
+	-webkit-overflow-scrolling: touch;
+	cursor: grab;
+}
+.feed-tabs.is-dragging {
+	cursor: grabbing;
+	scroll-snap-type: none;
+	user-select: none;
+}
 .feed-tabs .search-tab {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 	gap: 8px;
 	white-space: nowrap;
+	max-width: 220px;
+	scroll-snap-align: center;
+}
+.feed-tab__label {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Taşan sekmelerde kenarlarda soluk geçiş: "devamı var" ipucu */
+.feed-tabs.has-overflow-right {
+	-webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+	mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+}
+.feed-tabs.has-overflow-left {
+	-webkit-mask-image: linear-gradient(to left, #000 calc(100% - 40px), transparent);
+	mask-image: linear-gradient(to left, #000 calc(100% - 40px), transparent);
+}
+.feed-tabs.has-overflow-left.has-overflow-right {
+	-webkit-mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent);
+	mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent);
 }
 .composer-group-chips {
 	display: none !important;
@@ -941,25 +974,71 @@ h4,
 
 /* hidden niteliği display kurallarına ezilmesin */
 .groups-form-card[hidden],
-.groups-feed-list[hidden] { display: none; }
+.groups-feed-list[hidden] {
+	display: none;
+}
 
-#groupDetailSettingsButton[aria-expanded="true"] { background: var(--hover); color: var(--text); }
+#groupDetailSettingsButton[aria-expanded="true"] {
+	background: var(--hover);
+	color: var(--text);
+}
 
 /* ---------- Profil sayfası ---------- */
-.profile-header { display: flex; align-items: center; gap: 16px; padding: 20px; border-bottom: 1px solid var(--line); }
-.profile-header__avatar { flex: 0 0 76px; width: 76px; height: 76px; border-radius: 50%; font-size: 28px; font-weight: 600; }
-.profile-header__info { display: grid; gap: 4px; min-width: 0; flex: 1; }
-.profile-header__row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.profile-header__row h2 { margin: 0; font-size: 22px; font-weight: 700; overflow-wrap: anywhere; }
-.profile-header__meta { font-size: 14px; color: var(--text-soft); }
-.profile-header__row .button[hidden] { display: none; }
-#profilePostsTitle:empty { display: none; }
+.profile-header {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 20px;
+	border-bottom: 1px solid var(--line);
+}
+.profile-header__avatar {
+	flex: 0 0 76px;
+	width: 76px;
+	height: 76px;
+	border-radius: 50%;
+	font-size: 28px;
+	font-weight: 600;
+}
+.profile-header__info {
+	display: grid;
+	gap: 4px;
+	min-width: 0;
+	flex: 1;
+}
+.profile-header__row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+.profile-header__row h2 {
+	margin: 0;
+	font-size: 22px;
+	font-weight: 700;
+	overflow-wrap: anywhere;
+}
+.profile-header__meta {
+	font-size: 14px;
+	color: var(--text-soft);
+}
+.profile-header__row .button[hidden] {
+	display: none;
+}
+#profilePostsTitle:empty {
+	display: none;
+}
 
 /* Tıklanabilir yazar adı / avatar */
-.is-profile-link { cursor: pointer; }
+.is-profile-link {
+	cursor: pointer;
+}
 .post-author.is-profile-link:hover,
-.comment-author.is-profile-link:hover { text-decoration: underline; }
-.avatar.is-profile-link:hover { filter: brightness(0.92); }
+.comment-author.is-profile-link:hover {
+	text-decoration: underline;
+}
+.avatar.is-profile-link:hover {
+	filter: brightness(0.92);
+}
 
 /* Kişi arama sonuçları */
 .person-row {
@@ -976,17 +1055,51 @@ h4,
 	cursor: pointer;
 }
 
-.person-row:hover { background: var(--hover); }
-.person-row__avatar { flex: 0 0 44px; width: 44px; height: 44px; border-radius: 50%; font-size: 16px; font-weight: 600; }
-.person-row__info { display: grid; min-width: 0; gap: 2px; }
-.person-row__name { font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
-.person-row__meta { font-size: 14px; color: var(--text-soft); }
-.people-section .search-section__title { padding-top: 10px; }
+.person-row:hover {
+	background: var(--hover);
+}
+.person-row__avatar {
+	flex: 0 0 44px;
+	width: 44px;
+	height: 44px;
+	border-radius: 50%;
+	font-size: 16px;
+	font-weight: 600;
+}
+.person-row__info {
+	display: grid;
+	min-width: 0;
+	gap: 2px;
+}
+.person-row__name {
+	font-weight: 600;
+	font-size: 15px;
+	overflow-wrap: anywhere;
+}
+.person-row__meta {
+	font-size: 14px;
+	color: var(--text-soft);
+}
+.people-section .search-section__title {
+	padding-top: 10px;
+}
 
 /* ---------- Katılım modu ve istekler ---------- */
-.groups-field--select { display: grid; gap: 6px; }
-.groups-select-label { font-size: 13px; font-weight: 600; color: var(--text-soft); }
-.groups-field--select select { min-height: 44px; border-radius: 12px; padding: 0 12px; cursor: pointer; }
+.groups-field--select {
+	display: grid;
+	gap: 6px;
+}
+.groups-select-label {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--text-soft);
+}
+.groups-field--select select {
+	min-height: 44px;
+	border-radius: 12px;
+	padding: 0 12px;
+	cursor: pointer;
+}
 
 .request-row {
 	display: flex;
@@ -996,14 +1109,44 @@ h4,
 	border-bottom: 1px solid var(--line);
 }
 
-.request-row__avatar { flex: 0 0 40px; width: 40px; height: 40px; border-radius: 50%; font-size: 15px; font-weight: 600; }
-.request-row__info { display: grid; flex: 1; min-width: 0; gap: 2px; }
-.request-row__name { font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
-.request-row__meta { font-size: 13px; color: var(--text-soft); }
-.request-row__actions { display: flex; gap: 8px; flex: 0 0 auto; }
-.request-row__actions .group-action { position: static; }
+.request-row__avatar {
+	flex: 0 0 40px;
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	font-size: 15px;
+	font-weight: 600;
+}
+.request-row__info {
+	display: grid;
+	flex: 1;
+	min-width: 0;
+	gap: 2px;
+}
+.request-row__name {
+	font-weight: 600;
+	font-size: 15px;
+	overflow-wrap: anywhere;
+}
+.request-row__meta {
+	font-size: 13px;
+	color: var(--text-soft);
+}
+.request-row__actions {
+	display: flex;
+	gap: 8px;
+	flex: 0 0 auto;
+}
+.request-row__actions .group-action {
+	position: static;
+}
 
 @media (max-width: 480px) {
-	.request-row { flex-wrap: wrap; }
-	.request-row__actions { width: 100%; justify-content: flex-end; }
+	.request-row {
+		flex-wrap: wrap;
+	}
+	.request-row__actions {
+		width: 100%;
+		justify-content: flex-end;
+	}
 }

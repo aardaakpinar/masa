@@ -163,9 +163,9 @@
 			],
 			"$groupId": {
 				".write": "auth != null && root.child('users').child(auth.uid).child('isDisabled').val() !== true && (!data.exists() || data.child('ownerId').val() === auth.uid)",
-				".validate": "newData.hasChildren(['name', 'description', 'color', 'ownerId', 'ownerName', 'createdAt', 'members']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 48 && newData.child('description').isString() && newData.child('description').val().length <= 160 && newData.child('color').isString() && newData.child('color').val().matches(/^#[0-9a-fA-F]{3,8}$/) && newData.child('ownerId').isString() && newData.child('ownerName').isString() && newData.child('createdAt').isNumber()",
+				".validate": "newData.hasChildren(['name', 'description', 'color', 'ownerId', 'ownerName', 'createdAt', 'members']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 28 && newData.child('description').isString() && newData.child('description').val().length <= 160 && newData.child('color').isString() && newData.child('color').val().matches(/^#[0-9a-fA-F]{3,8}$/) && newData.child('ownerId').isString() && newData.child('ownerName').isString() && newData.child('createdAt').isNumber()",
 				"name": {
-					".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 48"
+					".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 28"
 				},
 				"description": {
 					".validate": "newData.isString() && newData.val().length <= 160"
