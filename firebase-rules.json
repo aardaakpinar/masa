@@ -34,7 +34,7 @@
 			}
 		},
 		"posts": {
-			".read": "auth != null && root.child('users').child(auth.uid).child('isDisabled').val() !== true",
+			".read": true,
 			".indexOn": [
 				"authorId"
 			],

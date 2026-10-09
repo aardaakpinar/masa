@@ -610,7 +610,7 @@ function renderFeedTabs(groups, selectedId) {
 	const activeItem = items.find((item) => item.id === selectedId) || items[0];
 
 	if (elements.postText) {
-		elements.postText.placeholder = activeItem.id ? `${activeItem.name} masasına yaz…` : "Masada neler oluyor?";
+		elements.postText.placeholder = activeItem.id ? `${activeItem.name} masasına yaz…` : "Neler oluyor?";
 	}
 
 	// Gönderiler her güncellendiğinde sekmeleri yeniden kurma: kaydırma konumu sıfırlanmasın.

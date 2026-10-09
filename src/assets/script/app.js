@@ -261,6 +261,11 @@ bind(elements.searchButton, "click", () => {
 	closeMobileMenu();
 });
 bind(elements.groupsButton, "click", () => {
+	if (!state.authUser) {
+		openAuth();
+		closeMobileMenu();
+		return;
+	}
 	setGroupsTab("mine");
 	openGroups();
 	closeMobileMenu();

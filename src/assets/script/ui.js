@@ -38,7 +38,7 @@ function toggleClass(element, className, enabled) {
 function _composerAuthHandler() {
   // Sadece locked durumdaysa (giriş yapılmamışsa) auth aç
   const composer = document.querySelector(".composer");
-  if (composer && composer.classList.contains("locked")) {
+  if (composer && composer.classList.contains("hidden")) {
     openAuth();
   }
 }
@@ -54,7 +54,7 @@ export function syncAuthUi() {
 
   const composer = document.querySelector(".composer");
   if (composer) {
-    composer.classList.toggle("locked", !isSignedIn);
+    composer.classList.toggle("hidden", !isSignedIn);
     // Önceki listener'ı temizle, sonra sadece giriş yapılmamışsa yenisini ekle
     composer.removeEventListener("click", _composerAuthHandler);
     if (!isSignedIn) {
@@ -209,10 +209,18 @@ export function openSearch() {
 }
 
 export function openGroups() {
+  if (!state.authUser) {
+    openAuth();
+    return;
+  }
   setMainView("groups");
 }
 
 export function openGroupDetail() {
+  if (!state.authUser) {
+    openAuth();
+    return;
+  }
   setMainView("groupDetail");
 }
 

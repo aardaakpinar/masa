@@ -22,10 +22,16 @@ function cspPlugin() {
         "https://*.firebasedatabase.app",
         "wss://*.firebasedatabase.app",
       ];
+      const firebaseScripts = [
+        "https://*.googleapis.com",
+        "https://*.firebaseio.com",
+        "https://*.firebasedatabase.app",
+        "https://*.firebaseapp.com",
+      ];
 
       const policy = [
         "default-src 'self'",
-        `script-src 'self' https://www.gstatic.com https://www.google.com/recaptcha/ https://unpkg.com https://scripts.simpleanalyticscdn.com ${hashes.join(" ")}`.trim(),
+        `script-src 'self' ${firebaseScripts.join(" ")} https://www.gstatic.com https://www.google.com/recaptcha/ https://unpkg.com https://scripts.simpleanalyticscdn.com ${hashes.join(" ")}`.trim(),
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         "font-src 'self' https://fonts.gstatic.com data:",
         "img-src 'self' data: blob: https://queue.simpleanalyticscdn.com",
