@@ -1,0 +1,41 @@
+/* ==========================================================================
+   MASA tasarım token'ları — yazı tipi, boyut, ağırlık ve ölçüler için TEK kaynak.
+   Başka hiçbir yerde px ile font-size / sayı ile font-weight yazılmaz.
+   Renkler tema dosyasında (threads.css) tanımlı: --text, --text-soft, --accent-dark, ...
+   ========================================================================== */
+:root {
+	/* Yazı tipleri */
+	--font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; /* sitenin şu an kullandığı yığın */
+	--font-display: "Bricolage Grotesque", var(--font-body);
+
+	/* Boyut ölçeği (5 kademe) */
+	--fs-base: 16px; /* gövde tabanı: ölçüsü belirtilmeyen metinler (eskisiyle aynı) */
+	--fs-xs: 12px; /* zaman, sayaç, ipucu, etiket */
+	--fs-sm: 13px; /* ikincil metin, buton, navigasyon */
+	--fs-md: 15px; /* gövde: gönderi, input, composer */
+	--fs-lg: 17px; /* kolon / bölüm başlığı */
+	--fs-xl: 22px; /* marka, sayfa başlığı */
+
+	/* Ağırlıklar (4 kademe) */
+	--fw-regular: 400;
+	--fw-medium: 500;
+	--fw-semibold: 600;
+	--fw-bold: 700;
+
+	/* Satır yüksekliği */
+	--lh-tight: 1.25;
+	--lh-base: 1.5;
+
+	/* Köşe yuvarlaklığı (4 kademe + hap + daire) */
+	--r-sm: 8px; /* chip, küçük kontrol */
+	--r-md: 12px; /* buton, input, kart, avatar kutusu */
+	--r-lg: 16px; /* büyük kart, medya, menü */
+	--r-xl: 24px; /* diyalog, giriş kartı */
+	--r-pill: 999px;
+
+	/* Yerleşim ölçüleri */
+	--col-w: 450px; /* kolon genişliği */
+	--head-h: 52px; /* kolon başlığı yüksekliği */
+	--nav-w: 176px; /* sağ navigasyon genişliği */
+	--nav-h: 56px; /* mobil alt navigasyon yüksekliği */
+}

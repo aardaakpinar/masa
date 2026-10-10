@@ -5,10 +5,9 @@ import {
   openSettings,
   openAuth,
   openProfileColumn,
-  closeProfileColumn,
 } from "./ui.js";
 import {
-  createPostElement,
+  renderPostList,
   subscribeProfilePosts,
   stopProfilePosts,
 } from "./posts.js";
@@ -110,7 +109,7 @@ function renderProfileColumn(column) {
     return;
   }
 
-  postList?.replaceChildren(...posts.map(createPostElement));
+  if (postList) renderPostList(postList, posts);
 }
 
 export function renderProfile() {

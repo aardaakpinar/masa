@@ -13,7 +13,7 @@ export function syncComposer() {
     const count = composer.querySelector('[data-composer-field="count"]');
     const submit = composer.querySelector('[data-composer-action="submit"]');
     if (!text || !count || !submit) return;
-    count.textContent = `${text.value.length}/280`;
+    count.textContent = `${text.value.length}/${composer.classList.contains("composer--comment") ? 180 : 280}`;
     submit.disabled = !state.db || !state.authUser || text.value.trim().length === 0;
   });
 }
@@ -221,6 +221,7 @@ function openFeedColumn(id) {
   if (!state.openFeedColumns.includes(id)) {
     state.openFeedColumns.push(id);
   }
+  window.dispatchEvent(new CustomEvent("feed-columns:focus-mobile", { detail: { id } }));
   window.dispatchEvent(new Event("feed-columns:updated"));
   syncNavigationState();
 }

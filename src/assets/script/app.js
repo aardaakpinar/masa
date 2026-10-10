@@ -453,18 +453,20 @@ document.addEventListener("click", async (event) => {
 				: Array.from(composerField(composer, "poll-options")?.querySelectorAll("input") || [])
 					.map((input) => input.value);
 			const groupId = composer.dataset.groupId || "";
+			const isComment = Boolean(composer.dataset.commentPostId);
 			try {
 				await submitComposerText(text, {
 					groupId,
+					commentPostId: composer.dataset.commentPostId || "",
 					media: composerMedia.get(composer) || null,
 					pollOptions,
 				});
 				const textField = composerField(composer, "text");
 				if (textField) textField.value = "";
 				autoGrowComposer(composer);
-				resetComposerAttachments(composer);
+				if (!isComment) resetComposerAttachments(composer);
 			} catch (error) {
-				console.warn("Post paylaşılamadı: " + error.message);
+				console.warn((isComment ? "Yorum gönderilemedi: " : "Post paylaşılamadı: ") + error.message);
 			} finally {
 				syncComposer();
 				syncComposerActiveState(composer);
@@ -481,12 +483,19 @@ window.addEventListener("resize", () => {
 	}
 });
 
-window.addEventListener("scroll", () => {
-	const threshold = 300;
-	const nearBottom =
-		window.innerHeight + window.scrollY >=
-		document.body.offsetHeight - threshold;
-	if (nearBottom) {
-		loadMorePosts();
-	}
-});
+// Sayfa kilitli (100dvh); kaydırma kolonların içinde olur. 'scroll' olayı kabarmaz,
+// bu yüzden yakalama (capture) aşamasında dinliyoruz.
+document.addEventListener(
+	"scroll",
+	(event) => {
+		const target = event.target;
+		if (!(target instanceof Element) || !target.matches(".feed-column__posts")) return;
+		const threshold = 300;
+		const nearBottom =
+			target.scrollTop + target.clientHeight >= target.scrollHeight - threshold;
+		if (nearBottom) {
+			loadMorePosts();
+		}
+	},
+	true,
+);

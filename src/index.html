@@ -2,7 +2,7 @@
 <html lang="tr">
 	<head>
 		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 		<meta name="description" content="MASA, Haberleşme, Eğlence ve Paylaşım Topluluğudur. hadi sende bir sandalye çek ve aramıza otur!" />
 		<meta property="og:title" content="MASA" />
 		<meta property="og:description" content="MASA, Haberleşme, Eğlence ve Paylaşım Topluluğudur. hadi sende bir sandalye çek ve aramıza otur!" />
@@ -16,8 +16,10 @@
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 		<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 		<title>MASA</title>
+		<link rel="stylesheet" href="assets/style/tokens.css" />
 		<link rel="stylesheet" href="assets/style/styles.css" />
 		<link rel="stylesheet" href="assets/style/threads.css" />
+		<link rel="stylesheet" href="assets/style/layout.css" />
 	</head>
 	<body>
 		<div class="app-shell">
@@ -30,7 +32,6 @@
 						<header class="feed-column__heading" data-column-id="">
 							<div class="feed-column__title">
 								<h2>Akış</h2>
-								<span class="feed-column__hint">Sürükleyerek sırala</span>
 							</div>
 							<div class="feed-column__controls">
 								<button class="feed-column__move" type="button" data-move="-1" aria-label="Akış sütununu sola taşı" title="Sola taşı">
@@ -105,7 +106,7 @@
 						<span class="nav-item-label">Ara</span>
 					</button>
 					<button class="nav-item button button--ghost" id="groupsButton" type="button" aria-label="Masalar">
-						<span data-lucide="users"></span>
+						<span data-lucide="grid-2x2"></span>
 						<span class="nav-item-label">Masalar</span>
 					</button>
 					<button class="nav-item button button--ghost" id="authButton" type="button" aria-label="Hesap">
@@ -270,7 +271,6 @@
 					<div class="profile-header__info">
 						<div class="profile-header__row">
 							<h2 id="profileName" data-profile-field="name">Profil</h2>
-							<button class="button button--secondary" id="profileEditButton" data-profile-field="edit" type="button" hidden>Profili düzenle</button>
 						</div>
 						<span class="profile-header__meta" id="profileMeta" data-profile-field="meta"></span>
 					</div>

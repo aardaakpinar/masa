@@ -1,4 +1,4 @@
-﻿export function cleanName(name) {
+export function cleanName(name) {
   const normalized = (name || "").replace(/\s+/g, " ").trim();
   return normalized.slice(0, 50) || "User";
 }

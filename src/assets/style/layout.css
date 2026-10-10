@@ -1,0 +1,347 @@
+/* ---------- Renk paleti: TEK kaynak (uygulama koyu temadadır) ----------
+   threads.css içindeki eski açık/koyu tema katmanları artık etkisizdir; her şey buradan okunur.
+   Metin rolleri:  --text (ana)  ·  --text-soft (ikincil)  ·  --accent-dark (vurgu/aktif)
+                   --btn-fg (sarı zemin üstü metin)  ·  --danger / --success / --link / --like  */
+:root {
+	color-scheme: dark;
+
+	--page-bg: #101113;
+	--bg: #101113;
+	--bg-alt: #18191c;
+	--bg-hover: #202125;
+	--line: #292a2e;
+	--line-soft: #222327;
+
+	--text: #f1f1f2;
+	--text-soft: #a1a2a6;
+	--muted: #a1a2a6; /* eski adı korunur; artık --text-soft ile aynı */
+
+	--accent: #f6c445;
+	--accent-dark: #f6c445;
+	--accent-soft: #302812;
+	--btn-fg: #17150f;
+
+	--danger: #ff4d5a;
+	--danger-soft: rgba(255, 77, 90, 0.12);
+	--success: #00d084;
+	--like: #ff3040;
+	--link: #b7a0ff;
+
+	--hover: rgba(255, 255, 255, 0.055);
+	--focus-ring: rgba(246, 196, 69, 0.25);
+	--shadow-sm: none;
+	--scrollbar-thumb: rgba(255, 255, 255, 0.16);
+	--scrollbar-thumb-hover: rgba(255, 255, 255, 0.28);
+
+	--alert-text: #ff8a93;
+	--ok-text: #4fe0ad;
+}
+
+/* ==========================================================================
+   MASA yerleşim kilidi — threads.css'in ÜSTÜNE biner (en son yüklenir).
+   Kurallar:
+   1) Sayfa 100dvh. html/body asla kaymaz.
+   2) Açılan her ekran bir KOLON: sabit yükseklik, başlık sabit, gövde kendi içinde kayar.
+   3) Mobilde alt navigasyon akışın içindedir (fixed değil) → taşma / kayma olmaz.
+   ========================================================================== */
+
+html,
+body {
+	height: 100%;
+	margin: 0;
+	overflow: hidden;
+	overscroll-behavior: none;
+	scroll-behavior: auto;
+}
+
+body {
+	height: 100dvh;
+	min-height: 0;
+	background: var(--page-bg);
+	color: var(--text);
+	font-family: var(--font-body);
+	font-size: var(--fs-base);
+	-webkit-text-size-adjust: 100%;
+}
+
+/* ---------- Kabuk ---------- */
+body .app-shell {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) var(--nav-w);
+	grid-template-rows: minmax(0, 1fr);
+	width: 100%;
+	max-width: none;
+	height: 100dvh;
+	min-height: 0;
+	margin: 0;
+	padding: 0;
+	gap: 0;
+	overflow: hidden;
+}
+
+body .app-shell > #feed {
+	grid-column: 1;
+	grid-row: 1;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	max-width: none;
+	height: 100%;
+	min-height: 0;
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+}
+
+body .app-shell > .right-panel {
+	position: static;
+	grid-column: 2;
+	grid-row: 1;
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	max-height: none;
+	min-height: 0;
+	margin: 0;
+	padding: 18px 12px;
+	overflow-x: hidden;
+	overflow-y: auto;
+	border: 0;
+	border-left: 1px solid var(--line);
+	background: var(--page-bg);
+	backdrop-filter: none;
+}
+
+/* ---------- Kolon şeridi ---------- */
+body .feed-columns {
+	display: flex;
+	flex: 1 1 0;
+	min-width: 0;
+	min-height: 0;
+	height: 100%;
+	gap: 0;
+	overflow-x: auto;
+	overflow-y: hidden;
+	overscroll-behavior: contain;
+	scroll-snap-type: x proximity;
+}
+
+/* ---------- Kolon: hepsi aynı iskelet ---------- */
+body .feed-column,
+body .feed-column.feed-column-page {
+	display: flex;
+	flex: 0 0 var(--col-w);
+	flex-direction: column;
+	width: var(--col-w);
+	max-width: var(--col-w);
+	height: 100%;
+	min-width: 0;
+	min-height: 0;
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+	border: 0;
+	border-right: 1px solid var(--line);
+	border-radius: 0;
+	background: var(--page-bg);
+	scroll-snap-align: start;
+}
+
+body .feed-column > .feed-column__heading {
+	position: static;
+	flex: 0 0 var(--head-h);
+	min-height: var(--head-h);
+	height: var(--head-h);
+}
+
+/* Kolon gövdesi: kayan tek alan */
+body .feed-column__body,
+body .feed-column__posts,
+body .feed-column--settings-open > .feed-column__settings:not([hidden]) {
+	flex: 1 1 0;
+	min-height: 0;
+	overflow-x: hidden;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	-webkit-overflow-scrolling: touch;
+}
+
+/* Gövdenin dışında kalan sabit parçalar (giriş uyarısı, composer, hata) kaymaz */
+body .feed-column > .auth-gate,
+body .feed-column > .composer,
+body .feed-column > .error-text {
+	flex: 0 0 auto;
+}
+
+body .composer--comment .composer-attach,
+body .composer--comment [data-composer-action="poll-toggle"],
+body .composer--comment .composer-poll-fields {
+	display: none;
+}
+
+/* Genel akış kolonu da aynı kuralla */
+body #feedColumn {
+	overflow: hidden;
+}
+
+/* Sayfa kolonlarının eski "timeline" üst çubuğu yok; başlık kolon başlığıdır */
+body .feed-column-page .topbar {
+	display: none;
+}
+
+/* ---------- Yazı: kolon içinde de aynı ölçek ---------- */
+body .feed-column__title h2,
+body .feed-column-page .topbar h1 {
+	font-family: var(--font-display);
+	font-size: var(--fs-lg);
+	font-weight: var(--fw-semibold);
+	line-height: var(--lh-tight);
+}
+
+/* iOS: odaklanınca yakınlaştırmayı önlemek için dokunmatikte input >= 16px */
+@media (pointer: coarse) {
+	input,
+	textarea,
+	select {
+		font-size: 16px;
+	}
+}
+
+/* ---------- Boşluk yok: kolonların arkası MASA logosu ---------- */
+body .feed-columns::after {
+	content: "";
+	flex: 1 0 0;
+	min-width: 0;
+	background: url("../logo.svg") center / min(220px, 60%) no-repeat;
+	opacity: 0.07;
+	pointer-events: none;
+}
+
+/* ---------- Başlık ve marka aynı hizada (aynı yükseklik, aynı alt çizgi) ---------- */
+body .feed-column > .feed-column__heading {
+	padding: 0 12px;
+	border-bottom: 1px solid var(--line);
+	border-radius: 0;
+	background: var(--page-bg);
+	backdrop-filter: none;
+}
+
+body .app-shell > .right-panel {
+	padding-top: 0;
+}
+
+body .right-panel .brand {
+	display: flex;
+	flex: 0 0 var(--head-h);
+	align-items: center;
+	gap: 10px;
+	width: calc(100% + 24px);
+	height: var(--head-h);
+	margin: 0 -12px 12px;
+	padding: 0 20px;
+	border-bottom: 1px solid var(--line);
+}
+
+body .right-panel .brand-image {
+	width: 28px;
+	height: 28px;
+	border-radius: var(--r-sm);
+	background: transparent;
+}
+
+body .right-panel .brand-text {
+	font-family: var(--font-display);
+	font-size: var(--fs-xl);
+	font-weight: var(--fw-bold);
+	line-height: 1;
+}
+
+body input,
+body textarea,
+body select,
+body .input,
+body .search-box .input,
+body .auth-field input,
+body .settings-field input,
+body .groups-field input,
+body .groups-field textarea,
+body .groups-field select,
+body .feed-column__settings .groups-field input,
+body .feed-column__settings .groups-field textarea,
+body .feed-column__settings .groups-field select,
+body .feed-column .composer-poll-option-row input {
+	border-radius: 0;
+}
+
+body .post:last-child,
+body .group-card:last-child {
+	border-bottom: 1px solid var(--line);
+}
+
+/* ---------- Köşe yuvarlaklığı: kolonlar düz, içindeki kartlar token'lı ---------- */
+body .feed-column,
+body .feed-column__body,
+body .feed-column__posts,
+body .feed-column__posts .post,
+body .feed-column__heading {
+	border-radius: 0;
+}
+
+/* ---------- Tablet: sağ panel ikon şeridi ---------- */
+@media (max-width: 1050px) {
+	body .app-shell {
+		grid-template-columns: minmax(0, 1fr) 64px;
+	}
+
+	body .app-shell > .right-panel {
+		padding: 0 8px 16px;
+	}
+
+	body .right-panel .brand {
+		justify-content: center;
+		width: calc(100% + 16px);
+		margin: 0 -8px 12px;
+		padding: 0;
+	}
+}
+
+/* ---------- Mobil: tek kolon, alt navigasyon akışın parçası ---------- */
+@media (max-width: 760px) {
+	body .app-shell {
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: minmax(0, 1fr) auto;
+	}
+
+	body .app-shell > #feed {
+		grid-column: 1;
+		grid-row: 1;
+	}
+
+	body .app-shell > .right-panel {
+		grid-column: 1;
+		grid-row: 2;
+		flex-direction: row;
+		justify-content: center;
+		height: auto;
+		padding: 4px 8px calc(4px + env(safe-area-inset-bottom, 0px));
+		overflow: hidden;
+		border-left: 0;
+		border-top: 1px solid var(--line);
+	}
+
+	body .right-panel .brand {
+		display: none;
+	}
+
+	body .feed-column,
+	body .feed-column.feed-column-page {
+		flex-basis: 100%;
+		width: 100%;
+		max-width: 100%;
+		border-right: 0;
+	}
+}

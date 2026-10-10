@@ -55,7 +55,7 @@
 	max-width: 420px;
 	background: var(--bg);
 	border: 1px solid var(--line);
-	border-radius: 24px;
+	border-radius: var(--r-xl);
 	box-shadow: var(--shadow);
 }
 
@@ -67,7 +67,7 @@
 		var(--accent) 0%,
 		var(--accent-dark) 100%
 	);
-	border-radius: 24px 24px 0 0;
+	border-radius: var(--r-xl) var(--r-xl) 0 0;
 }
 
 .login-card-body {
@@ -92,21 +92,21 @@
 .login-logo-img {
 	width: 36px;
 	height: 36px;
-	border-radius: 10px;
+	border-radius: var(--r-sm);
 }
 
 .login-logo-name {
-	font-family: "Bricolage Grotesque", sans-serif;
-	font-size: 22px;
-	font-weight: 800;
+	font-family: var(--font-display);
+	font-size: var(--fs-xl);
+	font-weight: var(--fw-bold);
 	letter-spacing: 0.12em;
 	color: var(--text);
 }
 
 .login-title {
-	font-family: "Bricolage Grotesque", sans-serif;
-	font-size: 26px;
-	font-weight: 800;
+	font-family: var(--font-display);
+	font-size: var(--fs-xl);
+	font-weight: var(--fw-bold);
 	letter-spacing: -0.01em;
 	color: var(--text);
 	margin: 0;
@@ -114,7 +114,7 @@
 }
 
 .login-subtitle {
-	font-size: 14px;
+	font-size: var(--fs-md);
 	color: var(--text-soft);
 	margin: 0;
 	line-height: 1.55;
@@ -128,7 +128,7 @@
 	padding: 12px 14px;
 	background: var(--bg-alt);
 	border: 1px solid var(--line-soft);
-	border-radius: 14px;
+	border-radius: var(--r-md);
 }
 
 .login-avatars {
@@ -139,8 +139,8 @@
 .login-avatars .avatar {
 	width: 28px;
 	height: 28px;
-	font-size: 10px;
-	font-weight: 800;
+	font-size: var(--fs-xs);
+	font-weight: var(--fw-bold);
 	border: 2px solid var(--bg);
 	box-shadow: none;
 	cursor: default;
@@ -151,14 +151,14 @@
 }
 
 .login-social-text {
-	font-size: 13px;
+	font-size: var(--fs-sm);
 	color: var(--text-soft);
 	line-height: 1.4;
 }
 
 .login-social-text strong {
 	color: var(--text);
-	font-weight: 700;
+	font-weight: var(--fw-bold);
 }
 
 /* ── Mode tabs ────────────────────────────────────────── */
@@ -168,15 +168,15 @@
 	gap: 4px;
 	background: var(--bg-alt);
 	border: 1px solid var(--line);
-	border-radius: 12px;
+	border-radius: var(--r-md);
 	padding: 4px;
 }
 
 .login-tab {
 	padding: 9px 0;
-	font-size: 14px;
-	font-weight: 700;
-	border-radius: 9px;
+	font-size: var(--fs-md);
+	font-weight: var(--fw-bold);
+	border-radius: var(--r-sm);
 	border: none;
 	background: transparent;
 	color: var(--text-soft);
@@ -207,8 +207,8 @@
 }
 
 .login-field label {
-	font-size: 13px;
-	font-weight: 700;
+	font-size: var(--fs-sm);
+	font-weight: var(--fw-bold);
 	color: var(--text-soft);
 	letter-spacing: 0.02em;
 }
@@ -243,8 +243,8 @@
 
 .login-field .input {
 	height: 46px;
-	font-size: 15px;
-	border-radius: 12px;
+	font-size: var(--fs-md);
+	border-radius: var(--r-md);
 	padding: 0 14px;
 	border: 1.5px solid var(--line);
 	background: var(--bg);
@@ -262,11 +262,11 @@
 }
 
 .login-field .input::placeholder {
-	color: var(--muted);
+	color: var(--text-soft);
 }
 
 .login-password-hint {
-	font-size: 12px;
+	font-size: var(--fs-xs);
 	color: var(--text-soft);
 	line-height: 1.5;
 	margin: -4px 0 0;
@@ -285,7 +285,7 @@
 	display: flex;
 	align-items: center;
 	gap: 7px;
-	font-size: 13px;
+	font-size: var(--fs-sm);
 	color: var(--text-soft);
 	cursor: pointer;
 	user-select: none;
@@ -301,12 +301,12 @@
 /* ── Submit button ────────────────────────────────────── */
 .login-submit {
 	height: 50px;
-	font-size: 15px;
-	font-weight: 700;
-	border-radius: 12px;
+	font-size: var(--fs-md);
+	font-weight: var(--fw-bold);
+	border-radius: var(--r-md);
 	width: 100%;
 	background: var(--accent);
-	color: #0f1419;
+	color: var(--btn-fg);
 	border: none;
 	cursor: pointer;
 	transition:
@@ -327,7 +327,7 @@
 
 /* ── Error ────────────────────────────────────────────── */
 .login-error {
-	font-size: 13px;
+	font-size: var(--fs-sm);
 	color: var(--danger);
 	min-height: 18px;
 	margin: -6px 0 0;
@@ -348,6 +348,6 @@
 	}
 
 	.login-title {
-		font-size: 22px;
+		font-size: var(--fs-xl);
 	}
 }
