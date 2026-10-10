@@ -1,4 +1,8 @@
-import { state } from "./state.js";
+import {
+  feedColumnIds,
+  profileUidFromColumnId,
+  state,
+} from "./state.js";
 import { elements } from "./elements.js";
 import { resolveAuthor } from "./users.js";
 import {
@@ -27,8 +31,12 @@ import {
   orderByChild,
   equalTo,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
-import { openAuth } from "./ui.js";
-import { canViewGroup, getGroupName } from "./groups.js";
+import { closeProfileColumn, openAuth, syncComposer } from "./ui.js";
+import {
+  canViewGroup,
+  closeGroupSettingsPanel,
+  getGroupName,
+} from "./groups.js";
 
 const POSTS_PAGE_SIZE = 15;
 let oldestLoadedKey = null;
@@ -37,10 +45,16 @@ let isLoadingMore = false;
 let activeCommentPostId = null;
 let liveWindowPostIds = new Set();
 let publicPosts = {};
-let extraPosts = {};
-let extraRef = null;
+const extraPosts = new Map();
+const extraRefs = new Map();
 
 const GROUP_POSTS_LIMIT = 100;
+const groupComposers = new Map();
+const auxiliaryColumns = [
+  { id: feedColumnIds.search, element: document.querySelector("#search"), title: "Ara" },
+  { id: feedColumnIds.groups, element: document.querySelector("#groupsView"), title: "Masalar" },
+  { id: feedColumnIds.account, element: document.querySelector("#settingsPanel"), title: "Hesap" },
+];
 
 // Herkese açık gönderiler + üyesi olunan masaların gönderileri tek haritada birleşir.
 // __path alanı yalnızca bellekte tutulur ve veritabanına yazılmaz.
@@ -50,8 +64,10 @@ function rebuildPosts() {
     merged[id] = { ...post, __path: `posts/${id}` };
   });
   // Profil sayfasında açılan kullanıcının eski gönderileri (akışta görünmez: __extra).
-  Object.entries(extraPosts).forEach(([id, post]) => {
-    if (!merged[id]) merged[id] = { ...post, __path: `posts/${id}`, __extra: true };
+  extraPosts.forEach((posts) => {
+    Object.entries(posts).forEach(([id, post]) => {
+      if (!merged[id]) merged[id] = { ...post, __path: `posts/${id}`, __extra: true };
+    });
   });
   Object.entries(state.groupPosts).forEach(([groupId, map]) => {
     Object.entries(map).forEach(([id, post]) => {
@@ -68,24 +84,24 @@ export function postPath(postId) {
 
 function refreshPostViews() {
   renderPosts();
-  renderGroupDetailPosts();
+  renderGroupFeedColumns();
   window.dispatchEvent(new Event("profile:refresh"));
 }
 
 // Profil sayfası: seçilen kullanıcının son 30 herkese açık gönderisi canlı dinlenir.
 export function subscribeProfilePosts(uid) {
-  stopProfilePosts();
-  if (!state.db || !uid) return;
-  extraRef = query(
+  if (!state.db || !uid || extraRefs.has(uid)) return;
+  const profileRef = query(
     ref(state.db, "posts"),
     orderByChild("authorId"),
     equalTo(uid),
     limitToLast(30),
   );
+  extraRefs.set(uid, profileRef);
   onValue(
-    extraRef,
+    profileRef,
     (snapshot) => {
-      extraPosts = snapshot.val() || {};
+      extraPosts.set(uid, snapshot.val() || {});
       rebuildPosts();
       refreshPostViews();
     },
@@ -93,11 +109,15 @@ export function subscribeProfilePosts(uid) {
   );
 }
 
-export function stopProfilePosts() {
-  if (extraRef) off(extraRef);
-  const hadPosts = Object.keys(extraPosts).length > 0;
-  extraRef = null;
-  extraPosts = {};
+export function stopProfilePosts(uid) {
+  const stoppedUids = uid ? [uid] : [...extraRefs.keys()];
+  let hadPosts = false;
+  stoppedUids.forEach((profileUid) => {
+    const profileRef = extraRefs.get(profileUid);
+    if (profileRef) off(profileRef);
+    extraRefs.delete(profileUid);
+    hadPosts = extraPosts.delete(profileUid) || hadPosts;
+  });
   if (hadPosts) {
     rebuildPosts();
     refreshPostViews();
@@ -218,38 +238,6 @@ export async function fetchOwnPostsWithPaths(uid) {
   }
 
   return results;
-}
-
-// Composer'da beklemede olan medya/anket taslağı (henüz gönderilmemiş)
-let pendingMedia = null; // { dataUrl } | null
-let pendingPollOptions = null; // string[] | null
-
-export function setPendingMedia(dataUrl) {
-  pendingMedia = dataUrl ? { dataUrl } : null;
-}
-
-export function clearPendingMedia() {
-  pendingMedia = null;
-}
-
-export function getPendingMedia() {
-  return pendingMedia;
-}
-
-export function setPendingPollOptions(options) {
-  pendingPollOptions = options;
-}
-
-export function clearPendingPoll() {
-  pendingPollOptions = null;
-}
-
-export function getPendingPollOptions() {
-  return pendingPollOptions;
-}
-
-export function hasPendingAttachment() {
-  return Boolean(pendingMedia || pendingPollOptions);
 }
 
 export function subscribeToPosts() {
@@ -378,21 +366,19 @@ export function renderPosts() {
 
   if (elements.postsLoading) elements.postsLoading.remove();
 
-  const selectedGroupId = elements.postGroupSelect?.value || "";
-
   const posts = Object.entries(state.posts)
     .map(([id, post]) => ({ id, ...post }))
     .filter((post) => !post.__extra || post.id === activeCommentPostId)
     .filter((post) => canViewGroup(post.groupId))
-    .filter((post) => !selectedGroupId || post.groupId === selectedGroupId)
+    .filter((post) => !post.groupId)
     .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+  renderGroupFeedColumns();
 
   if (!posts.length) {
     const empty = document.createElement("div");
     empty.className = "empty-state";
-    empty.textContent = selectedGroupId
-      ? "Bu masaya henüz mesaj atılmamış."
-      : "İlk postu paylaşarak akışı başlat.";
+    empty.textContent = "Akışta henüz gönderi yok.";
     elements.postList.replaceChildren(empty);
     return;
   }
@@ -413,6 +399,316 @@ export function renderPosts() {
   refreshIcons();
   window.dispatchEvent(new Event("posts:updated"));
 }
+
+function renderGroupFeedColumns() {
+  const container = elements.groupFeedColumns;
+  if (!container || !elements.feedColumn) return;
+
+  groupComposers.forEach((composer, groupId) => {
+    if (!state.groups?.[groupId] || !canViewGroup(groupId)) {
+      groupComposers.delete(groupId);
+    }
+  });
+
+  const columns = state.openFeedColumns
+    .map((groupId) => {
+      if (!groupId) {
+        setupBaseFeedColumnReordering();
+        return elements.feedColumn;
+      }
+      const auxiliary = auxiliaryColumns.find((column) => column.id === groupId);
+      if (auxiliary?.element) {
+        setupAuxiliaryColumn(auxiliary);
+        return auxiliary.element;
+      }
+      const profileUid = profileUidFromColumnId(groupId);
+      if (profileUid) {
+        const template = document.querySelector("#profileView");
+        if (!template) return null;
+        let profileColumn = [...document.querySelectorAll(".profile-column")].find(
+          (candidate) => candidate.dataset.profileUid === profileUid,
+        );
+        if (!profileColumn) {
+          profileColumn = template.cloneNode(true);
+          profileColumn.removeAttribute("id");
+          profileColumn.querySelectorAll("[id]").forEach((element) => {
+            element.removeAttribute("id");
+          });
+          profileColumn.dataset.profileUid = profileUid;
+          profileColumn.classList.add("profile-column");
+        }
+        setupAuxiliaryColumn({
+          id: groupId,
+          element: profileColumn,
+          title: "Profil",
+        });
+        return profileColumn;
+      }
+      if (!state.groups?.[groupId] || !canViewGroup(groupId)) return null;
+
+      const group = state.groups[groupId];
+      const column = document.createElement("section");
+      column.className = "feed-column";
+      column.dataset.columnId = groupId;
+      column.setAttribute("aria-label", `${group.name || "Masa"} akışı`);
+
+      const heading = document.createElement("header");
+      heading.className = "feed-column__heading";
+      heading.dataset.columnId = groupId;
+      heading.draggable = true;
+
+      const titleWrap = document.createElement("div");
+      titleWrap.className = "feed-column__title";
+      const title = document.createElement("h2");
+      title.textContent = group.name || "Masa";
+      const hint = document.createElement("span");
+      hint.className = "feed-column__hint";
+      hint.textContent = "Sürükleyerek sırala";
+      titleWrap.append(title, hint);
+
+      const controls = createColumnControls(groupId, group.name || "Masa");
+      if (group.ownerId === state.authUser?.uid) {
+        const settings = document.createElement("button");
+        settings.type = "button";
+        settings.className = "feed-column__settings-button";
+        settings.setAttribute("aria-label", `${group.name || "Masa"} ayarları`);
+        settings.title = "Masa ayarları";
+        settings.innerHTML = '<span data-lucide="settings"></span>';
+        settings.addEventListener("click", () => {
+          window.dispatchEvent(
+            new CustomEvent("group-settings:toggle", { detail: { groupId } }),
+          );
+        });
+        controls.insertBefore(settings, controls.lastElementChild);
+      }
+
+      const composer = getColumnComposer(groupId, group.name || "Masa");
+      const settingsSlot = document.createElement("section");
+      settingsSlot.className = "feed-column__settings";
+      settingsSlot.dataset.groupSettingsSlot = groupId;
+      settingsSlot.hidden = true;
+      const isSettingsOpen =
+        elements.groupDetailEditForm?.dataset.openGroupId === groupId;
+      column.classList.toggle("feed-column--settings-open", isSettingsOpen);
+      const list = document.createElement("div");
+      list.className = "feed-column__posts";
+      const posts = Object.entries(state.posts)
+        .map(([id, post]) => ({ id, ...post }))
+        .filter((post) => post.groupId === groupId && !post.__extra)
+        .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+      if (posts.length) {
+        list.replaceChildren(...posts.map(createPostElement));
+      } else {
+        const empty = document.createElement("div");
+        empty.className = "empty-state";
+        empty.textContent = "Bu masada henüz gönderi yok.";
+        list.append(empty);
+      }
+
+      heading.append(titleWrap, controls);
+      column.append(heading, settingsSlot, composer, list);
+      setupColumnReordering(column, heading, groupId);
+      return column;
+    })
+    .filter(Boolean);
+
+  container.replaceChildren(...columns);
+  const editForm = elements.groupDetailEditForm;
+  if (editForm?.dataset.openGroupId) {
+    const slot = [...container.querySelectorAll(".feed-column__settings")].find(
+      (candidate) => candidate.dataset.groupSettingsSlot === editForm.dataset.openGroupId,
+    );
+    if (slot) {
+      slot.append(editForm);
+      slot.hidden = false;
+      slot.closest(".feed-column")?.classList.add("feed-column--settings-open");
+    } else {
+      closeGroupSettingsPanel();
+    }
+  }
+  syncComposer();
+  syncColumnControlStates();
+  refreshIcons();
+}
+
+function getColumnComposer(groupId, groupName) {
+  let composer = groupComposers.get(groupId);
+  if (!composer) {
+    composer = elements.composerEl.cloneNode(true);
+    composer.querySelectorAll("[id]").forEach((element) => element.removeAttribute("id"));
+    groupComposers.set(groupId, composer);
+  }
+  composer.dataset.groupId = groupId;
+  composer.setAttribute("aria-label", `${groupName} için gönderi oluştur`);
+  const text = composer.querySelector('[data-composer-field="text"]');
+  if (text) text.placeholder = `${groupName} masasında neler oluyor?`;
+  return composer;
+}
+
+function setupAuxiliaryColumn({ id, element, title }) {
+  if (element.dataset.columnReady) return;
+  element.classList.remove("timeline", "hidden");
+  element.classList.add("feed-column", "feed-column-page");
+  element.dataset.columnId = id;
+  element.setAttribute("aria-label", `${title} sütunu`);
+
+  const heading = document.createElement("header");
+  heading.className = "feed-column__heading";
+  heading.dataset.columnId = id;
+  heading.draggable = true;
+
+  const titleWrap = document.createElement("div");
+  titleWrap.className = "feed-column__title";
+  const titleElement = document.createElement("h2");
+  titleElement.textContent = title;
+  const hint = document.createElement("span");
+  hint.className = "feed-column__hint";
+  hint.textContent = "Sürükleyerek sırala";
+  titleWrap.append(titleElement, hint);
+
+  heading.append(titleWrap, createColumnControls(id, title));
+  element.prepend(heading);
+  element.dataset.columnReady = "true";
+  setupColumnReordering(element, heading, id);
+}
+
+export function openGroupFeedColumn(groupId) {
+	if (!groupId || !state.groups?.[groupId] || !canViewGroup(groupId)) return false;
+	if (!state.openFeedColumns.includes(groupId)) {
+		state.openFeedColumns.push(groupId);
+		window.dispatchEvent(new Event("feed-columns:updated"));
+	}
+	return true;
+}
+
+function setupBaseFeedColumnReordering() {
+  const column = elements.feedColumn;
+  const heading = column?.querySelector(".feed-column__heading");
+  if (!column || !heading || heading.dataset.reorderReady) return;
+  heading.dataset.reorderReady = "true";
+  heading.draggable = true;
+  setupColumnReordering(column, heading, "");
+
+  heading.querySelector(".feed-column__close")?.addEventListener("click", () => {
+    state.openFeedColumns = state.openFeedColumns.filter((id) => id !== "");
+    window.dispatchEvent(new Event("feed-columns:updated"));
+  });
+  heading.querySelectorAll(".feed-column__move").forEach((button) => {
+    button.addEventListener("click", () => {
+      moveFeedColumn("", Number(button.dataset.move));
+    });
+  });
+}
+
+function createColumnControls(columnId, label) {
+  const controls = document.createElement("div");
+  controls.className = "feed-column__controls";
+
+  [
+    { direction: -1, icon: "arrow-left", text: "sola" },
+    { direction: 1, icon: "arrow-right", text: "sağa" },
+  ].forEach(({ direction, icon, text }) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "feed-column__move";
+    button.dataset.move = String(direction);
+    button.setAttribute("aria-label", `${label} sütununu ${text} taşı`);
+    button.title = `${text[0].toUpperCase()}${text.slice(1)} taşı`;
+    button.innerHTML = `<span data-lucide="${icon}"></span>`;
+    button.addEventListener("click", () => moveFeedColumn(columnId, direction));
+    controls.append(button);
+  });
+
+  const close = document.createElement("button");
+  close.type = "button";
+  close.className = "feed-column__close";
+  close.setAttribute("aria-label", `${label} sütununu kapat`);
+  close.title = "Kapat";
+  close.innerHTML = '<span data-lucide="x"></span>';
+  close.addEventListener("click", () => {
+    const profileUid = profileUidFromColumnId(columnId);
+    if (profileUid) {
+      closeProfileColumn(profileUid);
+      return;
+    }
+    state.openFeedColumns = state.openFeedColumns.filter((id) => id !== columnId);
+    window.dispatchEvent(new Event("feed-columns:updated"));
+  });
+  controls.append(close);
+  return controls;
+}
+
+function moveFeedColumn(columnId, direction) {
+  const index = state.openFeedColumns.indexOf(columnId);
+  const nextIndex = index + direction;
+  if (index < 0 || nextIndex < 0 || nextIndex >= state.openFeedColumns.length) return;
+  [state.openFeedColumns[index], state.openFeedColumns[nextIndex]] = [
+    state.openFeedColumns[nextIndex],
+    state.openFeedColumns[index],
+  ];
+  window.dispatchEvent(new Event("feed-columns:updated"));
+}
+
+function syncColumnControlStates() {
+  elements.groupFeedColumns?.querySelectorAll(".feed-column").forEach((column) => {
+    const columnId = column.dataset.columnId || "";
+    const index = state.openFeedColumns.indexOf(columnId);
+    column.querySelectorAll(".feed-column__move").forEach((button) => {
+      const nextIndex = index + Number(button.dataset.move);
+      button.disabled = nextIndex < 0 || nextIndex >= state.openFeedColumns.length;
+    });
+  });
+}
+
+function setupColumnReordering(column, heading, columnId) {
+  heading.addEventListener("dragstart", (event) => {
+    if (!event.dataTransfer) return;
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", columnId || "__feed__");
+    column.classList.add("is-dragging");
+  });
+
+  heading.addEventListener("dragend", () => {
+    column.classList.remove("is-dragging");
+    document.querySelectorAll(".feed-column.is-drop-target").forEach((item) => {
+      item.classList.remove("is-drop-target");
+    });
+  });
+
+  column.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+    column.classList.add("is-drop-target");
+  });
+
+  column.addEventListener("dragleave", (event) => {
+    if (!column.contains(event.relatedTarget)) {
+      column.classList.remove("is-drop-target");
+    }
+  });
+
+  column.addEventListener("drop", (event) => {
+    event.preventDefault();
+    column.classList.remove("is-drop-target");
+    const draggedId = event.dataTransfer?.getData("text/plain");
+    if (draggedId == null) return;
+    reorderFeedColumn(draggedId === "__feed__" ? "" : draggedId, columnId);
+  });
+}
+
+function reorderFeedColumn(sourceId, targetId) {
+  if (sourceId === targetId) return;
+  const sourceIndex = state.openFeedColumns.indexOf(sourceId);
+  const targetIndex = state.openFeedColumns.indexOf(targetId);
+  if (sourceIndex < 0 || targetIndex < 0) return;
+  state.openFeedColumns.splice(sourceIndex, 1);
+  const insertIndex = targetIndex - Number(sourceIndex < targetIndex);
+  state.openFeedColumns.splice(insertIndex, 0, sourceId);
+  window.dispatchEvent(new Event("feed-columns:updated"));
+}
+
+window.addEventListener("feed-columns:updated", renderGroupFeedColumns);
 
 export function renderGroupDetailPosts() {
   if (!elements.groupDetailPostList || !state.activeGroupId) return;
@@ -824,7 +1120,6 @@ export function openComments(postId) {
   }
 
   activeCommentPostId = postId;
-  syncComposerMode();
   renderPosts();
   // Yorumlar akış görünümünde açılır; arama/profilden gelindiyse akışa geç.
   if (elements.feed?.classList.contains("hidden")) {
@@ -834,34 +1129,15 @@ export function openComments(postId) {
 
 export function closeComments() {
   activeCommentPostId = null;
-  syncComposerMode();
   renderPosts();
 }
 
-export function getComposerMode() {
-  return activeCommentPostId ? "comment" : "post";
-}
-
-export async function submitComposerText(text) {
-  if (activeCommentPostId) {
-    await createComment(activeCommentPostId, text);
-    return;
-  }
+export async function submitComposerText(text, { groupId = "", media = null, pollOptions = null } = {}) {
   await createPost(text, {
-    media: pendingMedia,
-    pollOptions: pendingPollOptions,
+    groupId,
+    media,
+    pollOptions,
   });
-  clearPendingMedia();
-  clearPendingPoll();
-}
-
-function syncComposerMode() {
-  if (!elements.sendPost || !elements.postText) return;
-  const commentMode = Boolean(activeCommentPostId);
-  elements.postText.placeholder = commentMode
-    ? "Ne düşünüyorsun?"
-    : "Neler oluyor?";
-  elements.postText.maxLength = commentMode ? 180 : 280;
 }
 
 function refreshIcons() {
@@ -886,7 +1162,7 @@ export function toggleLike(postId, liked) {
   });
 }
 
-export async function createPost(text, { media, pollOptions } = {}) {
+export async function createPost(text, { groupId = "", media, pollOptions } = {}) {
   if (!state.authUser) {
     throw new Error("Post atmak için giriş yapmalısınız.");
   }
@@ -895,7 +1171,6 @@ export async function createPost(text, { media, pollOptions } = {}) {
   }
   if (!text) return;
 
-  const groupId = elements.postGroupSelect?.value || "";
   const isGroupPost = Boolean(groupId);
   if (isGroupPost && !canViewGroup(groupId)) {
     throw new Error("Bu masada paylaşım yapmak için üye olmalısın.");

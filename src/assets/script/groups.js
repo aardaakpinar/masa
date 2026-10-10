@@ -1,4 +1,4 @@
-import { state } from "./state.js";
+import { feedColumnIds, profileUidFromColumnId, state } from "./state.js";
 import { resolveUserName } from "./users.js";
 import { elements } from "./elements.js";
 import { initials, cleanName, getContrastColor, friendlyErrorMessage, safeColor } from "./utils.js";
@@ -90,8 +90,9 @@ export function createGroupCard(group, { compact = false } = {}) {
 	}
 	head.addEventListener("click", () => {
 		if (canOpenDetail) {
-			state.activeGroupId = group.id;
-			window.dispatchEvent(new Event("groups:open"));
+			window.dispatchEvent(
+				new CustomEvent("group-feed:open", { detail: { groupId: group.id } }),
+			);
 		}
 	});
 
@@ -276,7 +277,6 @@ export function renderGroups() {
 	window.dispatchEvent(new Event("groups:updated"));
 	const groups = getGroups();
 	renderInto(elements.groupsList, filterGroups(groups), GROUP_EMPTY_TEXT[groupFilter]);
-	syncComposerGroupOptions();
 	updateGroupStats();
 }
 
@@ -384,8 +384,6 @@ export function openGroupSettingsPanel() {
 	isGroupSettingsOpen = true;
 	fillGroupEditForm(group);
 	renderGroupDetailMembers();
-	elements.groupDetailSettingsPanel?.classList.remove("hidden");
-	elements.groupDetailPostsSection?.classList.add("hidden");
 	syncSettingsButtonState();
 }
 
@@ -406,9 +404,32 @@ export function toggleGroupSettingsPanel() {
 
 export function closeGroupSettingsPanel() {
 	isGroupSettingsOpen = false;
-	elements.groupDetailSettingsPanel?.classList.add("hidden");
-	elements.groupDetailPostsSection?.classList.remove("hidden");
+	if (elements.groupDetailEditForm && elements.groupDetailSettingsPanel) {
+		elements.groupDetailSettingsPanel.append(elements.groupDetailEditForm);
+		delete elements.groupDetailEditForm.dataset.openGroupId;
+	}
+	document.querySelectorAll(".feed-column__settings").forEach((slot) => {
+		slot.hidden = true;
+		slot.closest(".feed-column")?.classList.remove("feed-column--settings-open");
+	});
 	syncSettingsButtonState();
+}
+
+export function toggleColumnGroupSettings(groupId, slot) {
+	if (isGroupSettingsOpen && state.activeGroupId === groupId) {
+		closeGroupSettingsPanel();
+		return;
+	}
+	closeGroupSettingsPanel();
+	state.activeGroupId = groupId;
+	const group = state.groups?.[groupId];
+	if (!group || group.ownerId !== state.authUser?.uid || !slot) return;
+	renderGroupDetail();
+	openGroupSettingsPanel();
+	elements.groupDetailEditForm.dataset.openGroupId = groupId;
+	slot.append(elements.groupDetailEditForm);
+	slot.hidden = false;
+	slot.closest(".feed-column")?.classList.add("feed-column--settings-open");
 }
 
 export function syncGroupEditFormCounts() {
@@ -495,212 +516,22 @@ export async function submitGroupEditForm() {
 	}
 }
 
-function syncComposerGroupOptions() {
-	if (!elements.postGroupSelect) return;
-
-	const groups = getGroups().filter(isMember);
-	const current = elements.postGroupSelect.value;
-
-	const options = [{ value: "", label: "Akış" }, ...groups.map((group) => ({ value: group.id, label: group.name }))];
-
-	elements.postGroupSelect.replaceChildren(
-		...options.map(({ value, label }) => {
-			const option = document.createElement("option");
-			option.value = value;
-			option.textContent = label;
-			return option;
-		}),
+function pruneUnavailableFeedColumns() {
+	const availableGroupIds = new Set(
+		getGroups()
+			.filter((group) => isMember(group) || group.ownerId === state.authUser?.uid)
+			.map(({ id }) => id),
 	);
-
-	if (current && options.some((option) => option.value === current)) {
-		elements.postGroupSelect.value = current;
-	} else {
-		elements.postGroupSelect.value = "";
-		state.activeGroupId = "";
-		if (current !== "") {
-			elements.postGroupSelect.dispatchEvent(new Event("change"));
-		}
-	}
-
-	renderComposerGroupChips(groups);
+	const fixedColumnIds = new Set(Object.values(feedColumnIds));
+	const nextColumns = state.openFeedColumns.filter(
+		(id) => !id || fixedColumnIds.has(id) || profileUidFromColumnId(id) || availableGroupIds.has(id),
+	);
+	if (nextColumns.length === state.openFeedColumns.length) return;
+	state.openFeedColumns = nextColumns;
+	window.dispatchEvent(new Event("feed-columns:updated"));
 }
 
-// Ana sayfadaki sekmeler: "Akış" + katıldığın masalar. Seçim, gizli
-// #postGroupSelect üzerinden hem akışı filtreler hem paylaşım hedefini belirler.
-let feedTabsSignature = "";
-let feedTabsActiveId = null;
-
-// Sağ/sol kenarda taşan içerik varsa soluk geçiş (fade) gösterilir.
-function updateTabsOverflow(bar) {
-	const max = bar.scrollWidth - bar.clientWidth;
-	bar.classList.toggle("has-overflow-left", bar.scrollLeft > 4);
-	bar.classList.toggle("has-overflow-right", max > 4 && bar.scrollLeft < max - 4);
-}
-
-// Çok masa olunca sekmeler yana kayar: dokunmatikte kaydırma, farede tekerlek ve sürükleme.
-function setupScrollableTabs(bar) {
-	if (bar.dataset.scrollable) return;
-	bar.dataset.scrollable = "1";
-
-	bar.addEventListener("scroll", () => updateTabsOverflow(bar), { passive: true });
-	window.addEventListener("resize", () => updateTabsOverflow(bar));
-
-	bar.addEventListener(
-		"wheel",
-		(event) => {
-			const max = bar.scrollWidth - bar.clientWidth;
-			if (max <= 0 || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
-			const atStart = bar.scrollLeft <= 0 && event.deltaY < 0;
-			const atEnd = bar.scrollLeft >= max - 1 && event.deltaY > 0;
-			if (atStart || atEnd) return; // uçta sayfa normal kaysın
-			event.preventDefault();
-			bar.scrollLeft += event.deltaY;
-		},
-		{ passive: false },
-	);
-
-	let down = false;
-	let moved = false;
-	let startX = 0;
-	let startLeft = 0;
-
-	bar.addEventListener("pointerdown", (event) => {
-		if (event.pointerType !== "mouse" || event.button !== 0) return;
-		down = true;
-		moved = false;
-		startX = event.clientX;
-		startLeft = bar.scrollLeft;
-	});
-	window.addEventListener("pointermove", (event) => {
-		if (!down) return;
-		const dx = event.clientX - startX;
-		if (!moved && Math.abs(dx) > 5) {
-			moved = true;
-			bar.classList.add("is-dragging");
-		}
-		if (moved) bar.scrollLeft = startLeft - dx;
-	});
-	const endDrag = () => {
-		down = false;
-		bar.classList.remove("is-dragging");
-	};
-	window.addEventListener("pointerup", endDrag);
-	window.addEventListener("pointercancel", endDrag);
-	// Sürükleme sonrası bırakma, sekme tıklaması sayılmasın.
-	bar.addEventListener(
-		"click",
-		(event) => {
-			if (!moved) return;
-			event.stopPropagation();
-			event.preventDefault();
-			moved = false;
-		},
-		true,
-	);
-}
-
-function renderFeedTabs(groups, selectedId) {
-	const bar = elements.feedTabs;
-	if (!bar) return;
-
-	bar.classList.toggle("hidden", groups.length === 0);
-	setupScrollableTabs(bar);
-
-	const items = [{ id: "", name: "Akış", color: null }, ...groups.map((g) => ({ id: g.id, name: g.name, color: g.color }))];
-	const activeItem = items.find((item) => item.id === selectedId) || items[0];
-
-	if (elements.postText) {
-		elements.postText.placeholder = activeItem.id ? `${activeItem.name} masasına yaz…` : "Neler oluyor?";
-	}
-
-	// Gönderiler her güncellendiğinde sekmeleri yeniden kurma: kaydırma konumu sıfırlanmasın.
-	const signature = JSON.stringify([activeItem.id, items.map((i) => [i.id, i.name, i.color])]);
-	if (signature === feedTabsSignature) return;
-	feedTabsSignature = signature;
-
-	const previousScroll = bar.scrollLeft;
-	const activeChanged = feedTabsActiveId !== activeItem.id;
-	feedTabsActiveId = activeItem.id;
-
-	bar.replaceChildren(
-		...items.map(({ id, name, color }) => {
-			const tab = document.createElement("button");
-			tab.type = "button";
-			tab.setAttribute("role", "tab");
-			const active = id === activeItem.id;
-			tab.className = `search-tab${active ? " active" : ""}`;
-			tab.setAttribute("aria-selected", String(active));
-			tab.title = name;
-
-			const label = document.createElement("span");
-			label.className = "feed-tab__label";
-			label.textContent = name;
-			tab.append(label);
-
-			tab.addEventListener("click", () => {
-				if (elements.postGroupSelect.value === id) return;
-				elements.postGroupSelect.value = id;
-				elements.postGroupSelect.dispatchEvent(new Event("change"));
-				renderComposerGroupChips(groups);
-			});
-			return tab;
-		}),
-	);
-
-	// Eski kaydırma konumunu koru; yalnızca seçili sekme değiştiyse onu görünür alana getir.
-	bar.scrollLeft = previousScroll;
-	if (activeChanged) {
-		const activeTab = bar.querySelector(".active");
-		if (activeTab) {
-			const target = activeTab.offsetLeft - (bar.clientWidth - activeTab.offsetWidth) / 2;
-			bar.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
-		}
-	}
-	requestAnimationFrame(() => updateTabsOverflow(bar));
-}
-
-// Composer'ın üstünde, hangi masaya paylaşım yapılacağını seçmek için
-// tıklanabilir masa etiketleri (chip) gösterir. Seçilen chip, gizli
-// #postGroupSelect elemanının değerini günceller ve "change" tetikler.
-export function renderComposerGroupChips(memberGroups) {
-	if (!elements.postGroupSelect) return;
-
-	const groups = memberGroups || getGroups().filter(isMember);
-	const selectedId = elements.postGroupSelect.value || "";
-
-	renderFeedTabs(groups, selectedId);
-	if (!elements.composerGroupChips) return;
-
-	const chips = [
-		{ id: "", name: "Akış", color: null },
-		...groups.map((group) => ({
-			id: group.id,
-			name: group.name,
-			color: group.color,
-		})),
-	];
-
-	elements.composerGroupChips.replaceChildren(
-		...chips.map(({ id, name, color }) => {
-			const chip = document.createElement("button");
-			chip.type = "button";
-			chip.className = `composer-group-chip${id === selectedId ? " active" : ""}`;
-
-			const label = document.createElement("span");
-			label.textContent = name;
-			chip.append(label);
-
-			chip.addEventListener("click", () => {
-				if (elements.postGroupSelect.value === id) return;
-				elements.postGroupSelect.value = id;
-				elements.postGroupSelect.dispatchEvent(new Event("change"));
-				renderComposerGroupChips(groups);
-			});
-
-			return chip;
-		}),
-	);
-}
+window.addEventListener("groups:updated", pruneUnavailableFeedColumns);
 
 function updateGroupStats() {
 	if (elements.groupCount) {

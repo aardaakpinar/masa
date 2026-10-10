@@ -21,16 +21,84 @@
 	</head>
 	<body>
 		<div class="app-shell">
-			<aside class="sidebar" aria-label="Ana menü">
+			<!-- Mobil backdrop: sidebar açıkken arkayı karartır -->
+			<div class="mobile-backdrop" id="mobileBackdrop" hidden></div>
+
+			<main class="timeline" id="feed">
+				<div class="feed-columns" id="groupFeedColumns">
+					<section class="feed-column" id="feedColumn" aria-label="Genel akış">
+						<header class="feed-column__heading" data-column-id="">
+							<div class="feed-column__title">
+								<h2>Akış</h2>
+								<span class="feed-column__hint">Sürükleyerek sırala</span>
+							</div>
+							<div class="feed-column__controls">
+								<button class="feed-column__move" type="button" data-move="-1" aria-label="Akış sütununu sola taşı" title="Sola taşı">
+									<span data-lucide="arrow-left"></span>
+								</button>
+								<button class="feed-column__move" type="button" data-move="1" aria-label="Akış sütununu sağa taşı" title="Sağa taşı">
+									<span data-lucide="arrow-right"></span>
+								</button>
+								<button class="feed-column__close" type="button" aria-label="Akış sütununu kapat" title="Kapat">
+									<span data-lucide="x"></span>
+								</button>
+							</div>
+						</header>
+						<section class="auth-gate" id="authGate">
+							<div>
+								<strong>Masaya bir şeyler bırak</strong>
+								<p>Paylaşım yapmak ve sohbete katılmak için giriş yapman gerekiyor.</p>
+							</div>
+							<button class="button button--primary" id="openAuthFromGate" type="button">Giriş yap</button>
+						</section>
+
+						<section class="composer" data-group-id="" aria-label="Akış için gönderi oluştur">
+							<textarea id="postText" data-composer-field="text" maxlength="280" placeholder="Masada neler oluyor?" rows="1"></textarea>
+							<div class="composer-media-preview hidden" id="composerMediaPreview" data-composer-field="media-preview">
+								<img id="composerMediaImage" data-composer-field="media-image" alt="Eklenen görsel" />
+								<button class="icon-button composer-media-remove" id="composerMediaRemove" data-composer-action="media-remove" type="button" aria-label="Görseli kaldır">
+									<span data-lucide="x"></span>
+								</button>
+							</div>
+							<div class="composer-poll-fields hidden" id="composerPollFields" data-composer-field="poll-fields">
+								<div class="composer-poll-options" id="composerPollOptions" data-composer-field="poll-options"></div>
+								<div class="composer-poll-actions">
+									<button class="button button--secondary composer-poll-add" id="composerPollAddOption" data-composer-action="poll-add" type="button">+ Seçenek ekle</button>
+									<button class="button button--secondary composer-poll-cancel" id="composerPollRemove" data-composer-action="poll-remove" type="button">Anketi kaldır</button>
+								</div>
+							</div>
+							<div class="composer-footer">
+								<div class="composer-attach">
+									<button class="icon-button composer-attach-button" id="composerMediaButton" data-composer-action="media-open" type="button" aria-label="Medya ekle" title="Medya ekle">
+										<span data-lucide="image"></span>
+									</button>
+									<input id="composerMediaInput" data-composer-field="media-input" type="file" accept="image/*" class="visually-hidden" />
+									<button class="icon-button composer-attach-button" id="composerPollButton" data-composer-action="poll-toggle" type="button" aria-label="Anket ekle" title="Anket ekle">
+										<span data-lucide="bar-chart-2"></span>
+									</button>
+								</div>
+								<span class="count-text" id="charCount" data-composer-field="count">0/280</span>
+								<button class="button button--primary" id="sendPost" data-composer-action="submit" type="button" disabled>Paylaş</button>
+							</div>
+						</section>
+
+						<p class="error-text" id="feedError" hidden></p>
+						<section class="feed-list feed-column__posts" id="postList" aria-live="polite">
+							<div class="empty-state" id="postsLoading">Yükleniyor…</div>
+						</section>
+					</section>
+				</div>
+			</main>
+
+			<aside class="right-panel" aria-label="Gezinme">
 				<div class="brand" aria-label="MASA">
 					<img class="brand-image" src="assets/logo.svg" alt="MASA Logo" />
 					<span class="brand-text">MASA</span>
 				</div>
-
-				<nav class="nav-list">
-					<button class="nav-item button button--ghost" id="feedButton" type="button" aria-label="Masaüstü">
+				<nav class="nav-list right-panel-nav">
+					<button class="nav-item button button--ghost" id="feedButton" type="button" aria-label="Akış">
 						<span data-lucide="home"></span>
-						<span class="nav-item-label">Masaüstü</span>
+						<span class="nav-item-label">Akış</span>
 					</button>
 					<button class="nav-item button button--ghost" id="searchButton" type="button" aria-label="Ara">
 						<span data-lucide="search"></span>
@@ -40,75 +108,12 @@
 						<span data-lucide="users"></span>
 						<span class="nav-item-label">Masalar</span>
 					</button>
-					<button class="nav-item button button--ghost" id="authButton" type="button" aria-label="Giriş">
+					<button class="nav-item button button--ghost" id="authButton" type="button" aria-label="Hesap">
 						<span data-lucide="user"></span>
-						<span class="nav-item-label">Giriş</span>
+						<span class="nav-item-label">Hesap</span>
 					</button>
 				</nav>
 			</aside>
-
-			<!-- Mobil backdrop: sidebar açıkken arkayı karartır -->
-			<div class="mobile-backdrop" id="mobileBackdrop" hidden></div>
-
-			<main class="timeline" id="feed">
-				<header class="topbar">
-					<button class="button button--ghost mobile-menu-button" type="button" aria-label="Menüyü aç">
-						<span data-lucide="menu"></span>
-					</button>
-					<div>
-						<h1>Ana sayfa</h1>
-						<img class="brand-image" src="assets/logo.svg" alt="MASA Logo" />
-					</div>
-				</header>
-				<div class="search-tabs feed-tabs hidden" id="feedTabs" role="tablist" aria-label="Akış ve masalar"></div>
-
-				<section class="auth-gate" id="authGate">
-					<div>
-						<strong>Masaya bir şeyler bırak</strong>
-						<p>Paylaşım yapmak ve sohbete katılmak için giriş yapman gerekiyor.</p>
-					</div>
-					<button class="button button--primary" id="openAuthFromGate" type="button">Giriş yap</button>
-				</section>
-
-				<section class="composer" aria-label="Post oluştur">
-					<div class="composer-group-chips" id="composerGroupChips"></div>
-					<select id="postGroupSelect" class="visually-hidden" tabindex="-1" aria-hidden="true">
-						<option value="">Genel akış</option>
-					</select>
-					<textarea id="postText" maxlength="280" placeholder="Neler oluyor?" rows="1"></textarea>
-					<div class="composer-media-preview hidden" id="composerMediaPreview">
-						<img id="composerMediaImage" alt="Eklenen görsel" />
-						<button class="icon-button composer-media-remove" id="composerMediaRemove" type="button" aria-label="Görseli kaldır">
-							<span data-lucide="x"></span>
-						</button>
-					</div>
-					<div class="composer-poll-fields hidden" id="composerPollFields">
-						<div class="composer-poll-options" id="composerPollOptions"></div>
-						<div class="composer-poll-actions">
-							<button class="button button--secondary composer-poll-add" id="composerPollAddOption" type="button">+ Seçenek ekle</button>
-							<button class="button button--secondary composer-poll-cancel" id="composerPollRemove" type="button">Anketi kaldır</button>
-						</div>
-					</div>
-					<div class="composer-footer">
-						<div class="composer-attach">
-							<button class="icon-button composer-attach-button" id="composerMediaButton" type="button" aria-label="Medya ekle" title="Medya ekle">
-								<span data-lucide="image"></span>
-							</button>
-							<input id="composerMediaInput" type="file" accept="image/*" class="visually-hidden" />
-							<button class="icon-button composer-attach-button" id="composerPollButton" type="button" aria-label="Anket ekle" title="Anket ekle">
-								<span data-lucide="bar-chart-2"></span>
-							</button>
-						</div>
-						<span class="count-text" id="charCount">0/280</span>
-						<button class="button button--primary" id="sendPost" type="button" disabled>Paylaş</button>
-					</div>
-				</section>
-
-				<p class="error-text" id="feedError" hidden></p>
-				<section class="feed-list" id="postList" aria-live="polite">
-					<div class="empty-state" id="postsLoading">Yükleniyor…</div>
-				</section>
-			</main>
 
 			<main class="timeline hidden" id="groupsView">
 				<header class="topbar">
@@ -180,6 +185,7 @@
 					<div class="group-detail-info">
 						<div class="group-detail-title-row">
 							<h2 id="groupDetailName">Masa</h2>
+							<button class="button button--secondary" id="groupDetailFeedButton" type="button">Akışta aç</button>
 							<div class="group-detail-owner-actions" id="groupDetailOwnerActions" hidden>
 								<button class="icon-button button button--ghost group-detail-settings-button" id="groupDetailSettingsButton" type="button" aria-label="Masa ayarları" title="Masa ayarları">
 									<span data-lucide="settings"></span>
@@ -193,7 +199,7 @@
 
 				<section class="group-detail-settings hidden" id="groupDetailSettingsPanel" aria-label="Masa ayarları">
 					<section class="groups-form-card" id="groupDetailEditForm" aria-label="Masayı düzenle">
-						<div class="groups-form-title">Masayı Düzenle</div>
+						<div class="groups-form-title">Masa ayarları</div>
 						<div class="groups-form-fields">
 							<div class="groups-avatar-editor">
 								<button class="profile-color-button" id="groupDetailEditAvatarButton" type="button" title="Avatar rengini değiştir" aria-label="Avatar rengini değiştir">
@@ -201,12 +207,18 @@
 									<span class="profile-color-badge" data-lucide="palette" aria-hidden="true"></span>
 									<input id="groupDetailEditAvatarColorInput" class="settings-color-input" type="color" value="#2563eb" aria-label="Masa avatar rengi" />
 								</button>
+								<span class="groups-avatar-editor__copy">
+									<strong>Masa görünümü</strong>
+									<span>Avatar rengini değiştirmek için dokun</span>
+								</span>
 							</div>
 							<div class="groups-field">
+								<label class="groups-select-label" for="groupDetailEditNameInput">Masa adı</label>
 								<input id="groupDetailEditNameInput" name="ge_name" type="text" maxlength="28" placeholder="Masa adı" />
 								<span class="groups-counter" id="groupDetailEditNameCount">0/28</span>
 							</div>
 							<div class="groups-field">
+								<label class="groups-select-label" for="groupDetailEditDescriptionInput">Açıklama</label>
 								<textarea id="groupDetailEditDescriptionInput" name="ge_desc" maxlength="160" rows="2" placeholder="Bu masa ne hakkında?"></textarea>
 								<span class="groups-counter groups-counter--bottom" id="groupDetailEditDescriptionCount">0/160</span>
 							</div>
@@ -218,9 +230,8 @@
 								</select>
 							</div>
 							<div class="group-detail-edit-actions">
-								<button class="button button--secondary" id="groupDetailEditCancelButton" type="button">Kapat</button>
+								<button class="button button--danger group-submit group-detail-delete-button" id="groupDetailDeleteButton" type="button">Masayı sil</button>
 								<button class="button button--primary groups-submit" id="groupDetailEditSaveButton" type="button">Kaydet</button>
-								<button class="button button--danger group-submit" id="groupDetailDeleteButton" type="button">Masayı Sil</button>
 							</div>
 						</div>
 						<p class="error-text" id="groupDetailEditError" hidden></p>
@@ -249,24 +260,24 @@
 						<span data-lucide="arrow-left"></span>
 					</button>
 					<div>
-						<h1 id="profileTitle">Profil</h1>
+						<h1 id="profileTitle" data-profile-field="title">Profil</h1>
 						<img class="brand-image" src="assets/logo.svg" alt="MASA Logo" />
 					</div>
 				</header>
 
 				<section class="profile-header" id="profileHeader">
-					<div class="avatar profile-header__avatar" id="profileAvatar">?</div>
+					<div class="avatar profile-header__avatar" id="profileAvatar" data-profile-field="avatar">?</div>
 					<div class="profile-header__info">
 						<div class="profile-header__row">
-							<h2 id="profileName">Profil</h2>
-							<button class="button button--secondary" id="profileEditButton" type="button" hidden>Profili düzenle</button>
+							<h2 id="profileName" data-profile-field="name">Profil</h2>
+							<button class="button button--secondary" id="profileEditButton" data-profile-field="edit" type="button" hidden>Profili düzenle</button>
 						</div>
-						<span class="profile-header__meta" id="profileMeta"></span>
+						<span class="profile-header__meta" id="profileMeta" data-profile-field="meta"></span>
 					</div>
 				</section>
 
-				<div class="search-section__title" id="profilePostsTitle">Gönderiler</div>
-				<section class="feed-list" id="profilePostList" aria-live="polite"></section>
+				<div class="search-section__title" id="profilePostsTitle" data-profile-field="posts-title">Gönderiler</div>
+				<section class="feed-list" id="profilePostList" data-profile-field="posts" aria-live="polite"></section>
 			</main>
 
 			<main class="timeline hidden" id="search">
@@ -289,7 +300,6 @@
 						</button>
 					</div>
 					<div class="search-tabs" id="searchTabs" role="tablist" aria-label="Arama türü">
-						<button class="search-tab active" type="button" role="tab" data-prefix="">Tümü</button>
 						<button class="search-tab" type="button" role="tab" data-prefix="@">Kişiler</button>
 						<button class="search-tab" type="button" role="tab" data-prefix="-">Masalar</button>
 						<button class="search-tab" type="button" role="tab" data-prefix="#">Etiketler</button>

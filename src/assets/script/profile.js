@@ -1,7 +1,12 @@
 import { state } from "./state.js";
 import { elements } from "./elements.js";
 import { initials, getContrastColor, safeColor } from "./utils.js";
-import { getMainView, showMainView, openSettings, openAuth, openFeed } from "./ui.js";
+import {
+  openSettings,
+  openAuth,
+  openProfileColumn,
+  closeProfileColumn,
+} from "./ui.js";
 import {
   createPostElement,
   subscribeProfilePosts,
@@ -9,9 +14,10 @@ import {
 } from "./posts.js";
 import { canViewGroup } from "./groups.js";
 
-let returnView = "feed";
-
-const monthYear = new Intl.DateTimeFormat("tr-TR", { month: "long", year: "numeric" });
+const monthYear = new Intl.DateTimeFormat("tr-TR", {
+  month: "long",
+  year: "numeric",
+});
 
 // Bir kullanıcının görüntülenecek profili (kendi profilim canlı state.profile'dan gelir).
 export function getProfileData(uid) {
@@ -41,64 +47,81 @@ export function openProfile(uid) {
     return;
   }
 
-  if (getMainView() !== "profile") returnView = getMainView();
-  state.profileUid = uid;
-  showMainView("profile");
+  openProfileColumn(uid);
   subscribeProfilePosts(uid);
   renderProfile();
-  window.scrollTo({ top: 0 });
 }
 
-export function closeProfile() {
-  const target = returnView === "profile" ? "feed" : returnView;
-  showMainView(target);
-}
-
-export function renderProfile() {
-  const uid = state.profileUid;
-  if (!uid || !elements.profileView || elements.profileView.classList.contains("hidden")) return;
-
+function renderProfileColumn(column) {
+  const uid = column.dataset.profileUid;
   const data = getProfileData(uid);
+  const field = (name) => column.querySelector(`[data-profile-field="${name}"]`);
+  const title = field("title");
+  const name = field("name");
+  const avatar = field("avatar");
+  const meta = field("meta");
+  const editButton = field("edit");
+  const postsTitle = field("posts-title");
+  const postList = field("posts");
 
   if (!data) {
-    elements.profileTitle.textContent = "Profil";
-    elements.profileName.textContent = "Kullanıcı bulunamadı";
-    elements.profileAvatar.textContent = "?";
-    elements.profileAvatar.style.background = "";
-    elements.profileMeta.textContent = "";
-    elements.profileEditButton.hidden = true;
-    elements.profilePostsTitle.textContent = "";
-    elements.profilePostList.replaceChildren();
+    if (title) title.textContent = "Profil";
+    if (name) name.textContent = "Kullanıcı bulunamadı";
+    if (avatar) {
+      avatar.textContent = "?";
+      avatar.style.background = "";
+    }
+    if (meta) meta.textContent = "";
+    if (editButton) editButton.hidden = true;
+    if (postsTitle) postsTitle.textContent = "";
+    postList?.replaceChildren();
     return;
   }
 
-  elements.profileTitle.textContent = data.name;
-  elements.profileName.textContent = data.name;
-  elements.profileAvatar.textContent = initials(data.name);
-  elements.profileAvatar.style.background = data.color;
-  elements.profileAvatar.style.color = getContrastColor(data.color);
-  elements.profileEditButton.hidden = !data.isMe;
+  if (title) title.textContent = data.name;
+  const columnHeading = column.querySelector(".feed-column__title h2");
+  if (columnHeading) columnHeading.textContent = data.name;
+  if (name) name.textContent = data.name;
+  if (avatar) {
+    avatar.textContent = initials(data.name);
+    avatar.style.background = data.color;
+    avatar.style.color = getContrastColor(data.color);
+  }
+  if (editButton) editButton.hidden = !data.isMe;
 
   const posts = profilePosts(uid);
-  const joined = data.createdAt ? `${monthYear.format(new Date(data.createdAt))} tarihinde katıldı` : "";
-  elements.profileMeta.textContent = [joined, `${posts.length} gönderi`].filter(Boolean).join(" · ");
-  elements.profilePostsTitle.textContent = "Gönderiler";
+  const joined = data.createdAt
+    ? `${monthYear.format(new Date(data.createdAt))} tarihinde katıldı`
+    : "";
+  if (meta) {
+    meta.textContent = [joined, `${posts.length} gönderi`]
+      .filter(Boolean)
+      .join(" · ");
+  }
+  if (postsTitle) postsTitle.textContent = "Gönderiler";
 
   if (!posts.length) {
     const empty = document.createElement("div");
     empty.className = "empty-state";
-    empty.textContent = data.isMe ? "Henüz bir şey paylaşmadın." : "Henüz paylaşılmış bir gönderi yok.";
-    elements.profilePostList.replaceChildren(empty);
+    empty.textContent = data.isMe
+      ? "Henüz bir şey paylaşmadın."
+      : "Henüz paylaşılmış bir gönderi yok.";
+    postList?.replaceChildren(empty);
     return;
   }
 
-  elements.profilePostList.replaceChildren(...posts.map(createPostElement));
+  postList?.replaceChildren(...posts.map(createPostElement));
+}
+
+export function renderProfile() {
+  document.querySelectorAll(".profile-column").forEach(renderProfileColumn);
   if (window.lucide) window.lucide.createIcons();
 }
 
 export function setupProfile() {
-  elements.profileBack?.addEventListener("click", closeProfile);
-  elements.profileEditButton?.addEventListener("click", openSettings);
+  document.addEventListener("click", (event) => {
+    if (event.target.closest('[data-profile-field="edit"]')) openSettings();
+  });
   elements.viewProfileButton?.addEventListener("click", () => {
     if (state.authUser) openProfile(state.authUser.uid);
   });
@@ -106,9 +129,8 @@ export function setupProfile() {
   window.addEventListener("profile:open", (event) => openProfile(event.detail?.uid));
   window.addEventListener("profile:refresh", renderProfile);
   window.addEventListener("users:updated", renderProfile);
-  window.addEventListener("profile:left", () => {
-    stopProfilePosts();
-    state.profileUid = null;
+  window.addEventListener("profile:closed", (event) => {
+    const uid = event.detail?.uid;
+    if (uid) stopProfilePosts(uid);
   });
-  window.addEventListener("feed:open", openFeed);
 }

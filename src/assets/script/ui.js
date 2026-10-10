@@ -1,13 +1,21 @@
-import { state } from "./state.js";
+import {
+  feedColumnIds,
+  profileColumnId,
+  profileUidFromColumnId,
+  state,
+} from "./state.js";
 import { elements } from "./elements.js";
 import { initials, getContrastColor, safeColor } from "./utils.js";
 
 export function syncComposer() {
-  if (!elements.postText || !elements.charCount || !elements.sendPost) return;
-
-  const length = elements.postText.value.trim().length;
-  elements.charCount.textContent = `${elements.postText.value.length}/280`;
-  elements.sendPost.disabled = !state.db || !state.authUser || length === 0;
+  document.querySelectorAll(".composer").forEach((composer) => {
+    const text = composer.querySelector('[data-composer-field="text"]');
+    const count = composer.querySelector('[data-composer-field="count"]');
+    const submit = composer.querySelector('[data-composer-action="submit"]');
+    if (!text || !count || !submit) return;
+    count.textContent = `${text.value.length}/280`;
+    submit.disabled = !state.db || !state.authUser || text.value.trim().length === 0;
+  });
 }
 
 function setText(element, value) {
@@ -35,9 +43,8 @@ function toggleClass(element, className, enabled) {
 }
 
 // Composer tıklama handler'ı — isimlendirilmiş olduğu için removeEventListener ile temizlenebilir
-function _composerAuthHandler() {
-  // Sadece locked durumdaysa (giriş yapılmamışsa) auth aç
-  const composer = document.querySelector(".composer");
+function _composerAuthHandler(event) {
+  const composer = event.currentTarget;
   if (composer && composer.classList.contains("hidden")) {
     openAuth();
   }
@@ -52,15 +59,13 @@ export function syncAuthUi() {
     elements.groupsAuthGate.classList.toggle("visible", !isSignedIn);
   }
 
-  const composer = document.querySelector(".composer");
-  if (composer) {
+  document.querySelectorAll(".composer").forEach((composer) => {
     composer.classList.toggle("hidden", !isSignedIn);
-    // Önceki listener'ı temizle, sonra sadece giriş yapılmamışsa yenisini ekle
     composer.removeEventListener("click", _composerAuthHandler);
     if (!isSignedIn) {
       composer.addEventListener("click", _composerAuthHandler);
     }
-  }
+  });
 
   if (elements.authButton) {
     const buttonLabel = elements.authButton.querySelector("span:last-child");
@@ -183,29 +188,63 @@ function setMainView(view) {
   currentView = view;
   elements.profileView?.classList.toggle("hidden", view !== "profile");
   elements.feed?.classList.toggle("hidden", view !== "feed");
-  elements.groupsView?.classList.toggle("hidden", view !== "groups");
-  elements.groupDetail?.classList.toggle("hidden", view !== "groupDetail");
-  elements.searchPanel?.classList.toggle("hidden", view !== "search");
-  elements.settingsPanel?.classList.toggle("hidden", view !== "settings");
+  syncNavigationState();
+}
 
-  elements.feedButton?.classList.toggle("active", view === "feed");
-  elements.searchButton?.classList.toggle("active", view === "search");
+function syncNavigationState() {
+  elements.feedButton?.classList.toggle(
+    "active",
+    currentView === "feed" && state.openFeedColumns.includes(""),
+  );
+  elements.searchButton?.classList.toggle(
+    "active",
+    state.openFeedColumns.includes(feedColumnIds.search),
+  );
   elements.groupsButton?.classList.toggle(
     "active",
-    view === "groups" || view === "groupDetail",
+    state.openFeedColumns.includes(feedColumnIds.groups),
   );
   elements.authButton?.classList.toggle(
     "active",
-    view === "settings" || (view === "profile" && state.profileUid === state.authUser?.uid),
+    state.openFeedColumns.includes(feedColumnIds.account) ||
+      (state.authUser &&
+        state.openFeedColumns.includes(profileColumnId(state.authUser.uid))),
   );
 }
 
+window.addEventListener("feed-columns:updated", syncNavigationState);
+
+function openFeedColumn(id) {
+  if (currentView !== "feed") {
+    setMainView("feed");
+  }
+  if (!state.openFeedColumns.includes(id)) {
+    state.openFeedColumns.push(id);
+  }
+  window.dispatchEvent(new Event("feed-columns:updated"));
+  syncNavigationState();
+}
+
+function closeFeedColumn(id) {
+  state.openFeedColumns = state.openFeedColumns.filter((columnId) => columnId !== id);
+  window.dispatchEvent(new Event("feed-columns:updated"));
+  const profileUid = profileUidFromColumnId(id);
+  if (profileUid) {
+    window.dispatchEvent(new CustomEvent("profile:closed", { detail: { uid: profileUid } }));
+  }
+  syncNavigationState();
+}
+
 export function openFeed() {
+  if (!state.openFeedColumns.includes("")) {
+    state.openFeedColumns.unshift("");
+    window.dispatchEvent(new Event("feed-columns:updated"));
+  }
   setMainView("feed");
 }
 
 export function openSearch() {
-  setMainView("search");
+  openFeedColumn(feedColumnIds.search);
 }
 
 export function openGroups() {
@@ -213,15 +252,15 @@ export function openGroups() {
     openAuth();
     return;
   }
-  setMainView("groups");
+  openFeedColumn(feedColumnIds.groups);
 }
 
-export function openGroupDetail() {
-  if (!state.authUser) {
-    openAuth();
-    return;
-  }
-  setMainView("groupDetail");
+export function openProfileColumn(uid) {
+  openFeedColumn(profileColumnId(uid));
+}
+
+export function closeProfileColumn(uid) {
+  closeFeedColumn(profileColumnId(uid));
 }
 
 export function openSettings() {
@@ -230,9 +269,10 @@ export function openSettings() {
     return;
   }
 
-  setMainView("settings");
+  openFeedColumn(feedColumnIds.account);
 }
 
 export function closeSettings() {
+  closeFeedColumn(feedColumnIds.account);
   openFeed();
 }

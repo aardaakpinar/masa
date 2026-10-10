@@ -15,28 +15,23 @@ import {
 	syncAuthUi,
 	syncComposer,
 	openAuth,
+	openFeed,
 	closeSettings,
 	openSearch,
 	openGroups,
-	openGroupDetail,
 } from "./ui.js";
 import {
 	submitComposerText,
 	loadMorePosts,
 	closeComments,
-	renderGroupDetailPosts,
 	renderPosts,
-	setPendingMedia,
-	clearPendingMedia,
-	setPendingPollOptions,
-	clearPendingPoll,
+	openGroupFeedColumn,
 } from "./posts.js";
 import {
 	submitGroupForm,
 	syncGroupFormCounts,
-	renderGroupDetail,
 	deleteGroup,
-	toggleGroupSettingsPanel,
+	toggleColumnGroupSettings,
 	closeGroupSettingsPanel,
 	setGroupsTab,
 	submitGroupEditForm,
@@ -74,10 +69,15 @@ function closeMobileMenu() {
 }
 
 const COMPOSER_MAX_ROWS = 5;
+const composerMedia = new WeakMap();
+
+function composerField(composer, field) {
+	return composer?.querySelector(`[data-composer-field="${field}"]`) || null;
+}
 
 // Yazı yazıldıkça textarea'yı büyütür (rows=1 -> rows=5'e kadar).
-function autoGrowComposer() {
-	const el = elements.postText;
+function autoGrowComposer(composer = elements.composerEl) {
+	const el = composerField(composer, "text");
 	if (!el) return;
 
 	const style = window.getComputedStyle(el);
@@ -90,15 +90,17 @@ function autoGrowComposer() {
 	el.style.overflowY = el.scrollHeight > maxHeight ? "auto" : "hidden";
 }
 
-// Composer'ı "aktif" gösterir (masa etiketleri bu durumda açılır):
-// yazı yazılıyor, odaklanılmış ya da medya/anket eklenmişse aktif kalır.
-function syncComposerActiveState() {
-	if (!elements.composerEl || !elements.postText) return;
-	const hasText = elements.postText.value.trim().length > 0;
-	const isFocused = document.activeElement === elements.postText;
-	const hasMedia = !elements.composerMediaPreview?.classList.contains("hidden");
-	const hasPoll = !elements.composerPollFields?.classList.contains("hidden");
-	elements.composerEl.classList.toggle(
+// Composer, metin alanı, odak veya ek varlığında aktif görünür.
+function syncComposerActiveState(composer = elements.composerEl) {
+	const text = composerField(composer, "text");
+	const mediaPreview = composerField(composer, "media-preview");
+	const pollFields = composerField(composer, "poll-fields");
+	if (!composer || !text) return;
+	const hasText = text.value.trim().length > 0;
+	const isFocused = document.activeElement === text;
+	const hasMedia = !mediaPreview?.classList.contains("hidden");
+	const hasPoll = !pollFields?.classList.contains("hidden");
+	composer.classList.toggle(
 		"active",
 		hasText || isFocused || hasMedia || hasPoll,
 	);
@@ -132,26 +134,28 @@ function resizeImageFile(file, maxDimension = 1080, quality = 0.78) {
 	});
 }
 
-function showMediaPreview(dataUrl) {
-	if (!elements.composerMediaPreview) return;
-	const img = document.getElementById("composerMediaImage");
+function showMediaPreview(composer, dataUrl) {
+	const preview = composerField(composer, "media-preview");
+	if (!preview) return;
+	const img = composerField(composer, "media-image");
 	if (img) img.src = dataUrl;
-	elements.composerMediaPreview.classList.remove("hidden");
-	syncComposerActiveState();
+	preview.classList.remove("hidden");
+	syncComposerActiveState(composer);
 }
 
-function hideMediaPreview() {
-	if (!elements.composerMediaPreview) return;
-	elements.composerMediaPreview.classList.add("hidden");
-	const img = document.getElementById("composerMediaImage");
+function hideMediaPreview(composer) {
+	const preview = composerField(composer, "media-preview");
+	if (!preview) return;
+	preview.classList.add("hidden");
+	const img = composerField(composer, "media-image");
 	if (img) img.src = "";
-	syncComposerActiveState();
+	syncComposerActiveState(composer);
 }
 
 const MAX_POLL_OPTIONS = 4;
 const MIN_POLL_OPTIONS = 2;
 
-function createPollOptionRow(index, value = "") {
+function createPollOptionRow(index, composer, value = "") {
 	const row = document.createElement("div");
 	row.className = "composer-poll-option-row";
 
@@ -160,8 +164,6 @@ function createPollOptionRow(index, value = "") {
 	input.maxLength = 60;
 	input.placeholder = `Seçenek ${index + 1}`;
 	input.value = value;
-	input.addEventListener("input", syncPendingPollFromInputs);
-
 	row.append(input);
 
 	if (index >= MIN_POLL_OPTIONS) {
@@ -172,8 +174,7 @@ function createPollOptionRow(index, value = "") {
 		removeButton.textContent = "×";
 		removeButton.addEventListener("click", () => {
 			row.remove();
-			renumberPollOptions();
-			syncPendingPollFromInputs();
+			renumberPollOptions(composer);
 		});
 		row.append(removeButton);
 	}
@@ -181,47 +182,43 @@ function createPollOptionRow(index, value = "") {
 	return row;
 }
 
-function renumberPollOptions() {
-	const rows = elements.composerPollOptions?.querySelectorAll(
-		".composer-poll-option-row",
-	);
+function renumberPollOptions(composer) {
+	const rows = composerField(composer, "poll-options")?.querySelectorAll(".composer-poll-option-row");
 	rows?.forEach((row, index) => {
 		const input = row.querySelector("input");
 		if (input) input.placeholder = `Seçenek ${index + 1}`;
 	});
 }
 
-function syncPendingPollFromInputs() {
-	const inputs = elements.composerPollOptions?.querySelectorAll("input") || [];
-	setPendingPollOptions(Array.from(inputs).map((input) => input.value));
-}
-
-function openPollFields() {
-	if (!elements.composerPollFields || !elements.composerPollOptions) return;
-	elements.composerPollOptions.replaceChildren(
-		createPollOptionRow(0),
-		createPollOptionRow(1),
+function openPollFields(composer) {
+	const fields = composerField(composer, "poll-fields");
+	const options = composerField(composer, "poll-options");
+	if (!fields || !options) return;
+	options.replaceChildren(
+		createPollOptionRow(0, composer),
+		createPollOptionRow(1, composer),
 	);
-	elements.composerPollFields.classList.remove("hidden");
-	elements.composerPollButton?.classList.add("active");
-	syncPendingPollFromInputs();
-	syncComposerActiveState();
+	fields.classList.remove("hidden");
+	composer.querySelector('[data-composer-action="poll-toggle"]')?.classList.add("active");
+	syncComposerActiveState(composer);
 }
 
-function closePollFields() {
-	if (!elements.composerPollFields || !elements.composerPollOptions) return;
-	elements.composerPollFields.classList.add("hidden");
-	elements.composerPollOptions.replaceChildren();
-	elements.composerPollButton?.classList.remove("active");
-	clearPendingPoll();
-	syncComposerActiveState();
+function closePollFields(composer) {
+	const fields = composerField(composer, "poll-fields");
+	const options = composerField(composer, "poll-options");
+	if (!fields || !options) return;
+	fields.classList.add("hidden");
+	options.replaceChildren();
+	composer.querySelector('[data-composer-action="poll-toggle"]')?.classList.remove("active");
+	syncComposerActiveState(composer);
 }
 
-function resetComposerAttachments() {
-	clearPendingMedia();
-	hideMediaPreview();
-	if (elements.composerMediaInput) elements.composerMediaInput.value = "";
-	closePollFields();
+function resetComposerAttachments(composer) {
+	composerMedia.delete(composer);
+	hideMediaPreview(composer);
+	const input = composerField(composer, "media-input");
+	if (input) input.value = "";
+	closePollFields(composer);
 }
 
 syncAuthMode();
@@ -256,11 +253,12 @@ bind(elements.authButton, "click", () => {
 	openAuth();
 	closeMobileMenu();
 });
+window.addEventListener("account:open", openAuth);
 bind(elements.searchButton, "click", () => {
 	openSearch();
 	closeMobileMenu();
 });
-bind(elements.groupsButton, "click", () => {
+const openGroupsFromNavigation = () => {
 	if (!state.authUser) {
 		openAuth();
 		closeMobileMenu();
@@ -269,15 +267,18 @@ bind(elements.groupsButton, "click", () => {
 	setGroupsTab("mine");
 	openGroups();
 	closeMobileMenu();
-});
-bind(elements.groupDetailBack, "click", () => {
-	openGroups();
-});
-window.addEventListener("groups:open", () => {
-	renderGroupDetail();
-	renderGroupDetailPosts();
-	openGroupDetail();
+};
+bind(elements.groupsButton, "click", openGroupsFromNavigation);
+window.addEventListener("group-feed:open", (event) => {
+	openGroupFeedColumn(event.detail?.groupId);
 	closeMobileMenu();
+});
+window.addEventListener("group-settings:toggle", (event) => {
+	const groupId = event.detail?.groupId;
+	const slot = [...document.querySelectorAll(".feed-column__settings")].find(
+		(candidate) => candidate.dataset.groupSettingsSlot === groupId,
+	);
+	toggleColumnGroupSettings(groupId, slot);
 });
 bind(elements.mobileBackdrop, "click", closeMobileMenu);
 bind(elements.openAuthFromGate, "click", openAuth);
@@ -304,7 +305,6 @@ bind(elements.groupAvatarColorInput, "input", (event) => {
 		);
 	}
 });
-bind(elements.groupDetailSettingsButton, "click", toggleGroupSettingsPanel);
 bind(elements.groupDetailEditCancelButton, "click", closeGroupSettingsPanel);
 bind(elements.groupDetailEditSaveButton, "click", submitGroupEditForm);
 bind(elements.groupDetailEditNameInput, "input", syncGroupEditFormCounts);
@@ -350,7 +350,7 @@ bind(elements.settingsAvatarInput, "input", (event) => {
 });
 bind(elements.feedButton, "click", () => {
 	closeComments();
-	closeSettings();
+	openFeed();
 	closeMobileMenu();
 });
 
@@ -376,84 +376,108 @@ if (elements.authPasswordToggle && elements.authPassword) {
 	});
 }
 
-bind(elements.postText, "input", () => {
-	syncComposer();
-	autoGrowComposer();
-	syncComposerActiveState();
-});
-bind(elements.postText, "focus", syncComposerActiveState);
-bind(elements.postText, "blur", () => {
-	// Bir sonraki tık işlenene kadar bekle, böylece chip tıklaması sırasında
-	// composer aniden kapanmasın.
-	setTimeout(syncComposerActiveState, 120);
-});
-bind(elements.postGroupSelect, "change", () => {
-	renderPosts();
+document.addEventListener("input", (event) => {
+	const composer = event.target.closest(".composer");
+	if (!composer) return;
+	if (event.target.matches('[data-composer-field="text"]')) {
+		syncComposer();
+		autoGrowComposer(composer);
+		syncComposerActiveState(composer);
+	} else if (event.target.closest(".composer-poll-options")) {
+		syncComposerActiveState(composer);
+	}
 });
 
-bind(elements.composerMediaButton, "click", () => {
-	elements.composerMediaInput?.click();
+document.addEventListener("focusin", (event) => {
+	const composer = event.target.closest(".composer");
+	if (composer) syncComposerActiveState(composer);
 });
-bind(elements.composerMediaInput, "change", async (event) => {
-	const file = event.target.files?.[0];
-	if (!file) return;
+document.addEventListener("focusout", (event) => {
+	const composer = event.target.closest(".composer");
+	if (composer) setTimeout(() => syncComposerActiveState(composer), 120);
+});
+document.addEventListener("change", async (event) => {
+	const input = event.target.closest('[data-composer-field="media-input"]');
+	const composer = input?.closest(".composer");
+	const file = input?.files?.[0];
+	if (!composer || !file) return;
 	try {
 		const dataUrl = await resizeImageFile(file);
-		setPendingMedia(dataUrl);
-		showMediaPreview(dataUrl);
+		composerMedia.set(composer, { dataUrl });
+		showMediaPreview(composer, dataUrl);
 	} catch (error) {
 		console.warn("Görsel eklenemedi: " + error.message);
 	}
 });
-bind(elements.composerMediaRemove, "click", () => {
-	clearPendingMedia();
-	hideMediaPreview();
-	if (elements.composerMediaInput) elements.composerMediaInput.value = "";
-});
 
-bind(elements.composerPollButton, "click", () => {
-	const isOpen = !elements.composerPollFields?.classList.contains("hidden");
-	if (isOpen) {
-		closePollFields();
-	} else {
-		openPollFields();
+document.addEventListener("click", async (event) => {
+	const action = event.target.closest("[data-composer-action]");
+	const composer = action?.closest(".composer");
+	if (!action || !composer) return;
+
+	switch (action.dataset.composerAction) {
+		case "media-open":
+			composerField(composer, "media-input")?.click();
+			break;
+		case "media-remove":
+			composerMedia.delete(composer);
+			hideMediaPreview(composer);
+			if (composerField(composer, "media-input")) {
+				composerField(composer, "media-input").value = "";
+			}
+			break;
+		case "poll-toggle":
+			if (!composerField(composer, "poll-fields")?.classList.contains("hidden")) {
+				closePollFields(composer);
+			} else {
+				openPollFields(composer);
+			}
+			break;
+		case "poll-add": {
+			const options = composerField(composer, "poll-options");
+			const rows = options?.querySelectorAll(".composer-poll-option-row").length || 0;
+			if (rows < MAX_POLL_OPTIONS) {
+				options?.append(createPollOptionRow(rows, composer));
+			}
+			break;
+		}
+		case "poll-remove":
+			closePollFields(composer);
+			break;
+		case "submit": {
+			const text = composerField(composer, "text")?.value.trim();
+			if (!text) return;
+			action.disabled = true;
+			const pollOptions = composerField(composer, "poll-fields")?.classList.contains("hidden")
+				? null
+				: Array.from(composerField(composer, "poll-options")?.querySelectorAll("input") || [])
+					.map((input) => input.value);
+			const groupId = composer.dataset.groupId || "";
+			try {
+				await submitComposerText(text, {
+					groupId,
+					media: composerMedia.get(composer) || null,
+					pollOptions,
+				});
+				const textField = composerField(composer, "text");
+				if (textField) textField.value = "";
+				autoGrowComposer(composer);
+				resetComposerAttachments(composer);
+			} catch (error) {
+				console.warn("Post paylaşılamadı: " + error.message);
+			} finally {
+				syncComposer();
+				syncComposerActiveState(composer);
+				action.disabled = false;
+			}
+			break;
+		}
 	}
 });
-bind(elements.composerPollAddOption, "click", () => {
-	const rows =
-		elements.composerPollOptions?.querySelectorAll(".composer-poll-option-row")
-			.length || 0;
-	if (rows >= MAX_POLL_OPTIONS) return;
-	elements.composerPollOptions?.append(createPollOptionRow(rows));
-	syncPendingPollFromInputs();
-});
-bind(elements.composerPollRemove, "click", closePollFields);
 
 window.addEventListener("resize", () => {
 	if (window.innerWidth > 760) {
 		closeMobileMenu();
-	}
-});
-
-bind(elements.sendPost, "click", async () => {
-	const text = elements.postText?.value.trim();
-	if (!text) return;
-
-	elements.sendPost.disabled = true;
-
-	try {
-		await submitComposerText(text);
-		if (elements.postText) {
-			elements.postText.value = "";
-			autoGrowComposer();
-		}
-		resetComposerAttachments();
-	} catch (error) {
-		console.warn("Post paylaşılamadı: " + error.message);
-	} finally {
-		syncComposer();
-		syncComposerActiveState();
-		elements.sendPost.disabled = false;
 	}
 });
 

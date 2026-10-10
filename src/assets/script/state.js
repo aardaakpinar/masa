@@ -10,6 +10,27 @@ export const firebaseConfig = {
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
 };
 
+export const feedColumnIds = {
+  search: "$search",
+  groups: "$groups",
+  account: "$account",
+};
+
+const profileColumnPrefix = "$profile:";
+
+export function profileColumnId(uid) {
+  return `${profileColumnPrefix}${encodeURIComponent(uid)}`;
+}
+
+export function profileUidFromColumnId(columnId) {
+  if (!columnId?.startsWith(profileColumnPrefix)) return null;
+  try {
+    return decodeURIComponent(columnId.slice(profileColumnPrefix.length));
+  } catch {
+    return null;
+  }
+}
+
 export const state = {
   app: null,
   auth: null,
@@ -23,6 +44,7 @@ export const state = {
   posts: {},
   postsRef: null,
   groupPosts: {},
+  openFeedColumns: [""],
   groupPostRefs: {},
   groupRequests: {},
   groupRequestRefs: {},
@@ -31,6 +53,5 @@ export const state = {
   groups: {},
   groupsRef: null,
   users: {},
-  profileUid: null,
   activeGroupId: null,
 };

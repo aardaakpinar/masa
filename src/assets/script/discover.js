@@ -159,11 +159,10 @@ function matchesQuery(item, q, qWithoutHash, qWithoutAt) {
 	const authorSource = trLower(authorName || "");
 
 	if (q.startsWith("#")) {
-		// Etiket araması: gönderi metninin içindeki gerçek #etiketlere bak,
-		// ayrıca parçalı yazımı da (örn. "#den") desteklemek için ham metinde de ara.
+		// Match hashtag tokens only; searching raw text here also matches unrelated words.
 		const tags = extractHashtags(text || "");
-		const tagMatch = tags.some((tag) => tag.startsWith(qWithoutHash ? `#${qWithoutHash}` : "#"));
-		return tagMatch || body.includes(q) || body.includes(qWithoutHash);
+		const tagQuery = trLower(qWithoutHash.trim());
+		return tags.some((tag) => tag.slice(1).startsWith(tagQuery));
 	}
 
 	return body.includes(q) || authorSource.includes(q);
