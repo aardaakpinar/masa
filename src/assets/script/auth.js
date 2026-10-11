@@ -32,7 +32,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 import { renderPosts, fetchOwnPostsWithPaths } from "./posts.js";
 import { subscribeToUsers, stopUsersSubscription } from "./users.js";
-import { renderGroups } from "./groups.js";
+import { renderGroups, subscribeToGroups, stopGroupSubscription } from "./groups.js";
 import {
 	syncAuthUi,
 	syncComposer,
@@ -93,6 +93,8 @@ export function subscribeToAuth() {
 		state.authResolved = true;
 		if (user) {
 			subscribeToUsers();
+			// /groups yalnızca giriş yapmış kullanıcıya açık: oturum açılınca (sayfa yenilenmeden) dinlenir.
+			subscribeToGroups();
 			try {
 				await loadOrCreateProfile(user);
 			} catch (error) {
@@ -107,6 +109,8 @@ export function subscribeToAuth() {
 			closeAuthColumn();
 		} else {
 			stopUsersSubscription();
+			stopGroupSubscription();
+			state.groups = {};
 			state.authUser = null;
 			state.profile = {
 				name: "User",

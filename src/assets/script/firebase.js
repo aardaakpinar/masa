@@ -12,7 +12,7 @@ import { getDatabase } from "https://www.gstatic.com/firebasejs/10.12.5/firebase
 import { state, storageKeys, firebaseConfig } from "./state.js";
 import { subscribeToAuth } from "./auth.js";
 import { subscribeToPosts, stopPostSubscription } from "./posts.js";
-import { subscribeToGroups, stopGroupSubscription } from "./groups.js";
+import { stopGroupSubscription } from "./groups.js";
 import { syncAuthUi, syncComposer } from "./ui.js";
 
 // App Check: istekleri yalnızca gerçek uygulamadan gelen (reCAPTCHA v3 ile doğrulanmış)
@@ -56,7 +56,6 @@ export function connectToFirebase(rawConfig) {
 
     subscribeToAuth();
     subscribeToPosts();
-    subscribeToGroups();
   } catch (error) {
     state.auth = null;
     state.db = null;
