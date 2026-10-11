@@ -1522,7 +1522,6 @@ img {
 	margin: 18px;
 	background: var(--bg-alt);
 	overflow: hidden;
-	animation: fadeIn 220ms ease both;
 }
 
 .group-card__content {
@@ -1636,7 +1635,6 @@ img {
 	align-items: flex-start;
 	padding: 20px 18px;
 	border-bottom: 1px solid var(--line);
-	animation: fadeIn 220ms ease both;
 }
 
 .group-detail-avatar {
@@ -1688,7 +1686,6 @@ img {
 	display: grid;
 	gap: 18px;
 	border-bottom: 1px solid var(--line);
-	animation: fadeIn 220ms ease both;
 }
 
 .group-detail-danger-zone {
