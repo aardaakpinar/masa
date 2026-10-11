@@ -36,6 +36,7 @@ export const state = {
   auth: null,
   db: null,
   authUser: null,
+  authResolved: false,
   profile: {
     name: "User",
     color: "#2563eb",

@@ -173,6 +173,9 @@
 				"color": {
 					".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{3,8}$/)"
 				},
+				"logo": {
+					".validate": "newData.isString() && newData.val().length <= 350000 && (newData.val().beginsWith('data:image/jpeg;base64,') || newData.val().beginsWith('data:image/png;base64,') || newData.val().beginsWith('data:image/webp;base64,'))"
+				},
 				"ownerId": {
 					".validate": "newData.val() === (data.exists() ? data.val() : auth.uid)"
 				},

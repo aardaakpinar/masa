@@ -3023,3 +3023,115 @@ body {
 .login-field .input {
 	border-radius: 0;
 }
+
+/* Keep the group editor fields aligned like the group creation form. */
+.feed-column__settings #groupDetailEditForm .groups-form-fields {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 16px 20px;
+}
+
+.feed-column__settings #groupDetailEditForm .groups-field {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 0;
+	border: 0;
+}
+
+.feed-column__settings #groupDetailEditForm .groups-field--select {
+	display: grid;
+	align-items: initial;
+	gap: 6px;
+}
+
+.feed-column__settings #groupDetailEditForm .groups-field input,
+.feed-column__settings #groupDetailEditForm .groups-field textarea,
+.feed-column__settings #groupDetailEditForm .groups-field select {
+	width: 100%;
+	min-width: 0;
+	border: 0;
+	border-bottom: 1px solid var(--line);
+	background: var(--bg-alt);
+	font: inherit;
+	font-size: var(--fs-sm);
+}
+
+.feed-column__settings #groupDetailEditForm .groups-field input {
+	height: 46px;
+	min-height: 46px;
+	padding: 0 10px;
+}
+
+.feed-column__settings #groupDetailEditForm .groups-field textarea {
+	min-height: 84px;
+	padding: 8px 10px;
+}
+
+.feed-column__settings #groupDetailEditForm .groups-field select {
+	min-height: 44px;
+	padding: 0 12px;
+}
+
+.feed-column__settings #groupDetailEditForm .groups-counter {
+	right: 14px;
+}
+
+.feed-column__settings #groupDetailEditForm .groups-counter--bottom {
+	bottom: 10px;
+}
+
+.feed-column__settings #groupDetailEditForm .group-detail-edit-actions {
+	display: flex;
+	justify-content: space-between;
+	gap: 10px;
+	border: 0;
+}
+
+.feed-column__settings #groupDetailEditForm .group-detail-edit-actions .button {
+	min-height: 36px;
+	padding: 0 18px;
+	border: 0;
+	border-radius: var(--r-pill);
+	font-size: var(--fs-md);
+}
+
+.feed-column__settings #groupDetailEditForm .group-detail-edit-actions .groups-submit {
+	width: auto;
+	justify-self: auto;
+}
+
+.groups-field > input:not([type="color"]) {
+	flex: 1 1 0;
+	min-width: 0;
+}
+
+.groups-field .group-logo-button,
+.groups-field .group-logo-remove-button {
+	flex: 0 0 36px;
+	width: 36px;
+	height: 36px;
+	min-height: 36px;
+	padding: 0;
+	border: 1px solid var(--line);
+	border-radius: var(--r-md);
+	background: var(--bg-alt);
+	color: var(--text-soft);
+}
+
+.groups-field .group-logo-button:hover,
+.groups-field .group-logo-remove-button:hover {
+	background: var(--hover);
+	color: var(--text);
+}
+
+.groups-field .group-logo-button .lucide,
+.groups-field .group-logo-remove-button .lucide {
+	width: 18px;
+	height: 18px;
+}
+
+.group-logo-remove-button[hidden] {
+	display: none;
+}

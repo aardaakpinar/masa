@@ -51,6 +51,31 @@ function _composerAuthHandler(event) {
 }
 
 export function syncAuthUi() {
+  if (!state.authResolved) {
+    if (elements.authGate) elements.authGate.classList.add("visible");
+    if (elements.groupsAuthGate) elements.groupsAuthGate.classList.add("visible");
+    setHidden(elements.authGateMessage, true);
+    setHidden(elements.groupsAuthGateMessage, true);
+    setHidden(elements.openAuthFromGate, true);
+    setHidden(elements.openGroupsAuthFromGate, true);
+    setHidden(elements.authPending, false);
+    setHidden(elements.groupsAuthPending, false);
+    document.querySelectorAll(".composer").forEach((composer) => {
+      composer.classList.add("hidden");
+    });
+    [
+      elements.authButton,
+      elements.mobileAuthButton,
+      elements.createGroupButton,
+      elements.groupNameInput,
+      elements.groupDescriptionInput,
+    ].forEach((element) => {
+      if (element && "disabled" in element) element.disabled = true;
+    });
+    syncComposer();
+    return;
+  }
+
   const isSignedIn = Boolean(state.authUser);
   if (elements.authGate) {
     elements.authGate.classList.toggle("visible", !isSignedIn);
@@ -58,6 +83,12 @@ export function syncAuthUi() {
   if (elements.groupsAuthGate) {
     elements.groupsAuthGate.classList.toggle("visible", !isSignedIn);
   }
+  setHidden(elements.authGateMessage, false);
+  setHidden(elements.groupsAuthGateMessage, false);
+  setHidden(elements.openAuthFromGate, false);
+  setHidden(elements.openGroupsAuthFromGate, false);
+  setHidden(elements.authPending, true);
+  setHidden(elements.groupsAuthPending, true);
 
   document.querySelectorAll(".composer").forEach((composer) => {
     composer.classList.toggle("hidden", !isSignedIn);
@@ -70,9 +101,11 @@ export function syncAuthUi() {
   if (elements.authButton) {
     const buttonLabel = elements.authButton.querySelector("span:last-child");
     setText(buttonLabel, isSignedIn ? "Hesap" : "Giriş");
+    elements.authButton.disabled = false;
   }
 
   setText(elements.mobileAuthButton, isSignedIn ? "Hesap" : "Giriş");
+  if (elements.mobileAuthButton) elements.mobileAuthButton.disabled = false;
   setHidden(elements.panelAuthButton, isSignedIn);
   setHidden(elements.logoutButton, !isSignedIn);
   setText(

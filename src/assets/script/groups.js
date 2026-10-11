@@ -9,6 +9,169 @@ let groupFilter = "mine";
 let isSubmittingGroup = false;
 let isSubmittingGroupEdit = false;
 let isGroupSettingsOpen = false;
+let groupLogoDataUrl = "";
+let groupEditLogoDataUrl = "";
+
+const MAX_GROUP_LOGO_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_GROUP_LOGO_DATA_URL_LENGTH = 350_000;
+const SAFE_GROUP_LOGO_DATA_URL = /^data:image\/(?:jpeg|png|webp);base64,/;
+
+function safeGroupLogo(value) {
+	return typeof value === "string" &&
+		value.length <= MAX_GROUP_LOGO_DATA_URL_LENGTH &&
+		SAFE_GROUP_LOGO_DATA_URL.test(value)
+		? value
+		: "";
+}
+
+function setGroupAvatarPreview(preview, name, color, logo = "") {
+	if (!preview) return;
+	const safeLogo = safeGroupLogo(logo);
+	const safeAvatarColor = safeColor(color);
+	preview.textContent = safeLogo ? "" : initials(name) || "M";
+	preview.style.backgroundColor = safeAvatarColor;
+	preview.style.color = getContrastColor(safeAvatarColor);
+	preview.style.backgroundImage = safeLogo ? `url("${safeLogo}")` : "";
+	preview.style.backgroundPosition = "center";
+	preview.style.backgroundSize = "cover";
+	preview.style.backgroundRepeat = "no-repeat";
+}
+
+function resizeGroupLogo(file) {
+	return new Promise((resolve, reject) => {
+		if (!file || !["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
+			reject(new Error("Logo için JPEG, PNG, WebP veya GIF görseli seç."));
+			return;
+		}
+		if (file.size > MAX_GROUP_LOGO_FILE_SIZE) {
+			reject(new Error("Logo görseli 5 MB'dan küçük olmalı."));
+			return;
+		}
+
+		const reader = new FileReader();
+		reader.onerror = () => reject(new Error("Logo görseli okunamadı."));
+		reader.onload = () => {
+			const image = new Image();
+			image.onerror = () => reject(new Error("Logo görseli açılamadı."));
+			image.onload = () => {
+				const scale = Math.min(1, 512 / Math.max(image.width, image.height));
+				const canvas = document.createElement("canvas");
+				canvas.width = Math.max(1, Math.round(image.width * scale));
+				canvas.height = Math.max(1, Math.round(image.height * scale));
+				const context = canvas.getContext("2d");
+				if (!context) {
+					reject(new Error("Logo görseli işlenemedi."));
+					return;
+				}
+				context.drawImage(image, 0, 0, canvas.width, canvas.height);
+				const webp = canvas.toDataURL("image/webp", 0.78);
+				let dataUrl = webp.startsWith("data:image/webp;")
+					? webp
+					: "";
+				if (!dataUrl) {
+					context.fillStyle = "#ffffff";
+					context.fillRect(0, 0, canvas.width, canvas.height);
+					context.drawImage(image, 0, 0, canvas.width, canvas.height);
+					dataUrl = canvas.toDataURL("image/jpeg", 0.78);
+				}
+				if (dataUrl.length > MAX_GROUP_LOGO_DATA_URL_LENGTH) {
+					reject(new Error("Logo dosyası sıkıştırıldıktan sonra da çok büyük. Daha küçük bir görsel seç."));
+					return;
+				}
+				resolve(dataUrl);
+			};
+			image.src = String(reader.result);
+		};
+		reader.readAsDataURL(file);
+	});
+}
+
+function updateLogoControls(editing, hasLogo) {
+	const button = editing ? elements.groupDetailEditLogoButton : elements.groupLogoButton;
+	const removeButton = editing ? elements.groupDetailEditLogoRemoveButton : elements.groupLogoRemoveButton;
+	if (button) {
+		button.title = hasLogo ? "Masa logosunu değiştir" : "Masa logosu ekle";
+		button.setAttribute("aria-label", button.title);
+	}
+	if (removeButton) removeButton.hidden = !hasLogo;
+}
+
+export async function selectGroupLogo(file, editing = false) {
+	const errorElement = editing ? elements.groupDetailEditError : elements.groupCreateError;
+	try {
+		const dataUrl = await resizeGroupLogo(file);
+		if (editing) {
+			groupEditLogoDataUrl = dataUrl;
+			setGroupAvatarPreview(
+				elements.groupDetailEditAvatarPreview,
+				elements.groupDetailEditNameInput?.value,
+				elements.groupDetailEditAvatarColorInput?.value,
+				dataUrl,
+			);
+		} else {
+			groupLogoDataUrl = dataUrl;
+			setGroupAvatarPreview(
+				elements.groupAvatarPreview,
+				elements.groupNameInput?.value,
+				elements.groupAvatarColorInput?.value,
+				dataUrl,
+			);
+		}
+		updateLogoControls(editing, true);
+		if (errorElement) {
+			errorElement.hidden = true;
+			errorElement.textContent = "";
+		}
+	} catch (error) {
+		console.error("Masa logosu yüklenemedi:", error);
+		if (errorElement) {
+			errorElement.hidden = false;
+			errorElement.textContent = friendlyErrorMessage(error, "Masa logosu yüklenemedi.");
+		}
+	} finally {
+		const input = editing ? elements.groupDetailEditLogoInput : elements.groupLogoInput;
+		if (input) input.value = "";
+	}
+}
+
+export function removeGroupLogo(editing = false) {
+	if (editing) {
+		groupEditLogoDataUrl = "";
+		setGroupAvatarPreview(
+			elements.groupDetailEditAvatarPreview,
+			elements.groupDetailEditNameInput?.value,
+			elements.groupDetailEditAvatarColorInput?.value,
+		);
+		if (elements.groupDetailEditLogoInput) elements.groupDetailEditLogoInput.value = "";
+	} else {
+		groupLogoDataUrl = "";
+		setGroupAvatarPreview(
+			elements.groupAvatarPreview,
+			elements.groupNameInput?.value,
+			elements.groupAvatarColorInput?.value,
+		);
+		if (elements.groupLogoInput) elements.groupLogoInput.value = "";
+	}
+	updateLogoControls(editing, false);
+}
+
+export function syncGroupAvatarColorPreview(color, editing = false) {
+	if (editing) {
+		setGroupAvatarPreview(
+			elements.groupDetailEditAvatarPreview,
+			elements.groupDetailEditNameInput?.value,
+			color,
+			groupEditLogoDataUrl,
+		);
+	} else {
+		setGroupAvatarPreview(
+			elements.groupAvatarPreview,
+			elements.groupNameInput?.value,
+			color,
+			groupLogoDataUrl,
+		);
+	}
+}
 
 async function loadUsersProfiles() {
 	if (!state.db) return;
@@ -98,9 +261,7 @@ export function createGroupCard(group, { compact = false } = {}) {
 
 	const avatar = document.createElement("div");
 	avatar.className = "avatar group-card__avatar";
-	avatar.style.background = safeColor(group.color);
-	avatar.style.color = getContrastColor(safeColor(group.color));
-	avatar.textContent = initials(group.name);
+	setGroupAvatarPreview(avatar, group.name, group.color, group.logo);
 
 	const content = document.createElement("span");
 	content.className = "group-card__content";
@@ -318,9 +479,7 @@ export function renderGroupDetail() {
 	}
 
 	if (elements.groupDetailAvatar) {
-		elements.groupDetailAvatar.textContent = initials(group.name);
-		elements.groupDetailAvatar.style.background = safeColor(group.color);
-		elements.groupDetailAvatar.style.color = getContrastColor(safeColor(group.color));
+		setGroupAvatarPreview(elements.groupDetailAvatar, group.name, group.color, group.logo);
 	}
 	if (elements.groupDetailTitle) {
 		elements.groupDetailTitle.textContent = group.name || "Masa";
@@ -362,12 +521,16 @@ function fillGroupEditForm(group) {
 	if (elements.groupDetailEditAvatarColorInput) {
 		elements.groupDetailEditAvatarColorInput.value = group.color || "#2563eb";
 	}
+	groupEditLogoDataUrl = safeGroupLogo(group.logo);
 	if (elements.groupDetailEditAvatarPreview) {
-		const color = group.color || "#2563eb";
-		elements.groupDetailEditAvatarPreview.textContent = initials(group.name) || "M";
-		elements.groupDetailEditAvatarPreview.style.background = color;
-		elements.groupDetailEditAvatarPreview.style.color = getContrastColor(color);
+		setGroupAvatarPreview(
+			elements.groupDetailEditAvatarPreview,
+			group.name,
+			group.color,
+			groupEditLogoDataUrl,
+		);
 	}
+	updateLogoControls(true, Boolean(groupEditLogoDataUrl));
 	if (elements.groupDetailEditError) {
 		elements.groupDetailEditError.hidden = true;
 		elements.groupDetailEditError.textContent = "";
@@ -439,9 +602,13 @@ export function syncGroupEditFormCounts() {
 	if (elements.groupDetailEditDescriptionCount) {
 		elements.groupDetailEditDescriptionCount.textContent = `${elements.groupDetailEditDescriptionInput?.value.length || 0}/160`;
 	}
+	syncGroupAvatarColorPreview(
+		elements.groupDetailEditAvatarColorInput?.value || "",
+		true,
+	);
 }
 
-export async function updateGroup(groupId, { name, description, color, joinMode }) {
+export async function updateGroup(groupId, { name, description, color, joinMode, logo }) {
 	if (!state.authUser) {
 		throw new Error("Masayı düzenlemek için giriş yapmalısın.");
 	}
@@ -469,6 +636,7 @@ export async function updateGroup(groupId, { name, description, color, joinMode 
 		[`groups/${groupId}/name`]: groupName,
 		[`groups/${groupId}/description`]: groupDescription,
 		[`groups/${groupId}/color`]: groupColor,
+		[`groups/${groupId}/logo`]: safeGroupLogo(logo) || null,
 		[`groups/${groupId}/joinMode`]: mode,
 	};
 
@@ -500,6 +668,7 @@ export async function submitGroupEditForm() {
 			description: elements.groupDetailEditDescriptionInput?.value || "",
 			color: elements.groupDetailEditAvatarColorInput?.value || "",
 			joinMode: elements.groupDetailEditJoinModeSelect?.value || "open",
+			logo: groupEditLogoDataUrl,
 		});
 		closeGroupSettingsPanel();
 	} catch (error) {
@@ -544,11 +713,16 @@ function updateGroupStats() {
 		elements.groupDescriptionCount.textContent = `${elements.groupDescriptionInput?.value.length || 0}/160`;
 	}
 	if (elements.groupAvatarPreview) {
-		elements.groupAvatarPreview.textContent = initials(elements.groupNameInput?.value || "") || "M";
+		setGroupAvatarPreview(
+			elements.groupAvatarPreview,
+			elements.groupNameInput?.value,
+			elements.groupAvatarColorInput?.value,
+			groupLogoDataUrl,
+		);
 	}
 }
 
-export async function createGroup({ name, description, color, joinMode }) {
+export async function createGroup({ name, description, color, joinMode, logo }) {
 	if (!state.authUser) {
 		throw new Error("Masa oluşturmak için giriş yapmalısın.");
 	}
@@ -571,6 +745,7 @@ export async function createGroup({ name, description, color, joinMode }) {
 		name: groupName,
 		description: groupDescription,
 		color: groupColor,
+		logo: safeGroupLogo(logo) || null,
 		joinMode: joinMode === "approval" ? "approval" : "open",
 		ownerId: state.authUser.uid,
 		ownerName: state.profile.name,
@@ -973,6 +1148,10 @@ export async function submitGroupForm() {
 	if (elements.createGroupButton) {
 		elements.createGroupButton.disabled = true;
 	}
+	if (elements.groupCreateError) {
+		elements.groupCreateError.hidden = true;
+		elements.groupCreateError.textContent = "";
+	}
 
 	try {
 		await createGroup({
@@ -980,20 +1159,22 @@ export async function submitGroupForm() {
 			description: elements.groupDescriptionInput?.value || "",
 			color: elements.groupAvatarColorInput?.value || "",
 			joinMode: elements.groupJoinModeSelect?.value || "open",
+			logo: groupLogoDataUrl,
 		});
 
 		if (elements.groupJoinModeSelect) elements.groupJoinModeSelect.value = "open";
 		if (elements.groupNameInput) elements.groupNameInput.value = "";
 		if (elements.groupDescriptionInput) elements.groupDescriptionInput.value = "";
 		if (elements.groupAvatarColorInput) elements.groupAvatarColorInput.value = "#2563eb";
-		if (elements.groupAvatarPreview) {
-			elements.groupAvatarPreview.textContent = "M";
-			elements.groupAvatarPreview.style.background = "#2563eb";
-			elements.groupAvatarPreview.style.color = getContrastColor("#2563eb");
-		}
+		removeGroupLogo();
+		if (elements.groupAvatarPreview) setGroupAvatarPreview(elements.groupAvatarPreview, "", "#2563eb");
 		setGroupsTab("mine");
 	} catch (error) {
 		console.error("Masa oluşturulamadı:", error);
+		if (elements.groupCreateError) {
+			elements.groupCreateError.hidden = false;
+			elements.groupCreateError.textContent = friendlyErrorMessage(error, "Masa oluşturulamadı.");
+		}
 	} finally {
 		isSubmittingGroup = false;
 		if (elements.createGroupButton) {

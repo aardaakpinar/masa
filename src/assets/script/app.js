@@ -36,6 +36,9 @@ import {
 	setGroupsTab,
 	submitGroupEditForm,
 	syncGroupEditFormCounts,
+	selectGroupLogo,
+	removeGroupLogo,
+	syncGroupAvatarColorPreview,
 } from "./groups.js";
 import { setupDiscover } from "./discover.js";
 import { setupProfile } from "./profile.js";
@@ -298,13 +301,14 @@ bind(elements.groupAvatarButton, "click", () => {
 	elements.groupAvatarColorInput?.click();
 });
 bind(elements.groupAvatarColorInput, "input", (event) => {
-	if (elements.groupAvatarPreview) {
-		elements.groupAvatarPreview.style.background = event.target.value;
-		elements.groupAvatarPreview.style.color = getContrastColor(
-			event.target.value,
-		);
-	}
+	syncGroupAvatarColorPreview(event.target.value);
 });
+bind(elements.groupLogoButton, "click", () => elements.groupLogoInput?.click());
+bind(elements.groupLogoInput, "change", (event) => {
+	const file = event.target.files?.[0];
+	if (file) void selectGroupLogo(file);
+});
+bind(elements.groupLogoRemoveButton, "click", () => removeGroupLogo());
 bind(elements.groupDetailEditCancelButton, "click", closeGroupSettingsPanel);
 bind(elements.groupDetailEditSaveButton, "click", submitGroupEditForm);
 bind(elements.groupDetailEditNameInput, "input", syncGroupEditFormCounts);
@@ -317,14 +321,14 @@ bind(elements.groupDetailEditAvatarButton, "click", () => {
 	elements.groupDetailEditAvatarColorInput?.click();
 });
 bind(elements.groupDetailEditAvatarColorInput, "input", (event) => {
-	if (elements.groupDetailEditAvatarPreview) {
-		elements.groupDetailEditAvatarPreview.style.background =
-			event.target.value;
-		elements.groupDetailEditAvatarPreview.style.color = getContrastColor(
-			event.target.value,
-		);
-	}
+	syncGroupAvatarColorPreview(event.target.value, true);
 });
+bind(elements.groupDetailEditLogoButton, "click", () => elements.groupDetailEditLogoInput?.click());
+bind(elements.groupDetailEditLogoInput, "change", (event) => {
+	const file = event.target.files?.[0];
+	if (file) void selectGroupLogo(file, true);
+});
+bind(elements.groupDetailEditLogoRemoveButton, "click", () => removeGroupLogo(true));
 bind(elements.groupDetailDeleteButton, "click", () => {
 	if (state.activeGroupId) deleteGroup(state.activeGroupId);
 });

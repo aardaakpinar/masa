@@ -46,11 +46,15 @@
 							</div>
 						</header>
 						<section class="auth-gate" id="authGate">
-							<div>
+							<div class="auth-gate-message" id="authGateMessage">
 								<strong>Masaya bir şeyler bırak</strong>
 								<p>Paylaşım yapmak ve sohbete katılmak için giriş yapman gerekiyor.</p>
 							</div>
 							<button class="button button--primary" id="openAuthFromGate" type="button">Giriş yap</button>
+							<div class="auth-pending" id="authPending" role="status" aria-live="polite" hidden>
+								<span class="auth-pending-spinner" aria-hidden="true"></span>
+								<span>Oturum kontrol ediliyor…</span>
+							</div>
 						</section>
 
 						<section class="composer" data-group-id="" aria-label="Akış için gönderi oluştur">
@@ -128,11 +132,15 @@
 				</header>
 
 				<section class="auth-gate" id="groupsAuthGate">
-					<div>
+					<div class="auth-gate-message" id="groupsAuthGateMessage">
 						<strong>Masa oluşturmak ve yönetmek için giriş yap.</strong>
 						<p>İçerik, sahip olduğun masalar ve öneriler burada görünür.</p>
 					</div>
 					<button class="button button--primary" id="openGroupsAuthFromGate" type="button">Giriş yap</button>
+					<div class="auth-pending" id="groupsAuthPending" role="status" aria-live="polite" hidden>
+						<span class="auth-pending-spinner" aria-hidden="true"></span>
+						<span>Oturum kontrol ediliyor…</span>
+					</div>
 				</section>
 
 				<div class="search-tabs" id="groupsTabs" role="tablist" aria-label="Masa filtresi">
@@ -148,6 +156,15 @@
 								<span class="profile-color-badge" data-lucide="palette" aria-hidden="true"></span>
 								<input id="groupAvatarColorInput" class="settings-color-input" type="color" value="#2563eb" aria-label="Masa avatar rengi" />
 							</button>
+							<button class="icon-button button button--secondary group-logo-button" id="groupLogoButton" type="button" title="Masa logosu ekle" aria-label="Masa logosu ekle">
+								<span data-lucide="image"></span>
+							</button>
+							<input id="groupLogoInput" class="visually-hidden" type="file" accept="image/*" />
+							<button class="icon-button button button--secondary group-logo-remove-button" id="groupLogoRemoveButton" type="button" title="Masa logosunu kaldır" aria-label="Masa logosunu kaldır" hidden>
+								<span data-lucide="x"></span>
+							</button>
+						</div>
+						<div class="groups-field">
 							<input id="groupNameInput" name="g_name" type="text" maxlength="28" placeholder="Masa adı" />
 							<span class="groups-counter" id="groupNameCount">0/28</span>
 						</div>
@@ -164,6 +181,7 @@
 						</div>
 						<button class="button button--primary groups-submit" id="createGroupButton" type="button">Oluştur</button>
 					</div>
+					<p class="error-text" id="groupCreateError" hidden></p>
 				</section>
 			</main>
 
@@ -200,26 +218,26 @@
 
 				<section class="group-detail-settings hidden" id="groupDetailSettingsPanel" aria-label="Masa ayarları">
 					<section class="groups-form-card" id="groupDetailEditForm" aria-label="Masayı düzenle">
-						<div class="groups-form-title">Masa ayarları</div>
 						<div class="groups-form-fields">
-							<div class="groups-avatar-editor">
+							<div class="groups-field">
 								<button class="profile-color-button" id="groupDetailEditAvatarButton" type="button" title="Avatar rengini değiştir" aria-label="Avatar rengini değiştir">
 									<span class="avatar groups-avatar-preview" id="groupDetailEditAvatarPreview">M</span>
 									<span class="profile-color-badge" data-lucide="palette" aria-hidden="true"></span>
 									<input id="groupDetailEditAvatarColorInput" class="settings-color-input" type="color" value="#2563eb" aria-label="Masa avatar rengi" />
 								</button>
-								<span class="groups-avatar-editor__copy">
-									<strong>Masa görünümü</strong>
-									<span>Avatar rengini değiştirmek için dokun</span>
-								</span>
+								<button class="icon-button button button--secondary group-logo-button" id="groupDetailEditLogoButton" type="button" title="Masa logosu ekle" aria-label="Masa logosu ekle">
+									<span data-lucide="image"></span>
+								</button>
+								<input id="groupDetailEditLogoInput" class="visually-hidden" type="file" accept="image/*" />
+								<button class="icon-button button button--secondary group-logo-remove-button" id="groupDetailEditLogoRemoveButton" type="button" title="Masa logosunu kaldır" aria-label="Masa logosunu kaldır" hidden>
+									<span data-lucide="x"></span>
+								</button>
 							</div>
 							<div class="groups-field">
-								<label class="groups-select-label" for="groupDetailEditNameInput">Masa adı</label>
 								<input id="groupDetailEditNameInput" name="ge_name" type="text" maxlength="28" placeholder="Masa adı" />
 								<span class="groups-counter" id="groupDetailEditNameCount">0/28</span>
 							</div>
 							<div class="groups-field">
-								<label class="groups-select-label" for="groupDetailEditDescriptionInput">Açıklama</label>
 								<textarea id="groupDetailEditDescriptionInput" name="ge_desc" maxlength="160" rows="2" placeholder="Bu masa ne hakkında?"></textarea>
 								<span class="groups-counter groups-counter--bottom" id="groupDetailEditDescriptionCount">0/160</span>
 							</div>

@@ -79,6 +79,7 @@ async function anonymizeUserContent(uid, anonymousProfile) {
 export function subscribeToAuth() {
 	onAuthStateChanged(state.auth, async (user) => {
 		state.authUser = user;
+		state.authResolved = true;
 		if (user) {
 			subscribeToUsers();
 			try {
@@ -97,6 +98,7 @@ export function subscribeToAuth() {
 			}
 		} else {
 			stopUsersSubscription();
+			state.authUser = null;
 			state.profile = {
 				name: "User",
 				color: "#2563eb",

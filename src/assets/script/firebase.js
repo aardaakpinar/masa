@@ -37,6 +37,7 @@ function initAppCheck(app) {
 }
 
 export function connectToFirebase(rawConfig) {
+  state.authResolved = false;
   try {
     const config = JSON.parse(rawConfig);
     if (!config.databaseURL || !config.apiKey || !config.projectId) {
@@ -60,6 +61,7 @@ export function connectToFirebase(rawConfig) {
     state.auth = null;
     state.db = null;
     state.authUser = null;
+    state.authResolved = true;
     console.warn("Firebase bağlantı hatası: " + error.message);
   }
 

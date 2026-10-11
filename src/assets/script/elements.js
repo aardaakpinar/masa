@@ -6,6 +6,10 @@ export const elements = {
 	groupAvatarButton: document.querySelector("#groupAvatarButton"),
 	groupAvatarColorInput: document.querySelector("#groupAvatarColorInput"),
 	groupAvatarPreview: document.querySelector("#groupAvatarPreview"),
+	groupLogoButton: document.querySelector("#groupLogoButton"),
+	groupLogoInput: document.querySelector("#groupLogoInput"),
+	groupLogoRemoveButton: document.querySelector("#groupLogoRemoveButton"),
+	groupCreateError: document.querySelector("#groupCreateError"),
 	groupNameInput: document.querySelector("#groupNameInput"),
 	groupNameCount: document.querySelector("#groupNameCount"),
 	groupDescriptionInput: document.querySelector("#groupDescriptionInput"),
@@ -58,6 +62,11 @@ export const elements = {
 	),
 	groupDetailEditAvatarPreview: document.querySelector(
 		"#groupDetailEditAvatarPreview",
+	),
+	groupDetailEditLogoButton: document.querySelector("#groupDetailEditLogoButton"),
+	groupDetailEditLogoInput: document.querySelector("#groupDetailEditLogoInput"),
+	groupDetailEditLogoRemoveButton: document.querySelector(
+		"#groupDetailEditLogoRemoveButton",
 	),
 	groupDetailEditNameInput: document.querySelector(
 		"#groupDetailEditNameInput",
@@ -113,6 +122,8 @@ export const elements = {
 	logoutButton: document.querySelector("#logoutButton"),
 	accountText: document.querySelector("#accountText"),
 	authGate: document.querySelector("#authGate"),
+	authGateMessage: document.querySelector("#authGateMessage"),
+	authPending: document.querySelector("#authPending"),
 	authDialog: document.querySelector("#authDialog"),
 	authTitle: document.querySelector("#authTitle"),
 	loginMode: document.querySelector("#loginMode"),
@@ -127,4 +138,6 @@ export const elements = {
 	feedError: document.querySelector("#feedError"),
 	postsLoading: document.querySelector("#postsLoading"),
 	groupsAuthGate: document.querySelector("#groupsAuthGate"),
+	groupsAuthGateMessage: document.querySelector("#groupsAuthGateMessage"),
+	groupsAuthPending: document.querySelector("#groupsAuthPending"),
 };

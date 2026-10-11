@@ -390,6 +390,34 @@ img {
 	display: flex;
 }
 
+.auth-pending {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	color: var(--text-soft);
+	font-size: var(--fs-sm);
+	font-weight: var(--fw-semibold);
+}
+
+.auth-pending[hidden] {
+	display: none;
+}
+
+.auth-pending-spinner {
+	width: 18px;
+	height: 18px;
+	border: 2px solid var(--line);
+	border-top-color: var(--accent-dark);
+	border-radius: 50%;
+	animation: auth-pending-spin 700ms linear infinite;
+}
+
+@keyframes auth-pending-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
 .composer {
 	display: grid;
 	gap: 14px;
@@ -1133,8 +1161,11 @@ img {
 }
 
 .groups-form-card {
-	background: var(--bg);
 	margin: 18px;
+	padding: 18px;
+	border: 1px solid var(--line);
+	border-radius: var(--r-lg);
+	background: var(--bg);
 	box-shadow: var(--shadow-sm);
 }
 
@@ -1165,12 +1196,26 @@ img {
 .groups-field {
 	display: flex;
 	position: relative;
+	align-items: center;
 	gap: 10px;
 	flex-direction: row;
 }
 
+.groups-field--stacked {
+	display: grid;
+	gap: 8px;
+}
+
+.groups-select-label {
+	color: var(--text-soft);
+	font-size: var(--fs-xs);
+	font-weight: var(--fw-bold);
+	letter-spacing: 0.02em;
+}
+
 .groups-field input,
-.groups-field textarea {
+.groups-field textarea,
+.groups-field select {
 	width: 100%;
 	border: 1px solid var(--line);
 	background: var(--bg);
@@ -1183,6 +1228,16 @@ img {
 .groups-field input {
 	height: 46px;
 	padding-right: 64px;
+}
+
+.groups-field select {
+	min-height: 46px;
+}
+
+.groups-field--stacked input,
+.groups-field--stacked textarea,
+.groups-field--stacked select {
+	padding-right: 14px;
 }
 
 .groups-field textarea {
@@ -1201,6 +1256,13 @@ img {
 	font-size: var(--fs-xs);
 	color: var(--text-soft);
 	pointer-events: none;
+}
+
+.groups-field--stacked .groups-counter {
+	top: auto;
+	bottom: 10px;
+	right: 14px;
+	transform: none;
 }
 
 .groups-counter--bottom {
