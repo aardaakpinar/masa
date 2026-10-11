@@ -126,6 +126,7 @@ export const elements = {
 	authPending: document.querySelector("#authPending"),
 	authPanel: document.querySelector("#authPanel"),
 	authForm: document.querySelector("#authForm"),
+	authError: document.querySelector("#authError"),
 	authNameField: document.querySelector("#authNameField"),
 	authSubtitle: document.querySelector("#authSubtitle"),
 	authTabs: document.querySelector("#authTabs"),
