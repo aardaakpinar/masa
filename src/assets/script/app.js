@@ -8,6 +8,8 @@ import {
 	openChangePasswordDialog,
 	confirmDeleteAccount,
 	setAuthMode,
+	sendEmailLink,
+	backToAuthForm,
 	logout,
 } from "./auth.js";
 import {
@@ -15,6 +17,7 @@ import {
 	syncAuthUi,
 	syncComposer,
 	openAuth,
+	openAuthColumn,
 	openFeed,
 	closeSettings,
 	openSearch,
@@ -288,9 +291,10 @@ bind(elements.openAuthFromGate, "click", openAuth);
 bind(elements.openGroupsAuthFromGate, "click", openAuth);
 bind(elements.changePasswordButton, "click", openChangePasswordDialog);
 bind(elements.deleteAccountButton, "click", confirmDeleteAccount);
-bind(elements.logoutButton, "click", () => {
-	logout();
-	window.location.href = "login.html";
+bind(elements.logoutButton, "click", async () => {
+	await logout();
+	closeSettings();
+	openAuthColumn("login");
 });
 bind(elements.settingsAvatarInput, "change", saveSettingsAvatar);
 bind(elements.saveProfileButton, "click", saveProfileSettings);
@@ -360,12 +364,16 @@ bind(elements.feedButton, "click", () => {
 
 bind(elements.loginMode, "click", () => setAuthMode("login"));
 bind(elements.registerMode, "click", () => setAuthMode("register"));
-bind(elements.submitAuth, "click", submitAuth);
-bind(elements.authPassword, "keydown", (event) => {
-	if (event.key === "Enter") submitAuth();
+bind(elements.authMethodToggle, "click", () => {
+	state.authUsePassword = !state.authUsePassword;
+	syncAuthMode();
+	(state.authUsePassword ? elements.authPassword : elements.authEmail)?.focus();
 });
-bind(elements.authEmail, "keydown", (event) => {
-	if (event.key === "Enter") submitAuth();
+bind(elements.authResend, "click", () => sendEmailLink());
+bind(elements.authBack, "click", backToAuthForm);
+bind(elements.authForm, "submit", (event) => {
+	event.preventDefault();
+	submitAuth();
 });
 
 if (elements.authPasswordToggle && elements.authPassword) {
@@ -376,7 +384,8 @@ if (elements.authPasswordToggle && elements.authPassword) {
 			"aria-label",
 			isHidden ? "Şifreyi gizle" : "Şifreyi göster",
 		);
-		elements.authPasswordToggle.innerHTML = isHidden ? "🙈" : "👁";
+		elements.authPasswordToggle.innerHTML = `<span data-lucide="${isHidden ? "eye-off" : "eye"}"></span>`;
+		window.lucide?.createIcons();
 	});
 }
 

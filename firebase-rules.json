@@ -11,7 +11,7 @@
 				".write": "auth != null && auth.uid === $uid",
 				".validate": "newData.hasChildren(['name', 'color', 'createdAt', 'isDisabled']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 50 && newData.child('color').isString() && newData.child('color').val().matches(/^#[0-9a-fA-F]{3,8}$/) && newData.child('createdAt').isNumber() && newData.child('isDisabled').isBoolean() && (!newData.child('updatedAt').exists() || newData.child('updatedAt').isNumber()) && (!newData.child('deletedAt').exists() || newData.child('deletedAt').isNumber()) && !newData.hasChild('email')",
 				"name": {
-					".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 50"
+					".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 50 && ((data.exists() && newData.val() === data.val()) || newData.val() === 'Silinmiş kullanıcı' || root.child('usernames').child(newData.val().replace('.', '_').replace('$', '_').replace('#', '_').replace('[', '_').replace(']', '_').replace('/', '_')).val() === auth.uid)"
 				},
 				"color": {
 					".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{3,8}$/)"
@@ -31,6 +31,13 @@
 				"$other": {
 					".validate": false
 				}
+			}
+		},
+		"usernames": {
+			".read": "auth != null",
+			"$key": {
+				".write": "auth != null && ((!data.exists() && newData.val() === auth.uid) || (data.val() === auth.uid && !newData.exists()))",
+				".validate": "$key.length > 0 && $key.length <= 50 && (!newData.exists() || (newData.isString() && newData.val() === auth.uid))"
 			}
 		},
 		"posts": {
@@ -180,7 +187,7 @@
 					".validate": "newData.val() === (data.exists() ? data.val() : auth.uid)"
 				},
 				"ownerName": {
-					".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 50"
+					".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 50 && ((data.exists() && newData.val() === data.val()) || newData.val() === root.child('users').child(auth.uid).child('name').val())"
 				},
 				"createdAt": {
 					".validate": "newData.isNumber() && (data.exists() ? newData.val() === data.val() : newData.val() <= now + 60000)"

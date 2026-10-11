@@ -50,7 +50,7 @@ npm run dev
 
 5. Tarayıcıda aç:
 
-- Giriş ekranı: `/login.html`
+- Giriş / kayıt: akıştaki "Giriş" kolonu (sekmeli)
 - Uygulama: `/`
 
 ## Build

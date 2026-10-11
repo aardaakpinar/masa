@@ -24,6 +24,7 @@ const auxiliaryColumns = [
 	{ id: feedColumnIds.search, element: document.querySelector("#search"), title: "Ara" },
 	{ id: feedColumnIds.groups, element: document.querySelector("#groupsView"), title: "Masalar" },
 	{ id: feedColumnIds.account, element: document.querySelector("#settingsPanel"), title: "Hesap" },
+	{ id: feedColumnIds.auth, element: document.querySelector("#authPanel"), title: "Giriş" },
 ];
 
 // Herkese açık gönderiler + üyesi olunan masaların gönderileri tek haritada birleşir.
@@ -727,7 +728,8 @@ export function renderGroupDetailPosts() {
 	refreshIcons();
 }
 
-export function createPostElement(post) {
+export function createPostElement(post, options) {
+	const commentsOpen = options?.commentsOpen === true;
 	const author_ = resolveAuthor(post);
 	const article = document.createElement("article");
 	article.className = "post";
@@ -798,8 +800,12 @@ export function createPostElement(post) {
 	commentButton.className = "action-button";
 	commentButton.type = "button";
 	const commentIcon = document.createElement("span");
-	commentIcon.setAttribute("data-lucide", "message-circle");
-	commentButton.append(commentIcon, ` ${commentCount}`);
+	commentIcon.setAttribute("data-lucide", commentsOpen ? "x" : "message-circle");
+	if (commentsOpen) {
+		commentButton.setAttribute("aria-label", "Yorumları kapat");
+		commentButton.title = "Yorumları kapat";
+	}
+	commentButton.append(commentIcon, ...(commentsOpen ? [] : [` ${commentCount}`]));
 	commentButton.addEventListener("click", () => {
 		if (!state.authUser) {
 			openAuth();
@@ -1078,7 +1084,7 @@ function createCommentScreen(post, sourceList) {
 	const body = document.createElement("div");
 
 	// Original post preview
-	const postPreview = createPostElement(post);
+	const postPreview = createPostElement(post, { commentsOpen: true });
 
 	// Section heading
 	const heading = document.createElement("div");

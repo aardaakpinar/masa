@@ -331,6 +331,67 @@
 				</section>
 			</main>
 
+			<main class="timeline hidden" id="authPanel">
+				<header class="topbar">
+					<button class="button button--ghost mobile-menu-button" type="button" aria-label="Menüyü aç">
+						<span data-lucide="menu"></span>
+					</button>
+					<div>
+						<h1>Giriş</h1>
+						<img class="brand-image" src="assets/logo.svg" alt="MASA Logo" />
+					</div>
+				</header>
+
+				<div class="search-tabs" id="authTabs" role="tablist" aria-label="Hesap modu">
+					<button class="search-tab active" id="loginMode" type="button" role="tab" aria-selected="true" data-mode="login">Giriş yap</button>
+					<button class="search-tab" id="registerMode" type="button" role="tab" aria-selected="false" data-mode="register">Kayıt ol</button>
+				</div>
+
+				<form class="groups-form-card auth-form-card" id="authForm" novalidate>
+					<div class="auth-form-intro">
+						<strong id="authTitle">Tekrar hoş geldin!</strong>
+						<p id="authSubtitle">Masaya oturmak için giriş yap.</p>
+					</div>
+					<div class="groups-form-fields">
+						<div class="groups-field groups-field--stacked auth-name-field" id="authNameField" hidden>
+							<label class="groups-select-label" for="authName">Görünen ad</label>
+							<input id="authName" type="text" autocomplete="name" maxlength="28" placeholder="Adın soyadın" />
+						</div>
+						<div class="groups-field groups-field--stacked">
+							<label class="groups-select-label" for="authEmail">E-posta</label>
+							<input id="authEmail" type="email" autocomplete="email" placeholder="ornek@email.com" />
+						</div>
+						<div class="groups-field groups-field--stacked" id="authPasswordField" hidden>
+							<label class="groups-select-label" for="authPassword">Şifre</label>
+							<div class="password-input-wrapper">
+								<input id="authPassword" type="password" minlength="8" autocomplete="current-password" placeholder="••••••••" />
+								<button type="button" class="password-toggle" id="authPasswordToggle" aria-label="Şifreyi göster">
+									<span data-lucide="eye"></span>
+								</button>
+							</div>
+						</div>
+						<p class="password-hint auth-link-hint" id="authLinkHint">Şifre gerekmez. E-postana tek kullanımlık bir bağlantı göndeririz; tıklayınca giriş yapılır ve e-postan doğrulanır.</p>
+						<button class="button button--primary groups-submit auth-submit" id="submitAuth" type="submit">Giriş bağlantısı gönder</button>
+						<button class="auth-method-toggle" id="authMethodToggle" type="button">Şifreyle giriş yap</button>
+					</div>
+					<p class="error-text" id="authError"></p>
+				</form>
+
+				<section class="groups-form-card auth-form-card auth-sent" id="authSent" aria-live="polite" hidden>
+					<div class="auth-sent__icon" aria-hidden="true"><span data-lucide="mail-check"></span></div>
+					<div class="auth-form-intro">
+						<strong>Bağlantı yolda</strong>
+						<p id="authSentText"></p>
+					</div>
+					<p class="password-hint">Gelen kutunda göremezsen spam klasörüne de bak. Bağlantı tek kullanımlıktır ve süresi kısıtlıdır.</p>
+					<div class="auth-sent__actions">
+						<button class="button button--secondary" id="authResend" type="button">Tekrar gönder</button>
+						<button class="button button--ghost" id="authBack" type="button">E-postayı değiştir</button>
+					</div>
+					<p class="error-text" id="authSentError"></p>
+				</section>
+			</main>
+
 			<main class="timeline hidden" id="settingsPanel">
 				<header class="topbar">
 					<button class="button button--ghost mobile-menu-button" type="button" aria-label="Menüyü aç">
@@ -392,42 +453,9 @@
 			</main>
 		</div>
 
-		<dialog class="settings-dialog" id="authDialog">
-			<form method="dialog" class="settings-card">
-				<div class="dialog-heading">
-					<h2 id="authTitle">Giriş yap</h2>
-					<button class="icon-button button button--icon" value="cancel" aria-label="Kapat">×</button>
-				</div>
-				<div class="auth-switch segmented-control" role="tablist" aria-label="Hesap modu">
-					<button class="switch-button segmented-control__item active button button--secondary" id="loginMode" type="button">Giriş</button>
-					<button class="switch-button segmented-control__item button button--secondary" id="registerMode" type="button">Kayıt</button>
-				</div>
-				<label class="auth-field" id="authNameField">
-					<span>Görünen ad</span>
-					<input class="input" id="authName" type="text" autocomplete="name" />
-				</label>
-				<label class="auth-field">
-					<span>E-posta</span>
-					<input class="input" id="authEmail" type="email" autocomplete="email" />
-				</label>
-				<label class="auth-field">
-					<span>Şifre</span>
-					<div class="password-input-wrapper">
-						<input class="input" id="authPassword" type="password" minlength="8" autocomplete="current-password" />
-						<button type="button" class="password-toggle" id="authPasswordToggle" aria-label="Şifreyi göster">
-							<span aria-hidden="true">👁</span>
-						</button>
-					</div>
-				</label>
-				<p class="password-hint" id="passwordHint">Şifre: 8+ karakter, büyük, küçük, sayı, sembol</p>
-				<button class="button button--primary button--full" id="submitAuth" type="button">Giriş yap</button>
-				<p class="error-text" id="authError"></p>
-			</form>
-		</dialog>
-
 		<script type="module" src="assets/script/app.js"></script>
 		<script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
-		<script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+		<script integrity="sha384-uTYyvsSSUZeaPhb5RbKlQa0zY/WpX/QHfvg2mczXyBQOpkWPEDy9lczyp+w7SKXu" crossorigin="anonymous" src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
 		<script>
 			lucide.createIcons();
 		</script>

@@ -61,7 +61,17 @@ export function authMessage(code) {
     "auth/weak-password": "Şifre daha güçlü olmalı.",
     "auth/network-request-failed": "Ağ bağlantısı kurulamadı.",
     "auth/operation-not-allowed":
-      "Firebase Console'da Email/Password girişini açmalısın.",
+      "Firebase Console'da Email/Password girişini ve “Email link” seçeneğini açmalısın.",
+    "auth/invalid-action-code":
+      "Bağlantı geçersiz veya daha önce kullanılmış. Yeni bir bağlantı iste.",
+    "auth/expired-action-code":
+      "Bağlantının süresi dolmuş. Yeni bir bağlantı iste.",
+    "auth/unauthorized-continue-uri":
+      "Bu alan adı Firebase'de yetkili değil (Authentication → Settings → Authorized domains).",
+    "auth/invalid-continue-uri": "Yönlendirme adresi geçersiz.",
+    "auth/missing-continue-uri": "Yönlendirme adresi eksik.",
+    "auth/quota-exceeded": "E-posta gönderim sınırı doldu. Daha sonra tekrar dene.",
+    "auth/user-disabled": "Bu hesap devre dışı bırakılmış.",
     "auth/too-many-requests":
       "Çok fazla başarısız deneme. Lütfen daha sonra tekrar deneyin.",
   };
@@ -163,6 +173,12 @@ export function createRichTextFragment(text) {
   }
 
   return fragment;
+}
+
+// Kullanıcı adı rezervasyon anahtarı (usernames/<anahtar>). firebase-rules.json içindeki
+// replace zinciriyle birebir aynı olmalı: Firebase anahtarlarında yasak karakterler "_" olur.
+export function usernameKey(name) {
+  return String(name || "").replace(/[.$#[\]/]/g, "_");
 }
 
 // Veritabanından gelen renk değerlerini CSS'e vermeden önce doğrula.

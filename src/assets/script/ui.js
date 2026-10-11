@@ -172,26 +172,63 @@ export function syncAuthUi() {
 }
 
 export function syncAuthMode() {
+  const step = state.authStep;
   const isRegister = state.authMode === "register";
-  const authNameField = elements.authName?.closest("label");
-  if (authNameField) {
-    authNameField.style.display = isRegister ? "grid" : "none";
-  }
+  const isSent = step === "sent";
+  const isComplete = step === "complete";
+  const isForm = step === "form";
+  const usePassword = !isRegister && isForm && state.authUsePassword;
 
-  setText(elements.authTitle, isRegister ? "Kayıt ol" : "Giriş yap");
-  setText(elements.submitAuth, isRegister ? "Kayıt ol" : "Giriş yap");
+  setHidden(elements.authTabs, !isForm);
+  setHidden(elements.authForm, isSent);
+  setHidden(elements.authSent, !isSent);
+  setHidden(elements.authNameField, !(isRegister && isForm));
+  setHidden(elements.authPasswordField, !usePassword);
+  setHidden(elements.authLinkHint, usePassword || isComplete);
+  setHidden(elements.authMethodToggle, !(!isRegister && isForm));
+  setText(
+    elements.authMethodToggle,
+    usePassword ? "E-posta bağlantısıyla giriş yap" : "Şifreyle giriş yap",
+  );
+
+  let title = "Tekrar hoş geldin!";
+  let subtitle = "Masaya oturmak için giriş yap.";
+  let submit = "Giriş bağlantısı gönder";
+  if (isComplete) {
+    title = "Girişi tamamla";
+    subtitle = "Bağlantıyı açtığın e-posta adresini yaz.";
+    submit = "Girişi tamamla";
+  } else if (isRegister) {
+    title = "Masaya katıl!";
+    subtitle = "Adını ve e-postanı yaz; doğrulama bağlantısını gönderelim.";
+    submit = "Doğrulama bağlantısı gönder";
+  } else if (usePassword) {
+    submit = "Giriş yap";
+  }
+  setText(elements.authTitle, title);
+  setText(elements.authSubtitle, subtitle);
+  setText(elements.submitAuth, submit);
+
+  if (isSent) {
+    setText(
+      elements.authSentText,
+      `${state.authEmail} adresine tek kullanımlık bir bağlantı gönderdik. Bağlantıya tıkladığında giriş yapılır ve e-posta adresin doğrulanır.`,
+    );
+  }
 
   if (elements.authPassword) {
-    elements.authPassword.autocomplete = isRegister
-      ? "new-password"
-      : "current-password";
+    elements.authPassword.autocomplete = "current-password";
   }
 
-  toggleClass(elements.loginMode, "active", !isRegister);
-  toggleClass(elements.registerMode, "active", isRegister);
-  if (elements.authError) {
-    elements.authError.textContent = "";
-  }
+  [
+    [elements.loginMode, !isRegister],
+    [elements.registerMode, isRegister],
+  ].forEach(([tab, active]) => {
+    toggleClass(tab, "active", active);
+    tab?.setAttribute("aria-selected", String(active));
+  });
+  if (elements.authError) elements.authError.textContent = "";
+  if (elements.authSentError) elements.authSentError.textContent = "";
 }
 
 export function openAuth() {
@@ -199,9 +236,21 @@ export function openAuth() {
     openSettings();
     return;
   }
+  openAuthColumn();
+}
 
-  // Redirect to login page instead of showing modal
-  window.location.href = "login.html";
+export function openAuthColumn(mode) {
+  if (mode) {
+    state.authMode = mode;
+    syncAuthMode();
+  }
+  openFeedColumn(feedColumnIds.auth);
+  elements.authEmail?.focus({ preventScroll: true });
+}
+
+export function closeAuthColumn() {
+  if (!state.openFeedColumns.includes(feedColumnIds.auth)) return;
+  closeFeedColumn(feedColumnIds.auth);
 }
 
 let currentView = "feed";
@@ -240,6 +289,7 @@ function syncNavigationState() {
   elements.authButton?.classList.toggle(
     "active",
     state.openFeedColumns.includes(feedColumnIds.account) ||
+      state.openFeedColumns.includes(feedColumnIds.auth) ||
       (state.authUser &&
         state.openFeedColumns.includes(profileColumnId(state.authUser.uid))),
   );

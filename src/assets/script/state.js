@@ -1,6 +1,8 @@
 export const storageKeys = {
   config: "masa.firebaseConfig",
   rememberMe: "masa.rememberMe",
+  emailLink: "masa.emailLink",
+  pendingName: "masa.pendingName",
 };
 
 export const firebaseConfig = {
@@ -14,6 +16,7 @@ export const feedColumnIds = {
   search: "$search",
   groups: "$groups",
   account: "$account",
+  auth: "$auth",
 };
 
 const profileColumnPrefix = "$profile:";
@@ -42,6 +45,9 @@ export const state = {
     color: "#2563eb",
   },
   authMode: "login",
+  authStep: "form", // form | sent | complete (bağlantıyla farklı cihazda e-posta isteme)
+  authUsePassword: false,
+  authEmail: "",
   posts: {},
   postsRef: null,
   groupPosts: {},

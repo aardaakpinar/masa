@@ -22,8 +22,10 @@ function cspPlugin() {
         "https://*.firebasedatabase.app",
         "wss://*.firebasedatabase.app",
       ];
+      // script-src'ye *.googleapis.com ve unpkg.com'un tamamı EKLENMEZ (JSONP / keyfi paket ile CSP aşımı).
+      // lucide yalnızca tam dosya yoluyla izinli.
+      const lucideScript = "https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js";
       const firebaseScripts = [
-        "https://*.googleapis.com",
         "https://*.firebaseio.com",
         "https://*.firebasedatabase.app",
         "https://*.firebaseapp.com",
@@ -31,11 +33,11 @@ function cspPlugin() {
 
       const policy = [
         "default-src 'self'",
-        `script-src 'self' ${firebaseScripts.join(" ")} https://www.gstatic.com https://www.google.com/recaptcha/ https://unpkg.com https://scripts.simpleanalyticscdn.com ${hashes.join(" ")}`.trim(),
+        `script-src 'self' ${firebaseScripts.join(" ")} https://www.gstatic.com https://www.google.com/recaptcha/ ${lucideScript} https://scripts.simpleanalyticscdn.com ${hashes.join(" ")}`.trim(),
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         "font-src 'self' https://fonts.gstatic.com data:",
         "img-src 'self' data: blob: https://queue.simpleanalyticscdn.com",
-        `connect-src 'self' ${firebase.join(" ")} https://www.google.com/recaptcha/ https://www.gstatic.com https://unpkg.com https://scripts.simpleanalyticscdn.com https://queue.simpleanalyticscdn.com`,
+        `connect-src 'self' ${firebase.join(" ")} https://www.google.com/recaptcha/ https://www.gstatic.com https://scripts.simpleanalyticscdn.com https://queue.simpleanalyticscdn.com`,
         "frame-src https://*.firebaseapp.com https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/",
         "object-src 'none'",
         "base-uri 'self'",
@@ -73,7 +75,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, "src/index.html"),
-        login: resolve(__dirname, "src/login.html"),
       },
     },
   },

@@ -345,3 +345,144 @@ body .feed-column__heading {
 		border-right: 0;
 	}
 }
+
+/* ---------- Giriş / Kayıt kolonu ---------- */
+#authPanel .search-tabs {
+	margin: 0;
+}
+
+.auth-form-card {
+	display: grid;
+	gap: 16px;
+}
+
+.auth-form-intro {
+	display: grid;
+	gap: 4px;
+}
+
+.auth-form-intro strong {
+	font-family: var(--font-display);
+	font-size: var(--fs-lg);
+	font-weight: var(--fw-semibold);
+	line-height: var(--lh-tight);
+}
+
+.auth-form-intro p {
+	margin: 0;
+	color: var(--text-soft);
+	font-size: var(--fs-sm);
+	line-height: var(--lh-base);
+}
+
+.auth-form-card .groups-field[hidden],
+.auth-form-card .password-hint[hidden] {
+	display: none;
+}
+
+.auth-form-card .error-text {
+	margin: 0;
+}
+
+.password-input-wrapper {
+	position: relative;
+}
+
+.password-input-wrapper input {
+	padding-right: 48px;
+}
+
+.password-toggle {
+	position: absolute;
+	top: 50%;
+	right: 6px;
+	display: grid;
+	place-items: center;
+	width: 36px;
+	height: 36px;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: var(--text-soft);
+	transform: translateY(-50%);
+	cursor: pointer;
+}
+
+.password-toggle:hover {
+	color: var(--text);
+}
+
+.password-toggle svg {
+	width: 18px;
+	height: 18px;
+}
+
+.auth-submit {
+	align-self: stretch;
+	width: 100%;
+}
+
+/* ---------- Giriş: e-posta bağlantısı akışı ---------- */
+.auth-form-card[hidden] {
+	display: none;
+}
+
+.auth-link-hint {
+	margin: 0;
+}
+
+.auth-method-toggle {
+	align-self: center;
+	padding: 6px 4px;
+	border: 0;
+	background: transparent;
+	color: var(--text-soft);
+	font-size: var(--fs-sm);
+	font-weight: var(--fw-semibold);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+	cursor: pointer;
+}
+
+.auth-method-toggle:hover {
+	color: var(--text);
+}
+
+.auth-method-toggle[hidden] {
+	display: none;
+}
+
+.auth-sent {
+	justify-items: start;
+}
+
+.auth-sent__icon {
+	display: grid;
+	place-items: center;
+	width: 44px;
+	height: 44px;
+	border: 1px solid var(--line);
+	border-radius: var(--r-md);
+	background: var(--bg-alt);
+	color: var(--text);
+}
+
+.auth-sent__icon svg {
+	width: 22px;
+	height: 22px;
+}
+
+.auth-sent__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.auth-sent .error-text {
+	margin: 0;
+	width: 100%;
+}
+
+#authPanel .search-tabs[hidden] {
+	display: none;
+}

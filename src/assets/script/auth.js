@@ -7,14 +7,17 @@ import {
 	authMessage,
 	friendlyErrorMessage,
 	validatePassword,
+	usernameKey,
 } from "./utils.js";
 import {
 	onAuthStateChanged,
-	createUserWithEmailAndPassword,
 	signInWithEmailAndPassword,
 	signOut,
 	updateProfile,
 	updatePassword,
+	sendSignInLinkToEmail,
+	isSignInWithEmailLink,
+	signInWithEmailLink,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import {
 	get,
@@ -30,7 +33,14 @@ import {
 import { renderPosts, fetchOwnPostsWithPaths } from "./posts.js";
 import { subscribeToUsers, stopUsersSubscription } from "./users.js";
 import { renderGroups } from "./groups.js";
-import { syncAuthUi, syncComposer, syncAuthMode, closeSettings } from "./ui.js";
+import {
+	syncAuthUi,
+	syncComposer,
+	syncAuthMode,
+	closeSettings,
+	closeAuthColumn,
+	openAuthColumn,
+} from "./ui.js";
 
 const authAttempts = {
 	attempts: [],
@@ -77,6 +87,7 @@ async function anonymizeUserContent(uid, anonymousProfile) {
 }
 
 export function subscribeToAuth() {
+	void handleEmailLinkOnLoad();
 	onAuthStateChanged(state.auth, async (user) => {
 		state.authUser = user;
 		state.authResolved = true;
@@ -93,9 +104,7 @@ export function subscribeToAuth() {
 				};
 				console.warn("Profil bilgisi alınamadı: " + error.message);
 			}
-			if (elements.authDialog?.open) {
-				elements.authDialog.close();
-			}
+			closeAuthColumn();
 		} else {
 			stopUsersSubscription();
 			state.authUser = null;
@@ -130,22 +139,54 @@ export async function loadOrCreateProfile(user) {
 			name: cleanName(profile.name || user.displayName || "User"),
 			color: profile.color || "#2563eb",
 		};
+		void ensureUsernameClaim(user.uid, state.profile.name);
 	} else {
-		state.profile = {
-			name: cleanName(
-				user.displayName || user.email?.split("@")[0] || "User",
-			),
-			color: "#2563eb",
-		};
+		// Yeni hesap: kayıtta yazılan ad (varsa) kullanılır; ad alınmışsa sayı eklenir.
+		const wantedName = cleanName(
+			readPendingName() ||
+				user.displayName ||
+				user.email?.split("@")[0] ||
+				"User",
+		);
+		const name = await reserveUsername(user.uid, wantedName);
+		state.profile = { name, color: "#2563eb" };
+		if (user.displayName !== name) {
+			await updateProfile(user, { displayName: name }).catch(() => {});
+		}
 		await set(userRef, {
 			...state.profile,
 			createdAt: serverTimestamp(),
 			isDisabled: false,
 		});
+		clearPendingName();
 	}
 
 	syncAuthUi();
 	renderGroups();
+}
+
+// Kullanıcı adı rezervasyonu: usernames/<anahtar> = uid. Kurallar aynı adı ikinci kişiye vermez.
+async function claimUsername(uid, name) {
+	await set(ref(state.db, `usernames/${usernameKey(name)}`), uid);
+}
+
+async function releaseUsername(uid, name) {
+	try {
+		const nodeRef = ref(state.db, `usernames/${usernameKey(name)}`);
+		if ((await get(nodeRef)).val() === uid) await remove(nodeRef);
+	} catch (error) {
+		console.warn("Kullanıcı adı serbest bırakılamadı: " + error.message);
+	}
+}
+
+// Rezervasyonu olmayan eski hesaplar ilk girişte adını (boşsa) sahiplenir.
+async function ensureUsernameClaim(uid, name) {
+	try {
+		const nodeRef = ref(state.db, `usernames/${usernameKey(name)}`);
+		if (!(await get(nodeRef)).exists()) await set(nodeRef, uid);
+	} catch (error) {
+		console.warn("Kullanıcı adı rezerve edilemedi: " + error.message);
+	}
 }
 
 async function isNameTaken(name, excludeUid) {
@@ -181,26 +222,199 @@ async function isNameTaken(name, excludeUid) {
 	);
 }
 
+// ---------- E-posta bağlantısıyla giriş / kayıt (passwordless) ----------
+const LINK_TTL = 6 * 60 * 60 * 1000;
+const RESEND_COOLDOWN = 30 * 1000;
+let lastLinkSentAt = 0;
+
+function readJson(key) {
+	try {
+		return JSON.parse(localStorage.getItem(key) || "null");
+	} catch {
+		return null;
+	}
+}
+
+function readPendingName() {
+	const stored = readJson(storageKeys.pendingName);
+	if (!stored || Date.now() - stored.ts > LINK_TTL) return "";
+	return stored.name || "";
+}
+
+function clearPendingName() {
+	try {
+		localStorage.removeItem(storageKeys.pendingName);
+	} catch {}
+}
+
+function emailLinkUrl() {
+	// Bağlantı aynı sayfaya döner (GitHub Pages alt dizini dahil), arama/hash temizlenir.
+	return window.location.href.split(/[?#]/)[0];
+}
+
+function setAuthStep(step) {
+	state.authStep = step;
+	syncAuthMode();
+}
+
 export async function submitAuth() {
 	if (!state.auth) {
 		elements.authError.textContent = "Önce Firebase bağlantısı kurulmalı.";
 		return;
 	}
+	if (state.authStep === "complete") {
+		await completeEmailLink(elements.authEmail.value);
+		return;
+	}
+	if (state.authMode === "login" && state.authUsePassword) {
+		await submitPasswordLogin();
+		return;
+	}
+	await sendEmailLink({ fromForm: true });
+}
 
+export async function sendEmailLink({ fromForm = false } = {}) {
+	const errorEl = fromForm ? elements.authError : elements.authSentError;
+	const email = fromForm
+		? sanitizeEmail(elements.authEmail.value.trim())
+		: state.authEmail;
+	const isRegister = state.authMode === "register";
+	const name = fromForm
+		? cleanName((elements.authName?.value || "").trim())
+		: readPendingName();
+
+	if (!email || !isValidEmail(email)) {
+		errorEl.textContent = "Geçerli bir e-posta adresi gir.";
+		return;
+	}
+	if (fromForm && isRegister && !(elements.authName?.value || "").trim()) {
+		errorEl.textContent = "Kayıt olurken görünen ad gereklidir.";
+		return;
+	}
+	const wait = Math.ceil((lastLinkSentAt + RESEND_COOLDOWN - Date.now()) / 1000);
+	if (wait > 0) {
+		errorEl.textContent = `Yeni bağlantı için ${wait} saniye bekle.`;
+		return;
+	}
+
+	const button = fromForm ? elements.submitAuth : elements.authResend;
+	if (button) button.disabled = true;
+	try {
+		await sendSignInLinkToEmail(state.auth, email, {
+			url: emailLinkUrl(),
+			handleCodeInApp: true,
+		});
+		lastLinkSentAt = Date.now();
+		// Bağlantı başka sekmede/aynı tarayıcıda açılırsa e-postayı sormadan tamamlanır.
+		localStorage.setItem(
+			storageKeys.emailLink,
+			JSON.stringify({ email, ts: Date.now() }),
+		);
+		if (fromForm && isRegister && name) {
+			localStorage.setItem(
+				storageKeys.pendingName,
+				JSON.stringify({ name, ts: Date.now() }),
+			);
+		}
+		state.authEmail = email;
+		setAuthStep("sent");
+	} catch (error) {
+		console.error("E-posta bağlantısı gönderilemedi:", error);
+		errorEl.textContent = error.code
+			? authMessage(error.code)
+			: "Bağlantı gönderilemedi. Lütfen tekrar dene.";
+	} finally {
+		if (button) button.disabled = false;
+	}
+}
+
+export function backToAuthForm() {
+	state.authStep = "form";
+	if (elements.authEmail) elements.authEmail.value = state.authEmail || "";
+	syncAuthMode();
+}
+
+// Sayfa e-postadaki bağlantıyla açıldıysa girişi tamamlar.
+async function handleEmailLinkOnLoad() {
+	if (!state.auth || !isSignInWithEmailLink(state.auth, window.location.href)) {
+		return;
+	}
+	const stored = readJson(storageKeys.emailLink);
+	const email =
+		stored?.email && Date.now() - stored.ts <= LINK_TTL ? stored.email : "";
+
+	openAuthColumn();
+	if (email) {
+		state.authEmail = email;
+		await completeEmailLink(email);
+	} else {
+		// Bağlantı başka bir cihazda açıldı: güvenlik için e-posta yeniden istenir.
+		setAuthStep("complete");
+	}
+}
+
+async function completeEmailLink(rawEmail) {
+	const email = sanitizeEmail(String(rawEmail || "").trim());
+	if (!email || !isValidEmail(email)) {
+		elements.authError.textContent = "Geçerli bir e-posta adresi gir.";
+		return;
+	}
+	if (elements.submitAuth) elements.submitAuth.disabled = true;
+	try {
+		await signInWithEmailLink(state.auth, email, window.location.href);
+		try {
+			localStorage.removeItem(storageKeys.emailLink);
+		} catch {}
+		// oobCode adres çubuğunda kalmasın.
+		history.replaceState(history.state, "", emailLinkUrl());
+		state.authStep = "form";
+		syncAuthMode();
+	} catch (error) {
+		console.error("E-posta bağlantısıyla giriş başarısız:", error);
+		const dead = ["auth/invalid-action-code", "auth/expired-action-code"].includes(error.code);
+		if (dead) {
+			history.replaceState(history.state, "", emailLinkUrl());
+			state.authStep = "form";
+			syncAuthMode();
+		}
+		elements.authError.textContent = error.code
+			? authMessage(error.code)
+			: "Giriş tamamlanamadı. Lütfen tekrar dene.";
+		if (dead) return;
+	} finally {
+		if (elements.submitAuth) elements.submitAuth.disabled = false;
+	}
+}
+
+// Ad alınmışsa sonuna sayı ekleyerek rezerve eder (kullanıcı sonra Hesap'tan değiştirebilir).
+async function reserveUsername(uid, baseName) {
+	for (let attempt = 0; attempt < 6; attempt += 1) {
+		const candidate =
+			attempt === 0
+				? baseName
+				: cleanName(`${baseName.slice(0, 40)}${Math.floor(1000 + Math.random() * 9000)}`);
+		try {
+			if (await isNameTaken(candidate, uid)) continue;
+			await claimUsername(uid, candidate);
+			return candidate;
+		} catch {
+			// rezerve edilmiş: sıradaki adayı dene
+		}
+	}
+	throw new Error("Kullanıcı adı ayrılamadı.");
+}
+
+// Eski hesaplar için şifreyle giriş korunur.
+async function submitPasswordLogin() {
 	const email = sanitizeEmail(elements.authEmail.value.trim());
 	const password = elements.authPassword.value;
-	const name = cleanName(
-		elements.authName.value.trim() || email.split("@")[0] || "User",
-	);
 
 	if (!email || !isValidEmail(email)) {
 		elements.authError.textContent = "Geçerli bir e-posta adresi gir.";
 		return;
 	}
 
-	const passwordProblem = validatePassword(password, {
-		strict: state.authMode === "register",
-	});
+	const passwordProblem = validatePassword(password, { strict: false });
 	if (passwordProblem) {
 		elements.authError.textContent = passwordProblem;
 		return;
@@ -215,52 +429,24 @@ export async function submitAuth() {
 	elements.submitAuth.disabled = true;
 
 	try {
-		if (state.authMode === "register") {
-			if (!elements.authName.value.trim()) {
-				throw new Error("Kayıt yaparken görünen ad gereklidir.");
-			}
-			if (await isNameTaken(name)) {
-				elements.authError.textContent =
-					"Bu kullanıcı adı zaten alınmış, lütfen başka bir tane seç.";
-				elements.submitAuth.disabled = false;
-				return;
-			}
-			const credential = await createUserWithEmailAndPassword(
-				state.auth,
-				email,
-				password,
-			);
-			await updateProfile(credential.user, { displayName: name });
-			await set(ref(state.db, `users/${credential.user.uid}`), {
-				name,
-				color: "#2563eb",
-				createdAt: serverTimestamp(),
-				isDisabled: false,
-			});
-		} else {
-			const credential = await signInWithEmailAndPassword(
-				state.auth,
-				email,
-				password,
-			);
-			const profileSnapshot = await get(
-				ref(state.db, `users/${credential.user.uid}`),
-			);
-			const profile = profileSnapshot.val();
-			if (profile?.isDisabled) {
-				await signOut(state.auth);
-				state.authUser = null;
-				throw new Error("Bu hesap devre dışı bırakılmıştır.");
-			}
+		const credential = await signInWithEmailAndPassword(
+			state.auth,
+			email,
+			password,
+		);
+		const profileSnapshot = await get(
+			ref(state.db, `users/${credential.user.uid}`),
+		);
+		const profile = profileSnapshot.val();
+		if (profile?.isDisabled) {
+			await signOut(state.auth);
+			state.authUser = null;
+			throw new Error("Bu hesap devre dışı bırakılmıştır.");
 		}
 		recordAuthAttempt(true);
 	} catch (error) {
 		recordAuthAttempt(false);
-		console.error("Giriş/kayıt hatası:", error);
-		// Firebase hataları (error.code) için hazır, kullanıcı dostu Türkçe metin kullan.
-		// error.message'ı doğrudan göstermek İngilizce/teknik metin sızdırır; bunun tek
-		// istisnası, kendi kodumuzun az önce fırlattığı ("Bu hesap devre dışı..." gibi)
-		// zaten Türkçe ve kullanıcıya uygun mesajlardır (bunların error.code'u yoktur).
+		console.error("Giriş hatası:", error);
 		elements.authError.textContent = error.code
 			? authMessage(error.code)
 			: error.message || "İşlem tamamlanamadı. Lütfen tekrar dene.";
@@ -304,12 +490,28 @@ export async function saveProfileSettings() {
 		return;
 	}
 
+	const previousName = state.profile.name;
+	const renamed = name !== previousName;
 	try {
-		await update(ref(state.db, `users/${state.authUser.uid}`), {
-			name,
-			color,
-			updatedAt: serverTimestamp(),
-		});
+		if (renamed) {
+			try {
+				await claimUsername(state.authUser.uid, name);
+			} catch {
+				alert("Bu kullanıcı adı zaten alınmış, lütfen başka bir tane seç.");
+				return;
+			}
+		}
+		try {
+			await update(ref(state.db, `users/${state.authUser.uid}`), {
+				name,
+				color,
+				updatedAt: serverTimestamp(),
+			});
+		} catch (updateError) {
+			if (renamed) await releaseUsername(state.authUser.uid, name);
+			throw updateError;
+		}
+		if (renamed) await releaseUsername(state.authUser.uid, previousName);
 
 		// Gönderi ve yorumlarda ad/renk saklanmaz; herkes güncel profili users/ altından okur.
 		state.profile.name = name;
@@ -323,6 +525,7 @@ export async function saveProfileSettings() {
 
 export function setAuthMode(mode) {
 	state.authMode = mode;
+	state.authStep = "form";
 	syncAuthMode();
 }
 
@@ -416,10 +619,12 @@ export async function confirmDeleteAccount() {
 		// Önce içerik anonimleştirilir: hesap devre dışı kalınca (isDisabled) kurallar
 		// kullanıcının kendi gönderilerine yazmasını zaten engeller.
 		await anonymizeUserContent(state.authUser.uid, anonymousProfile);
+		const previousName = state.profile.name;
 		await update(
 			ref(state.db, `users/${state.authUser.uid}`),
 			anonymousProfile,
 		);
+		await releaseUsername(state.authUser.uid, previousName);
 
 		state.profile = {
 			name: anonymousProfile.name,
