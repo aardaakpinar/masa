@@ -486,3 +486,11 @@ body .feed-column__heading {
 #authPanel .search-tabs[hidden] {
 	display: none;
 }
+
+/* Görsel inene kadar yer tutucu (akış zıplamasın) */
+.post-media--loading {
+	min-height: 160px;
+	border: 1px solid var(--line);
+	border-radius: var(--r-lg);
+	background: var(--bg-alt);
+}

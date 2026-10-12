@@ -361,7 +361,7 @@
 							<label class="groups-select-label" for="authEmail">E-posta</label>
 							<input id="authEmail" type="email" autocomplete="email" placeholder="ornek@email.com" />
 						</div>
-						<div class="groups-field groups-field--stacked" id="authPasswordField" hidden>
+						<div class="groups-field groups-field--stacked" id="authPasswordField">
 							<label class="groups-select-label" for="authPassword">Şifre</label>
 							<div class="password-input-wrapper">
 								<input id="authPassword" type="password" minlength="8" autocomplete="current-password" placeholder="••••••••" />
@@ -370,9 +370,8 @@
 								</button>
 							</div>
 						</div>
-						<p class="password-hint auth-link-hint" id="authLinkHint">Şifre gerekmez. E-postana tek kullanımlık bir bağlantı göndeririz; tıklayınca giriş yapılır ve e-postan doğrulanır.</p>
-						<button class="button button--primary groups-submit auth-submit" id="submitAuth" type="submit">Giriş bağlantısı gönder</button>
-						<button class="auth-method-toggle" id="authMethodToggle" type="button">Şifreyle giriş yap</button>
+						<p class="password-hint" id="passwordHint" hidden>8+ karakter, büyük/küçük harf, sayı ve sembol (@$!%*?&amp;) içermeli. Kayıttan sonra e-postana bir doğrulama bağlantısı göndeririz.</p>
+						<button class="button button--primary groups-submit auth-submit" id="submitAuth" type="submit">Giriş yap</button>
 					</div>
 					<p class="error-text" id="authError"></p>
 				</form>
@@ -380,13 +379,14 @@
 				<section class="groups-form-card auth-form-card auth-sent" id="authSent" aria-live="polite" hidden>
 					<div class="auth-sent__icon" aria-hidden="true"><span data-lucide="mail-check"></span></div>
 					<div class="auth-form-intro">
-						<strong>Bağlantı yolda</strong>
+						<strong>E-postanı doğrula</strong>
 						<p id="authSentText"></p>
 					</div>
-					<p class="password-hint">Gelen kutunda göremezsen spam klasörüne de bak. Bağlantı tek kullanımlıktır ve süresi kısıtlıdır.</p>
+					<p class="password-hint">Gelen kutunda göremezsen spam klasörüne de bak. Bağlantıya tıkladıktan sonra aşağıdaki düğmeyle devam et.</p>
 					<div class="auth-sent__actions">
+						<button class="button button--primary" id="authVerified" type="button">Doğruladım, devam et</button>
 						<button class="button button--secondary" id="authResend" type="button">Tekrar gönder</button>
-						<button class="button button--ghost" id="authBack" type="button">E-postayı değiştir</button>
+						<button class="button button--ghost" id="authBack" type="button">Çıkış yap</button>
 					</div>
 					<p class="error-text" id="authSentError"></p>
 				</section>

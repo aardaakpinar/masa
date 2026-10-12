@@ -8,7 +8,10 @@ import { elements } from "./elements.js";
 import { initials, getContrastColor, safeColor } from "./utils.js";
 
 export function syncComposer() {
+  // Oturum yoksa (veya henüz çözülmediyse / e-posta doğrulanmadıysa) hiçbir composer görünmez.
+  const canCompose = Boolean(state.authResolved && state.authUser);
   document.querySelectorAll(".composer").forEach((composer) => {
+    composer.classList.toggle("hidden", !canCompose);
     const text = composer.querySelector('[data-composer-field="text"]');
     const count = composer.querySelector('[data-composer-field="count"]');
     const submit = composer.querySelector('[data-composer-action="submit"]');
@@ -172,52 +175,35 @@ export function syncAuthUi() {
 }
 
 export function syncAuthMode() {
-  const step = state.authStep;
+  const isVerify = state.authStep === "verify";
   const isRegister = state.authMode === "register";
-  const isSent = step === "sent";
-  const isComplete = step === "complete";
-  const isForm = step === "form";
-  const usePassword = !isRegister && isForm && state.authUsePassword;
 
-  setHidden(elements.authTabs, !isForm);
-  setHidden(elements.authForm, isSent);
-  setHidden(elements.authSent, !isSent);
-  setHidden(elements.authNameField, !(isRegister && isForm));
-  setHidden(elements.authPasswordField, !usePassword);
-  setHidden(elements.authLinkHint, usePassword || isComplete);
-  setHidden(elements.authMethodToggle, !(!isRegister && isForm));
+  setHidden(elements.authTabs, isVerify);
+  setHidden(elements.authForm, isVerify);
+  setHidden(elements.authSent, !isVerify);
+  setHidden(elements.authNameField, !isRegister);
+  setHidden(elements.passwordHint, !isRegister);
+
+  setText(elements.authTitle, isRegister ? "Masaya katıl!" : "Tekrar hoş geldin!");
   setText(
-    elements.authMethodToggle,
-    usePassword ? "E-posta bağlantısıyla giriş yap" : "Şifreyle giriş yap",
+    elements.authSubtitle,
+    isRegister
+      ? "Hesap oluşturmak için birkaç saniye yeterli."
+      : "Masaya oturmak için giriş yap.",
   );
+  setText(elements.submitAuth, isRegister ? "Kayıt ol" : "Giriş yap");
 
-  let title = "Tekrar hoş geldin!";
-  let subtitle = "Masaya oturmak için giriş yap.";
-  let submit = "Giriş bağlantısı gönder";
-  if (isComplete) {
-    title = "Girişi tamamla";
-    subtitle = "Bağlantıyı açtığın e-posta adresini yaz.";
-    submit = "Girişi tamamla";
-  } else if (isRegister) {
-    title = "Masaya katıl!";
-    subtitle = "Adını ve e-postanı yaz; doğrulama bağlantısını gönderelim.";
-    submit = "Doğrulama bağlantısı gönder";
-  } else if (usePassword) {
-    submit = "Giriş yap";
-  }
-  setText(elements.authTitle, title);
-  setText(elements.authSubtitle, subtitle);
-  setText(elements.submitAuth, submit);
-
-  if (isSent) {
+  if (isVerify) {
     setText(
       elements.authSentText,
-      `${state.authEmail} adresine tek kullanımlık bir bağlantı gönderdik. Bağlantıya tıkladığında giriş yapılır ve e-posta adresin doğrulanır.`,
+      `${state.authEmail} adresine bir doğrulama bağlantısı gönderdik. Devam etmek için e-posta adresini doğrulaman gerekiyor.`,
     );
   }
 
   if (elements.authPassword) {
-    elements.authPassword.autocomplete = "current-password";
+    elements.authPassword.autocomplete = isRegister
+      ? "new-password"
+      : "current-password";
   }
 
   [
@@ -227,7 +213,7 @@ export function syncAuthMode() {
     toggleClass(tab, "active", active);
     tab?.setAttribute("aria-selected", String(active));
   });
-  if (elements.authError) elements.authError.textContent = "";
+  if (elements.authError) elements.authError.textContent = state.authNotice || "";
   if (elements.authSentError) elements.authSentError.textContent = "";
 }
 

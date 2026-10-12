@@ -15,9 +15,9 @@ import {
 	signOut,
 	updateProfile,
 	updatePassword,
-	sendSignInLinkToEmail,
-	isSignInWithEmailLink,
-	signInWithEmailLink,
+	createUserWithEmailAndPassword,
+	sendEmailVerification,
+	reload,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import {
 	get,
@@ -86,36 +86,74 @@ async function anonymizeUserContent(uid, anonymousProfile) {
 	}
 }
 
+// Giriş yapmış ama e-postası doğrulanmamış kullanıcı uygulamada "çıkış yapmış" sayılır:
+// yalnızca doğrulama adımını görür. (Kurallar da doğrulanmamış hesaba yazma izni vermez.)
+function enterVerifyStep(user) {
+	stopUsersSubscription();
+	stopGroupSubscription();
+	state.groups = {};
+	state.authUser = null;
+	state.pendingUser = user;
+	state.authEmail = user.email || "";
+	state.authStep = "verify";
+	state.profile = { name: "User", color: "#2563eb" };
+	syncAuthMode();
+	openAuthColumn();
+	void sendVerificationOnce(user);
+}
+
+async function activateUser(user) {
+	state.pendingUser = null;
+	state.authStep = "form";
+	state.authUser = user;
+	try {
+		// Önce profil: devre dışı hesaplar için masalar/kullanıcılar hiç dinlenmez.
+		if ((await loadOrCreateProfile(user)) === "disabled") {
+			state.authUser = null;
+			state.authNotice = "Bu hesap devre dışı bırakılmıştır.";
+			state.authStep = "form";
+			openAuthColumn(); // giriş kolonu kapanmaz; hata mesajı orada görünür
+			syncAuthMode();
+			return;
+		}
+		state.authNotice = "";
+		subscribeToUsers();
+		// /groups yalnızca doğrulanmış, giriş yapmış kullanıcıya açık: oturum açılınca dinlenir.
+		subscribeToGroups();
+	} catch (error) {
+		subscribeToUsers();
+		subscribeToGroups();
+		state.profile = {
+			name: cleanName(
+				user.displayName || user.email?.split("@")[0] || "User",
+			),
+			color: "#2563eb",
+		};
+		console.warn("Profil bilgisi alınamadı: " + error.message);
+	}
+	closeAuthColumn();
+	syncAuthMode();
+}
+
 export function subscribeToAuth() {
-	void handleEmailLinkOnLoad();
 	onAuthStateChanged(state.auth, async (user) => {
-		state.authUser = user;
 		state.authResolved = true;
-		if (user) {
-			subscribeToUsers();
-			// /groups yalnızca giriş yapmış kullanıcıya açık: oturum açılınca (sayfa yenilenmeden) dinlenir.
-			subscribeToGroups();
-			try {
-				await loadOrCreateProfile(user);
-			} catch (error) {
-				state.profile = {
-					name: cleanName(
-						user.displayName || user.email?.split("@")[0] || "User",
-					),
-					color: "#2563eb",
-				};
-				console.warn("Profil bilgisi alınamadı: " + error.message);
-			}
-			closeAuthColumn();
+		if (user && !user.emailVerified) {
+			enterVerifyStep(user);
+		} else if (user) {
+			await activateUser(user);
 		} else {
 			stopUsersSubscription();
 			stopGroupSubscription();
 			state.groups = {};
 			state.authUser = null;
+			state.pendingUser = null;
+			state.authStep = "form";
 			state.profile = {
 				name: "User",
 				color: "#2563eb",
 			};
+			syncAuthMode();
 		}
 		syncAuthUi();
 		renderPosts();
@@ -135,7 +173,7 @@ export async function loadOrCreateProfile(user) {
 		};
 		await signOut(state.auth);
 		state.authUser = null;
-		return;
+		return "disabled";
 	}
 
 	if (profile) {
@@ -147,7 +185,6 @@ export async function loadOrCreateProfile(user) {
 	} else {
 		// Yeni hesap: kayıtta yazılan ad (varsa) kullanılır; ad alınmışsa sayı eklenir.
 		const wantedName = cleanName(
-			readPendingName() ||
 				user.displayName ||
 				user.email?.split("@")[0] ||
 				"User",
@@ -162,7 +199,6 @@ export async function loadOrCreateProfile(user) {
 			createdAt: serverTimestamp(),
 			isDisabled: false,
 		});
-		clearPendingName();
 	}
 
 	syncAuthUi();
@@ -226,38 +262,94 @@ async function isNameTaken(name, excludeUid) {
 	);
 }
 
-// ---------- E-posta bağlantısıyla giriş / kayıt (passwordless) ----------
-const LINK_TTL = 6 * 60 * 60 * 1000;
-const RESEND_COOLDOWN = 30 * 1000;
-let lastLinkSentAt = 0;
+// ---------- E-posta doğrulaması ----------
+const RESEND_COOLDOWN = 60 * 1000;
+let lastVerificationSentAt = 0;
 
-function readJson(key) {
+// Aynı kullanıcıya sayfa yenilemelerinde sürekli e-posta gitmesin (10 dk içinde bir kez).
+async function sendVerificationOnce(user) {
+	const key = `masa.verifySent.${user.uid}`;
 	try {
-		return JSON.parse(localStorage.getItem(key) || "null");
-	} catch {
-		return null;
+		const last = Number(sessionStorage.getItem(key) || 0);
+		if (Date.now() - last < 10 * 60 * 1000) return;
+		sessionStorage.setItem(key, String(Date.now()));
+	} catch {}
+	try {
+		await sendEmailVerification(user);
+		lastVerificationSentAt = Date.now();
+	} catch (error) {
+		console.error("Doğrulama e-postası gönderilemedi:", error);
+		if (elements.authSentError) {
+			elements.authSentError.textContent = error.code
+				? authMessage(error.code)
+				: "Doğrulama e-postası gönderilemedi.";
+		}
 	}
 }
 
-function readPendingName() {
-	const stored = readJson(storageKeys.pendingName);
-	if (!stored || Date.now() - stored.ts > LINK_TTL) return "";
-	return stored.name || "";
-}
-
-function clearPendingName() {
+export async function resendVerification() {
+	const user = state.pendingUser;
+	if (!user) return;
+	const errorEl = elements.authSentError;
+	errorEl.textContent = "";
+	const wait = Math.ceil((lastVerificationSentAt + RESEND_COOLDOWN - Date.now()) / 1000);
+	if (wait > 0) {
+		errorEl.textContent = `Yeni bağlantı için ${wait} saniye bekle.`;
+		return;
+	}
+	elements.authResend.disabled = true;
 	try {
-		localStorage.removeItem(storageKeys.pendingName);
-	} catch {}
+		await sendEmailVerification(user);
+		lastVerificationSentAt = Date.now();
+		errorEl.textContent = "";
+		elements.authResend.textContent = "Gönderildi";
+		setTimeout(() => {
+			elements.authResend.textContent = "Tekrar gönder";
+		}, 3000);
+	} catch (error) {
+		console.error("Doğrulama e-postası gönderilemedi:", error);
+		errorEl.textContent = error.code
+			? authMessage(error.code)
+			: "Doğrulama e-postası gönderilemedi.";
+	} finally {
+		elements.authResend.disabled = false;
+	}
 }
 
-function emailLinkUrl() {
-	// Bağlantı aynı sayfaya döner (GitHub Pages alt dizini dahil), arama/hash temizlenir.
-	return window.location.href.split(/[?#]/)[0];
+// "Doğruladım" düğmesi: kullanıcıyı yeniler; doğrulanmışsa oturumu uygulamaya açar.
+export async function confirmVerified() {
+	const user = state.pendingUser;
+	if (!user) return;
+	const errorEl = elements.authSentError;
+	errorEl.textContent = "";
+	elements.authVerified.disabled = true;
+	try {
+		await reload(user);
+		if (!user.emailVerified) {
+			errorEl.textContent =
+				"E-postan henüz doğrulanmamış görünüyor. Bağlantıya tıkladığından emin ol.";
+			return;
+		}
+		// Kuralların email_verified bilgisini görmesi için kimlik jetonu yenilenir.
+		await user.getIdToken(true);
+		await activateUser(user);
+		syncAuthUi();
+		renderPosts();
+		renderGroups();
+	} catch (error) {
+		console.error("Doğrulama kontrol edilemedi:", error);
+		errorEl.textContent = error.code
+			? authMessage(error.code)
+			: "Doğrulama kontrol edilemedi. Lütfen tekrar dene.";
+	} finally {
+		elements.authVerified.disabled = false;
+	}
 }
 
-function setAuthStep(step) {
-	state.authStep = step;
+export async function cancelVerification() {
+	state.pendingUser = null;
+	state.authStep = "form";
+	await logout();
 	syncAuthMode();
 }
 
@@ -266,127 +358,57 @@ export async function submitAuth() {
 		elements.authError.textContent = "Önce Firebase bağlantısı kurulmalı.";
 		return;
 	}
-	if (state.authStep === "complete") {
-		await completeEmailLink(elements.authEmail.value);
-		return;
-	}
-	if (state.authMode === "login" && state.authUsePassword) {
-		await submitPasswordLogin();
-		return;
-	}
-	await sendEmailLink({ fromForm: true });
-}
 
-export async function sendEmailLink({ fromForm = false } = {}) {
-	const errorEl = fromForm ? elements.authError : elements.authSentError;
-	const email = fromForm
-		? sanitizeEmail(elements.authEmail.value.trim())
-		: state.authEmail;
+	state.authNotice = "";
 	const isRegister = state.authMode === "register";
-	const name = fromForm
-		? cleanName((elements.authName?.value || "").trim())
-		: readPendingName();
+	const email = sanitizeEmail(elements.authEmail.value.trim());
+	const password = elements.authPassword.value;
+	const rawName = (elements.authName?.value || "").trim();
 
-	if (!email || !isValidEmail(email)) {
-		errorEl.textContent = "Geçerli bir e-posta adresi gir.";
-		return;
-	}
-	if (fromForm && isRegister && !(elements.authName?.value || "").trim()) {
-		errorEl.textContent = "Kayıt olurken görünen ad gereklidir.";
-		return;
-	}
-	const wait = Math.ceil((lastLinkSentAt + RESEND_COOLDOWN - Date.now()) / 1000);
-	if (wait > 0) {
-		errorEl.textContent = `Yeni bağlantı için ${wait} saniye bekle.`;
-		return;
-	}
-
-	const button = fromForm ? elements.submitAuth : elements.authResend;
-	if (button) button.disabled = true;
-	try {
-		await sendSignInLinkToEmail(state.auth, email, {
-			url: emailLinkUrl(),
-			handleCodeInApp: true,
-		});
-		lastLinkSentAt = Date.now();
-		// Bağlantı başka sekmede/aynı tarayıcıda açılırsa e-postayı sormadan tamamlanır.
-		localStorage.setItem(
-			storageKeys.emailLink,
-			JSON.stringify({ email, ts: Date.now() }),
-		);
-		if (fromForm && isRegister && name) {
-			localStorage.setItem(
-				storageKeys.pendingName,
-				JSON.stringify({ name, ts: Date.now() }),
-			);
-		}
-		state.authEmail = email;
-		setAuthStep("sent");
-	} catch (error) {
-		console.error("E-posta bağlantısı gönderilemedi:", error);
-		errorEl.textContent = error.code
-			? authMessage(error.code)
-			: "Bağlantı gönderilemedi. Lütfen tekrar dene.";
-	} finally {
-		if (button) button.disabled = false;
-	}
-}
-
-export function backToAuthForm() {
-	state.authStep = "form";
-	if (elements.authEmail) elements.authEmail.value = state.authEmail || "";
-	syncAuthMode();
-}
-
-// Sayfa e-postadaki bağlantıyla açıldıysa girişi tamamlar.
-async function handleEmailLinkOnLoad() {
-	if (!state.auth || !isSignInWithEmailLink(state.auth, window.location.href)) {
-		return;
-	}
-	const stored = readJson(storageKeys.emailLink);
-	const email =
-		stored?.email && Date.now() - stored.ts <= LINK_TTL ? stored.email : "";
-
-	openAuthColumn();
-	if (email) {
-		state.authEmail = email;
-		await completeEmailLink(email);
-	} else {
-		// Bağlantı başka bir cihazda açıldı: güvenlik için e-posta yeniden istenir.
-		setAuthStep("complete");
-	}
-}
-
-async function completeEmailLink(rawEmail) {
-	const email = sanitizeEmail(String(rawEmail || "").trim());
 	if (!email || !isValidEmail(email)) {
 		elements.authError.textContent = "Geçerli bir e-posta adresi gir.";
 		return;
 	}
-	if (elements.submitAuth) elements.submitAuth.disabled = true;
+	if (isRegister && !rawName) {
+		elements.authError.textContent = "Kayıt olurken görünen ad gereklidir.";
+		return;
+	}
+	const passwordProblem = validatePassword(password, { strict: isRegister });
+	if (passwordProblem) {
+		elements.authError.textContent = passwordProblem;
+		return;
+	}
+	if (isAuthRateLimited()) {
+		const waitMin = getRateLimitWaitMinutes();
+		elements.authError.textContent = `Çok fazla deneme yapıldı. ${waitMin} dakika sonra tekrar dene.`;
+		return;
+	}
+
+	elements.submitAuth.disabled = true;
 	try {
-		await signInWithEmailLink(state.auth, email, window.location.href);
-		try {
-			localStorage.removeItem(storageKeys.emailLink);
-		} catch {}
-		// oobCode adres çubuğunda kalmasın.
-		history.replaceState(history.state, "", emailLinkUrl());
-		state.authStep = "form";
-		syncAuthMode();
-	} catch (error) {
-		console.error("E-posta bağlantısıyla giriş başarısız:", error);
-		const dead = ["auth/invalid-action-code", "auth/expired-action-code"].includes(error.code);
-		if (dead) {
-			history.replaceState(history.state, "", emailLinkUrl());
-			state.authStep = "form";
-			syncAuthMode();
+		if (isRegister) {
+			const credential = await createUserWithEmailAndPassword(
+				state.auth,
+				email,
+				password,
+			);
+			// Seçilen ad hesapta saklanır; profil kaydı e-posta doğrulandıktan sonra oluşturulur.
+			await updateProfile(credential.user, {
+				displayName: cleanName(rawName),
+			}).catch(() => {});
+			// Doğrulama e-postası ve adım geçişi onAuthStateChanged içinde yapılır.
+		} else {
+			await signInWithEmailAndPassword(state.auth, email, password);
 		}
+		recordAuthAttempt(true);
+	} catch (error) {
+		recordAuthAttempt(false);
+		console.error("Giriş/kayıt hatası:", error);
 		elements.authError.textContent = error.code
 			? authMessage(error.code)
-			: "Giriş tamamlanamadı. Lütfen tekrar dene.";
-		if (dead) return;
+			: error.message || "İşlem tamamlanamadı. Lütfen tekrar dene.";
 	} finally {
-		if (elements.submitAuth) elements.submitAuth.disabled = false;
+		elements.submitAuth.disabled = false;
 	}
 }
 
@@ -406,57 +428,6 @@ async function reserveUsername(uid, baseName) {
 		}
 	}
 	throw new Error("Kullanıcı adı ayrılamadı.");
-}
-
-// Eski hesaplar için şifreyle giriş korunur.
-async function submitPasswordLogin() {
-	const email = sanitizeEmail(elements.authEmail.value.trim());
-	const password = elements.authPassword.value;
-
-	if (!email || !isValidEmail(email)) {
-		elements.authError.textContent = "Geçerli bir e-posta adresi gir.";
-		return;
-	}
-
-	const passwordProblem = validatePassword(password, { strict: false });
-	if (passwordProblem) {
-		elements.authError.textContent = passwordProblem;
-		return;
-	}
-
-	if (isAuthRateLimited()) {
-		const waitMin = getRateLimitWaitMinutes();
-		elements.authError.textContent = `Çok fazla deneme yapıldı. ${waitMin} dakika sonra tekrar dene.`;
-		return;
-	}
-
-	elements.submitAuth.disabled = true;
-
-	try {
-		const credential = await signInWithEmailAndPassword(
-			state.auth,
-			email,
-			password,
-		);
-		const profileSnapshot = await get(
-			ref(state.db, `users/${credential.user.uid}`),
-		);
-		const profile = profileSnapshot.val();
-		if (profile?.isDisabled) {
-			await signOut(state.auth);
-			state.authUser = null;
-			throw new Error("Bu hesap devre dışı bırakılmıştır.");
-		}
-		recordAuthAttempt(true);
-	} catch (error) {
-		recordAuthAttempt(false);
-		console.error("Giriş hatası:", error);
-		elements.authError.textContent = error.code
-			? authMessage(error.code)
-			: error.message || "İşlem tamamlanamadı. Lütfen tekrar dene.";
-	} finally {
-		elements.submitAuth.disabled = false;
-	}
 }
 
 export async function saveSettingsAvatar() {
@@ -529,6 +500,7 @@ export async function saveProfileSettings() {
 
 export function setAuthMode(mode) {
 	state.authMode = mode;
+	state.authNotice = "";
 	state.authStep = "form";
 	syncAuthMode();
 }

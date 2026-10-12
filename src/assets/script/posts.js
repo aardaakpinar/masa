@@ -2,7 +2,7 @@ import { feedColumnIds, profileUidFromColumnId, state } from "./state.js";
 import { elements } from "./elements.js";
 import { resolveAuthor } from "./users.js";
 import { initials, formatTime, createRichTextFragment, getContrastColor, safeColor, extractHashtags, friendlyErrorMessage } from "./utils.js";
-import { ref, push, set, update, remove, onValue, off, serverTimestamp, query, orderByKey, limitToLast, endAt, get, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+import { ref, push, set, update, remove, onValue, off, serverTimestamp, increment, query, orderByKey, limitToLast, endAt, get, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 import { closeProfileColumn, openAuth, syncComposer } from "./ui.js";
 import { canViewGroup, closeGroupSettingsPanel, getGroupName } from "./groups.js";
 
@@ -12,6 +12,7 @@ let hasMorePosts = true;
 let isLoadingMore = false;
 let activeCommentPostId = null;
 const profileCommentPostIds = new WeakMap();
+const profileOpenCommentIds = new Set(); // yorumları açık profil gönderileri (dinleme için)
 let liveWindowPostIds = new Set();
 let publicPosts = {};
 const extraPosts = new Map();
@@ -51,6 +52,145 @@ function rebuildPosts() {
 // Bir gönderinin veritabanındaki yolu (herkese açık: posts/…, masa: group_posts/<masa>/…).
 export function postPath(postId) {
 	return state.posts[postId]?.__path || `posts/${postId}`;
+}
+
+// Ağır veriler (görsel, yorumlar) gönderi düğümünün dışında tutulur; akış hafif kalır:
+//   posts/<id>                  -> çekirdek alanlar (+ hasMedia, commentCount)
+//   post_media/<id>             -> görsel (masa: group_post_media/<masa>/<id>)
+//   post_comments/<id>/<yorum>  -> yorumlar (masa: group_post_comments/<masa>/<id>/<yorum>)
+// Eski (gömülü) veri geçiş betiği çalışana kadar okunmaya devam eder.
+function sidePath(kind, postId) {
+	const path = postPath(postId);
+	const groupMatch = path.match(/^group_posts\/([^/]+)\/(.+)$/);
+	return groupMatch
+		? `group_${kind}/${groupMatch[1]}/${groupMatch[2]}`
+		: `${kind}/${postId}`;
+}
+
+export function mediaPath(postId) {
+	return sidePath("post_media", postId);
+}
+
+export function commentsPath(postId) {
+	return sidePath("post_comments", postId);
+}
+
+// ---- Yorumlar: yalnızca açık olan gönderi için dinlenir ----
+const commentCache = new Map(); // postId -> { id: yorum }
+const commentRefs = new Map(); // postId -> ref
+
+function watchComments(postId) {
+	if (!state.db || commentRefs.has(postId)) return;
+	const commentsRef = ref(state.db, commentsPath(postId));
+	commentRefs.set(postId, commentsRef);
+	onValue(
+		commentsRef,
+		(snapshot) => {
+			commentCache.set(postId, snapshot.val() || {});
+			refreshCommentViews();
+		},
+		() => {
+			commentCache.set(postId, {});
+			refreshCommentViews();
+		},
+	);
+}
+
+function unwatchComments(keepIds) {
+	[...commentRefs.keys()].forEach((postId) => {
+		if (keepIds.has(postId)) return;
+		off(commentRefs.get(postId));
+		commentRefs.delete(postId);
+		commentCache.delete(postId);
+	});
+}
+
+// Yalnızca yorumları açık olan gönderilerin yorum dinlemeleri açık kalır.
+function syncCommentWatchers() {
+	const keep = new Set(profileOpenCommentIds);
+	if (activeCommentPostId) keep.add(activeCommentPostId);
+	unwatchComments(keep);
+}
+
+function refreshCommentViews() {
+	renderPosts();
+	window.dispatchEvent(new Event("profile:refresh"));
+}
+
+function getComments(post) {
+	return commentCache.has(post.id) ? commentCache.get(post.id) : post.comments || {};
+}
+
+function getCommentCount(post) {
+	if (commentCache.has(post.id)) return Object.keys(commentCache.get(post.id)).length;
+	return Number.isFinite(post.commentCount)
+		? post.commentCount
+		: Object.keys(post.comments || {}).length;
+}
+
+// ---- Görseller: ekrana yaklaşınca bir kez indirilir ----
+const mediaCache = new Map(); // yol -> Promise<string|null>
+
+function loadMedia(postId) {
+	const path = mediaPath(postId);
+	if (!mediaCache.has(path)) {
+		mediaCache.set(
+			path,
+			get(ref(state.db, path))
+				.then((snapshot) => snapshot.val()?.dataUrl || null)
+				.catch(() => null),
+		);
+	}
+	return mediaCache.get(path);
+}
+
+const mediaObserver =
+	typeof IntersectionObserver === "function"
+		? new IntersectionObserver(
+				(entries) => {
+					entries.forEach((entry) => {
+						if (!entry.isIntersecting) return;
+						mediaObserver.unobserve(entry.target);
+						entry.target.__loadMedia?.();
+					});
+				},
+				{ rootMargin: "400px" },
+			)
+		: null;
+
+function createLazyMediaElement(post) {
+	const wrap = document.createElement("div");
+	wrap.className = "post-media post-media--loading";
+	wrap.__loadMedia = async () => {
+		const dataUrl = await loadMedia(post.id);
+		if (!SAFE_IMAGE_DATA_URL.test(String(dataUrl || ""))) {
+			wrap.remove();
+			return;
+		}
+		const img = document.createElement("img");
+		img.src = dataUrl;
+		img.alt = "Gönderi görseli";
+		wrap.classList.remove("post-media--loading");
+		wrap.append(img);
+	};
+	if (mediaObserver) mediaObserver.observe(wrap);
+	else void wrap.__loadMedia();
+	return wrap;
+}
+
+// Gönderiyi ve ona bağlı yorum/görsel düğümlerini siler (önce bağlılar: kurallar gönderinin sahibine bakar).
+async function deletePost(post) {
+	const id = post.id;
+	const tasks = [commentsPath(id), post.hasMedia ? mediaPath(id) : null];
+	for (const path of tasks) {
+		if (!path) continue;
+		try {
+			await remove(ref(state.db, path));
+		} catch (error) {
+			console.warn("Bağlı veri silinemedi:", error);
+		}
+	}
+	await remove(ref(state.db, postPath(id)));
 }
 
 function refreshPostViews() {
@@ -773,7 +913,11 @@ export function createPostElement(post, options) {
 	text.className = "post-text";
 	text.append(createRichTextFragment(post.text || ""));
 
-	const mediaEl = post.media?.dataUrl ? createMediaElement(post.media) : null;
+	const mediaEl = post.media?.dataUrl
+		? createMediaElement(post.media)
+		: post.hasMedia
+			? createLazyMediaElement(post)
+			: null;
 	const pollEl = post.poll ? createPollElement(post) : null;
 
 	const actions = document.createElement("div");
@@ -795,7 +939,7 @@ export function createPostElement(post, options) {
 		toggleLike(post.id, liked);
 	});
 
-	const commentCount = Object.keys(post.comments || {}).length;
+	const commentCount = getCommentCount(post);
 	const commentButton = document.createElement("button");
 	commentButton.className = "action-button";
 	commentButton.type = "button";
@@ -827,7 +971,7 @@ export function createPostElement(post, options) {
 		const deleteIcon = document.createElement("span");
 		deleteIcon.setAttribute("data-lucide", "trash-2");
 		deleteButton.append(deleteIcon);
-		deleteButton.addEventListener("click", () => remove(ref(state.db, postPath(post.id))));
+		deleteButton.addEventListener("click", () => deletePost(post));
 		actions.append(deleteButton);
 	}
 
@@ -954,7 +1098,7 @@ function createCommentsSection(post) {
 	const wrap = document.createElement("div");
 	wrap.className = "comments";
 
-	const comments = Object.entries(post.comments || {})
+	const comments = Object.entries(getComments(post))
 		.map(([id, comment]) => ({ id, ...comment }))
 		.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
 
@@ -1042,7 +1186,7 @@ function createCommentsSection(post) {
 					openAuth();
 					return;
 				}
-				const likeRef = ref(state.db, `${postPath(post.id)}/comments/${comment.id}/likes/${state.authUser.uid}`);
+				const likeRef = ref(state.db, `${commentsPath(post.id)}/${comment.id}/likes/${state.authUser.uid}`);
 				try {
 					if (liked) {
 						await remove(likeRef);
@@ -1063,7 +1207,7 @@ function createCommentsSection(post) {
 				const commentDeleteIcon = document.createElement("span");
 				commentDeleteIcon.setAttribute("data-lucide", "trash-2");
 				del.append(commentDeleteIcon);
-				del.addEventListener("click", () => remove(ref(state.db, `${postPath(post.id)}/comments/${comment.id}`)));
+				del.addEventListener("click", () => deleteComment(post.id, comment.id));
 				actions.append(del);
 			}
 
@@ -1078,6 +1222,7 @@ function createCommentsSection(post) {
 }
 
 function createCommentScreen(post, sourceList) {
+	watchComments(post.id);
 	const container = document.createElement("section");
 	container.className = "comments-screen";
 
@@ -1092,7 +1237,7 @@ function createCommentScreen(post, sourceList) {
 	const headingIcon = document.createElement("span");
 	headingIcon.setAttribute("data-lucide", "message-circle");
 	const headingText = document.createElement("span");
-	const commentCount = Object.keys(post.comments || {}).length;
+	const commentCount = getCommentCount(post);
 	headingText.textContent = commentCount > 0 ? `${commentCount} Yorum` : "Yorumlar";
 	heading.append(headingIcon, headingText);
 
@@ -1153,11 +1298,15 @@ export function openComments(postId, sourceList) {
 	if (!sourceList) return;
 
 	if (sourceList.matches('[data-profile-field="posts"]')) {
-		if (profileCommentPostIds.get(sourceList) === postId) {
+		const previous = profileCommentPostIds.get(sourceList);
+		if (previous) profileOpenCommentIds.delete(previous);
+		if (previous === postId) {
 			profileCommentPostIds.delete(sourceList);
 		} else {
 			profileCommentPostIds.set(sourceList, postId);
+			profileOpenCommentIds.add(postId);
 		}
+		syncCommentWatchers();
 		window.dispatchEvent(new Event("profile:refresh"));
 		return;
 	}
@@ -1167,20 +1316,25 @@ export function openComments(postId, sourceList) {
 		return;
 	}
 	activeCommentPostId = postId;
+	syncCommentWatchers();
 	renderPosts();
 }
 
 export function closeComments(sourceList, postId) {
 	if (sourceList?.matches('[data-profile-field="posts"]')) {
-		if (!postId || profileCommentPostIds.get(sourceList) === postId) {
+		const openId = profileCommentPostIds.get(sourceList);
+		if (!postId || openId === postId) {
 			profileCommentPostIds.delete(sourceList);
+			if (openId) profileOpenCommentIds.delete(openId);
 		}
+		syncCommentWatchers();
 		window.dispatchEvent(new Event("profile:refresh"));
 		return;
 	}
 	if (!sourceList || !postId || activeCommentPostId === postId) {
 		activeCommentPostId = null;
 	}
+	syncCommentWatchers();
 	renderPosts();
 }
 
@@ -1255,8 +1409,9 @@ export async function createPost(text, { groupId = "", media, pollOptions } = {}
 	}
 
 	if (media?.dataUrl) {
-		payload.media = { type: "image", dataUrl: media.dataUrl };
+		payload.hasMedia = true; // görselin kendisi post_media altında tutulur
 	}
+	payload.commentCount = 0;
 
 	const cleanOptions = (pollOptions || [])
 		.map((option) => (option || "").trim())
@@ -1275,6 +1430,17 @@ export async function createPost(text, { groupId = "", media, pollOptions } = {}
 	const path = isGroupPost ? `group_posts/${groupId}/${postKey}` : `posts/${postKey}`;
 
 	await set(ref(state.db, path), payload);
+
+	if (media?.dataUrl) {
+		const mediaDest = isGroupPost ? `group_post_media/${groupId}/${postKey}` : `post_media/${postKey}`;
+		try {
+			await set(ref(state.db, mediaDest), { type: "image", dataUrl: media.dataUrl });
+		} catch (error) {
+			// Görsel yazılamadıysa yarım gönderi bırakma.
+			await remove(ref(state.db, path)).catch(() => {});
+			throw error;
+		}
+	}
 }
 
 export async function createComment(postId, text) {
@@ -1286,10 +1452,22 @@ export async function createComment(postId, text) {
 	}
 	if (!text) return;
 
-	const commentRef = push(ref(state.db, `${postPath(postId)}/comments`));
+	const commentRef = push(ref(state.db, commentsPath(postId)));
 	await set(commentRef, {
 		text: text.slice(0, 180),
 		authorId: state.authUser.uid,
 		createdAt: serverTimestamp(),
+	});
+	// Sayaç gönderide tutulur; akış yorumları indirmeden sayıyı gösterebilir.
+	await set(ref(state.db, `${postPath(postId)}/commentCount`), increment(1)).catch((error) => {
+		console.warn("Yorum sayacı güncellenemedi:", error);
+	});
+}
+
+async function deleteComment(postId, commentId) {
+	if (!state.db) return;
+	await remove(ref(state.db, `${commentsPath(postId)}/${commentId}`));
+	await set(ref(state.db, `${postPath(postId)}/commentCount`), increment(-1)).catch((error) => {
+		console.warn("Yorum sayacı güncellenemedi:", error);
 	});
 }

@@ -8,8 +8,9 @@ import {
 	openChangePasswordDialog,
 	confirmDeleteAccount,
 	setAuthMode,
-	sendEmailLink,
-	backToAuthForm,
+	resendVerification,
+	confirmVerified,
+	cancelVerification,
 	logout,
 } from "./auth.js";
 import {
@@ -364,13 +365,9 @@ bind(elements.feedButton, "click", () => {
 
 bind(elements.loginMode, "click", () => setAuthMode("login"));
 bind(elements.registerMode, "click", () => setAuthMode("register"));
-bind(elements.authMethodToggle, "click", () => {
-	state.authUsePassword = !state.authUsePassword;
-	syncAuthMode();
-	(state.authUsePassword ? elements.authPassword : elements.authEmail)?.focus();
-});
-bind(elements.authResend, "click", () => sendEmailLink());
-bind(elements.authBack, "click", backToAuthForm);
+bind(elements.authVerified, "click", confirmVerified);
+bind(elements.authResend, "click", resendVerification);
+bind(elements.authBack, "click", cancelVerification);
 bind(elements.authForm, "submit", (event) => {
 	event.preventDefault();
 	submitAuth();

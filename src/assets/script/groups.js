@@ -17,11 +17,39 @@ const MAX_GROUP_LOGO_DATA_URL_LENGTH = 350_000;
 const SAFE_GROUP_LOGO_DATA_URL = /^data:image\/(?:jpeg|png|webp);base64,/;
 
 function safeGroupLogo(value) {
-	return typeof value === "string" &&
-		value.length <= MAX_GROUP_LOGO_DATA_URL_LENGTH &&
-		SAFE_GROUP_LOGO_DATA_URL.test(value)
-		? value
-		: "";
+	return typeof value === "string" && value.length <= MAX_GROUP_LOGO_DATA_URL_LENGTH && SAFE_GROUP_LOGO_DATA_URL.test(value) ? value : "";
+}
+
+// Logo masa kaydında değil group_logos/<masa> altında tutulur (masa listesi hafif kalır).
+// Masa kaydında yalnızca logoRev (sürüm damgası) bulunur; logo ekrana gelince bir kez indirilir.
+// Eski (gömülü) group.logo geçiş betiği çalışana kadar okunmaya devam eder.
+const groupLogoCache = new Map(); // `${id}:${rev}` -> dataUrl | null
+const groupLogoLoading = new Set();
+let groupLogoRenderTimer = 0;
+
+function getGroupLogo(groupId, group) {
+	if (!group) return "";
+	if (group.logo) return safeGroupLogo(group.logo);
+	if (!group.logoRev || !state.db) return "";
+	const key = `${groupId}:${group.logoRev}`;
+	if (groupLogoCache.has(key)) return groupLogoCache.get(key) || "";
+	if (!groupLogoLoading.has(key)) {
+		groupLogoLoading.add(key);
+		get(ref(state.db, `group_logos/${groupId}`))
+			.then((snapshot) => safeGroupLogo(snapshot.val()?.dataUrl))
+			.catch(() => "")
+			.then((dataUrl) => {
+				groupLogoCache.set(key, dataUrl || null);
+				groupLogoLoading.delete(key);
+				// Birden çok logo art arda gelirse tek seferde yeniden çiz.
+				clearTimeout(groupLogoRenderTimer);
+				groupLogoRenderTimer = setTimeout(() => {
+					renderGroups();
+					if (state.activeGroupId) renderGroupDetail();
+				}, 60);
+			});
+	}
+	return "";
 }
 
 function setGroupAvatarPreview(preview, name, color, logo = "") {
@@ -65,9 +93,7 @@ function resizeGroupLogo(file) {
 				}
 				context.drawImage(image, 0, 0, canvas.width, canvas.height);
 				const webp = canvas.toDataURL("image/webp", 0.78);
-				let dataUrl = webp.startsWith("data:image/webp;")
-					? webp
-					: "";
+				let dataUrl = webp.startsWith("data:image/webp;") ? webp : "";
 				if (!dataUrl) {
 					context.fillStyle = "#ffffff";
 					context.fillRect(0, 0, canvas.width, canvas.height);
@@ -102,20 +128,10 @@ export async function selectGroupLogo(file, editing = false) {
 		const dataUrl = await resizeGroupLogo(file);
 		if (editing) {
 			groupEditLogoDataUrl = dataUrl;
-			setGroupAvatarPreview(
-				elements.groupDetailEditAvatarPreview,
-				elements.groupDetailEditNameInput?.value,
-				elements.groupDetailEditAvatarColorInput?.value,
-				dataUrl,
-			);
+			setGroupAvatarPreview(elements.groupDetailEditAvatarPreview, elements.groupDetailEditNameInput?.value, elements.groupDetailEditAvatarColorInput?.value, dataUrl);
 		} else {
 			groupLogoDataUrl = dataUrl;
-			setGroupAvatarPreview(
-				elements.groupAvatarPreview,
-				elements.groupNameInput?.value,
-				elements.groupAvatarColorInput?.value,
-				dataUrl,
-			);
+			setGroupAvatarPreview(elements.groupAvatarPreview, elements.groupNameInput?.value, elements.groupAvatarColorInput?.value, dataUrl);
 		}
 		updateLogoControls(editing, true);
 		if (errorElement) {
@@ -137,19 +153,11 @@ export async function selectGroupLogo(file, editing = false) {
 export function removeGroupLogo(editing = false) {
 	if (editing) {
 		groupEditLogoDataUrl = "";
-		setGroupAvatarPreview(
-			elements.groupDetailEditAvatarPreview,
-			elements.groupDetailEditNameInput?.value,
-			elements.groupDetailEditAvatarColorInput?.value,
-		);
+		setGroupAvatarPreview(elements.groupDetailEditAvatarPreview, elements.groupDetailEditNameInput?.value, elements.groupDetailEditAvatarColorInput?.value);
 		if (elements.groupDetailEditLogoInput) elements.groupDetailEditLogoInput.value = "";
 	} else {
 		groupLogoDataUrl = "";
-		setGroupAvatarPreview(
-			elements.groupAvatarPreview,
-			elements.groupNameInput?.value,
-			elements.groupAvatarColorInput?.value,
-		);
+		setGroupAvatarPreview(elements.groupAvatarPreview, elements.groupNameInput?.value, elements.groupAvatarColorInput?.value);
 		if (elements.groupLogoInput) elements.groupLogoInput.value = "";
 	}
 	updateLogoControls(editing, false);
@@ -157,19 +165,9 @@ export function removeGroupLogo(editing = false) {
 
 export function syncGroupAvatarColorPreview(color, editing = false) {
 	if (editing) {
-		setGroupAvatarPreview(
-			elements.groupDetailEditAvatarPreview,
-			elements.groupDetailEditNameInput?.value,
-			color,
-			groupEditLogoDataUrl,
-		);
+		setGroupAvatarPreview(elements.groupDetailEditAvatarPreview, elements.groupDetailEditNameInput?.value, color, groupEditLogoDataUrl);
 	} else {
-		setGroupAvatarPreview(
-			elements.groupAvatarPreview,
-			elements.groupNameInput?.value,
-			color,
-			groupLogoDataUrl,
-		);
+		setGroupAvatarPreview(elements.groupAvatarPreview, elements.groupNameInput?.value, color, groupLogoDataUrl);
 	}
 }
 
@@ -212,6 +210,12 @@ export function subscribeToGroups() {
 			}
 		},
 		(error) => {
+			// Giriş yapılmamış / devre dışı hesaplarda /groups okunamaz: beklenen durum, hata değil.
+			if (/permission[_ ]denied/i.test(`${error?.code} ${error?.message}`)) {
+				state.groups = {};
+				renderGroups();
+				return;
+			}
 			console.error("Masalar yüklenemedi:", error);
 		},
 	);
@@ -253,15 +257,13 @@ export function createGroupCard(group, { compact = false } = {}) {
 	}
 	head.addEventListener("click", () => {
 		if (canOpenDetail) {
-			window.dispatchEvent(
-				new CustomEvent("group-feed:open", { detail: { groupId: group.id } }),
-			);
+			window.dispatchEvent(new CustomEvent("group-feed:open", { detail: { groupId: group.id } }));
 		}
 	});
 
 	const avatar = document.createElement("div");
 	avatar.className = "avatar group-card__avatar";
-	setGroupAvatarPreview(avatar, group.name, group.color, group.logo);
+	setGroupAvatarPreview(avatar, group.name, group.color, getGroupLogo(group.id, group));
 
 	const content = document.createElement("span");
 	content.className = "group-card__content";
@@ -479,7 +481,7 @@ export function renderGroupDetail() {
 	}
 
 	if (elements.groupDetailAvatar) {
-		setGroupAvatarPreview(elements.groupDetailAvatar, group.name, group.color, group.logo);
+		setGroupAvatarPreview(elements.groupDetailAvatar, group.name, group.color, getGroupLogo(groupId, group));
 	}
 	if (elements.groupDetailTitle) {
 		elements.groupDetailTitle.textContent = group.name || "Masa";
@@ -501,40 +503,43 @@ export function renderGroupDetail() {
 	if (!isOwner) {
 		closeGroupSettingsPanel();
 	} else if (isGroupSettingsOpen) {
-		fillGroupEditForm(group);
+		fillGroupEditForm(state.activeGroupId, group);
 	}
 
 	renderGroupDetailMembers();
 	renderGroupRequests();
 }
 
-function fillGroupEditForm(group) {
+function fillGroupEditForm(groupId, group) {
 	if (elements.groupDetailEditJoinModeSelect) {
 		elements.groupDetailEditJoinModeSelect.value = group.joinMode === "approval" ? "approval" : "open";
 	}
+
 	if (elements.groupDetailEditNameInput) {
 		elements.groupDetailEditNameInput.value = group.name || "";
 	}
+
 	if (elements.groupDetailEditDescriptionInput) {
 		elements.groupDetailEditDescriptionInput.value = group.description || "";
 	}
+
 	if (elements.groupDetailEditAvatarColorInput) {
 		elements.groupDetailEditAvatarColorInput.value = group.color || "#2563eb";
 	}
-	groupEditLogoDataUrl = safeGroupLogo(group.logo);
+
+	groupEditLogoDataUrl = getGroupLogo(groupId, group);
+
 	if (elements.groupDetailEditAvatarPreview) {
-		setGroupAvatarPreview(
-			elements.groupDetailEditAvatarPreview,
-			group.name,
-			group.color,
-			groupEditLogoDataUrl,
-		);
+		setGroupAvatarPreview(elements.groupDetailEditAvatarPreview, group.name, group.color, groupEditLogoDataUrl);
 	}
+
 	updateLogoControls(true, Boolean(groupEditLogoDataUrl));
+
 	if (elements.groupDetailEditError) {
 		elements.groupDetailEditError.hidden = true;
 		elements.groupDetailEditError.textContent = "";
 	}
+
 	syncGroupEditFormCounts();
 }
 
@@ -545,7 +550,7 @@ export function openGroupSettingsPanel() {
 	}
 
 	isGroupSettingsOpen = true;
-	fillGroupEditForm(group);
+	fillGroupEditForm(state.activeGroupId, group);
 	renderGroupDetailMembers();
 	syncSettingsButtonState();
 }
@@ -602,10 +607,7 @@ export function syncGroupEditFormCounts() {
 	if (elements.groupDetailEditDescriptionCount) {
 		elements.groupDetailEditDescriptionCount.textContent = `${elements.groupDetailEditDescriptionInput?.value.length || 0}/160`;
 	}
-	syncGroupAvatarColorPreview(
-		elements.groupDetailEditAvatarColorInput?.value || "",
-		true,
-	);
+	syncGroupAvatarColorPreview(elements.groupDetailEditAvatarColorInput?.value || "", true);
 }
 
 export async function updateGroup(groupId, { name, description, color, joinMode, logo }) {
@@ -636,9 +638,16 @@ export async function updateGroup(groupId, { name, description, color, joinMode,
 		[`groups/${groupId}/name`]: groupName,
 		[`groups/${groupId}/description`]: groupDescription,
 		[`groups/${groupId}/color`]: groupColor,
-		[`groups/${groupId}/logo`]: safeGroupLogo(logo) || null,
 		[`groups/${groupId}/joinMode`]: mode,
 	};
+
+	// Logo değişmediyse (aynı veri) dokunma; değiştiyse yeni sürüm damgası ver.
+	const nextLogo = safeGroupLogo(logo);
+	if (nextLogo !== getGroupLogo(groupId, group)) {
+		updates[`groups/${groupId}/logo`] = null; // eski gömülü alanı temizle
+		updates[`group_logos/${groupId}`] = nextLogo ? { dataUrl: nextLogo } : null;
+		updates[`groups/${groupId}/logoRev`] = nextLogo ? serverTimestamp() : null;
+	}
 
 	// Masa herkese açık yapılınca bekleyen istekler anlamını yitirir; temizlenir.
 	if (mode === "open") {
@@ -692,9 +701,7 @@ function pruneUnavailableFeedColumns() {
 			.map(({ id }) => id),
 	);
 	const fixedColumnIds = new Set(Object.values(feedColumnIds));
-	const nextColumns = state.openFeedColumns.filter(
-		(id) => !id || fixedColumnIds.has(id) || profileUidFromColumnId(id) || availableGroupIds.has(id),
-	);
+	const nextColumns = state.openFeedColumns.filter((id) => !id || fixedColumnIds.has(id) || profileUidFromColumnId(id) || availableGroupIds.has(id));
 	if (nextColumns.length === state.openFeedColumns.length) return;
 	state.openFeedColumns = nextColumns;
 	window.dispatchEvent(new Event("feed-columns:updated"));
@@ -713,12 +720,7 @@ function updateGroupStats() {
 		elements.groupDescriptionCount.textContent = `${elements.groupDescriptionInput?.value.length || 0}/160`;
 	}
 	if (elements.groupAvatarPreview) {
-		setGroupAvatarPreview(
-			elements.groupAvatarPreview,
-			elements.groupNameInput?.value,
-			elements.groupAvatarColorInput?.value,
-			groupLogoDataUrl,
-		);
+		setGroupAvatarPreview(elements.groupAvatarPreview, elements.groupNameInput?.value, elements.groupAvatarColorInput?.value, groupLogoDataUrl);
 	}
 }
 
@@ -745,7 +747,6 @@ export async function createGroup({ name, description, color, joinMode, logo }) 
 		name: groupName,
 		description: groupDescription,
 		color: groupColor,
-		logo: safeGroupLogo(logo) || null,
 		joinMode: joinMode === "approval" ? "approval" : "open",
 		ownerId: state.authUser.uid,
 		ownerName: state.profile.name,
@@ -756,7 +757,18 @@ export async function createGroup({ name, description, color, joinMode, logo }) 
 				joinedAt: serverTimestamp(),
 			},
 		},
+		...(safeGroupLogo(logo) ? { logoRev: serverTimestamp() } : {}),
 	});
+
+	const createdLogo = safeGroupLogo(logo);
+	if (createdLogo) {
+		try {
+			await set(ref(state.db, `group_logos/${groupRef.key}`), { dataUrl: createdLogo });
+		} catch (error) {
+			await remove(ref(state.db, `groups/${groupRef.key}`)).catch(() => {});
+			throw error;
+		}
+	}
 
 	return groupRef.key;
 }
@@ -1005,6 +1017,9 @@ export async function deleteGroup(groupId) {
 	await update(ref(state.db), {
 		[`groups/${groupId}`]: null,
 		[`group_posts/${groupId}`]: null,
+		[`group_post_media/${groupId}`]: null,
+		[`group_post_comments/${groupId}`]: null,
+		[`group_logos/${groupId}`]: null,
 	});
 	if (state.activeGroupId === groupId) {
 		state.activeGroupId = "";

@@ -1,8 +1,6 @@
 export const storageKeys = {
   config: "masa.firebaseConfig",
   rememberMe: "masa.rememberMe",
-  emailLink: "masa.emailLink",
-  pendingName: "masa.pendingName",
 };
 
 export const firebaseConfig = {
@@ -45,9 +43,10 @@ export const state = {
     color: "#2563eb",
   },
   authMode: "login",
-  authStep: "form", // form | sent | complete (bağlantıyla farklı cihazda e-posta isteme)
-  authUsePassword: false,
+  authStep: "form", // form | verify (e-posta doğrulaması bekleniyor)
   authEmail: "",
+  authNotice: "", // giriş formunda gösterilecek kalıcı bilgi (ör. hesap devre dışı)
+  pendingUser: null, // giriş yapmış ama e-postası doğrulanmamış kullanıcı
   posts: {},
   postsRef: null,
   groupPosts: {},
