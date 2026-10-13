@@ -196,7 +196,6 @@ img {
 	width: 18px;
 	height: 18px;
 	border: 2px solid var(--line);
-	border-top-color: var(--accent-dark);
 	border-radius: 50%;
 	animation: auth-pending-spin 700ms linear infinite;
 }
@@ -493,9 +492,10 @@ img {
 
 .groups-field {
 	display: flex;
+	flex: 1;
+	gap: 10px;
 	position: relative;
 	align-items: center;
-	gap: 10px;
 	flex-direction: row;
 }
 
@@ -1062,10 +1062,6 @@ img {
 		padding: 14px;
 	}
 
-	.profile-card {
-		gap: 14px;
-	}
-
 	.profile-avatar {
 		width: 72px;
 		height: 72px;
@@ -1085,10 +1081,6 @@ img {
 @media (max-width: 420px) {
 	.groups-form-fields {
 		gap: 10px;
-	}
-
-	.profile-card {
-		align-items: flex-start;
 	}
 
 	.profile-card__body {
@@ -2996,10 +2988,6 @@ h4,
 	background: var(--hover);
 }
 
-.post-poll-option.voted {
-	border-bottom-color: var(--accent-dark);
-}
-
 .post-poll-option-fill {
 	z-index: 0;
 	opacity: 0.8;
@@ -4549,13 +4537,6 @@ body .groups-form-card {
 	gap: 14px;
 }
 
-.groups-form-card .groups-avatar-preview,
-.groups-form-card .avatar {
-	width: 64px;
-	height: 64px;
-	border-radius: var(--r-lg);
-}
-
 .group-logo-button,
 .group-logo-remove-button {
 	border-radius: var(--r-md);
@@ -4667,7 +4648,6 @@ body .feed-column__posts .post-poll-option {
 }
 
 .post-poll-option.voted {
-	border-color: var(--accent-dark);
 	border-width: 1.5px;
 }
 
@@ -4685,7 +4665,6 @@ body .feed-column__posts .post-poll-option {
 }
 
 .post-poll-option.voted .post-poll-option-mark {
-	border-color: var(--accent-dark);
 	background: var(--accent);
 }
 
@@ -4737,12 +4716,6 @@ body .groups-field select {
 	border-width: 1px;
 	border-style: solid;
 	border-bottom-width: 1px;
-}
-
-body .groups-field input:focus,
-body .groups-field textarea:focus,
-body .groups-field select:focus {
-	border-color: var(--accent-dark);
 }
 
 body .input,
@@ -4838,10 +4811,6 @@ body .post-poll {
 
 body .post-poll .post-poll-option {
 	border-bottom: 1px solid var(--line);
-}
-
-body .post-poll .post-poll-option.voted {
-	border-bottom-color: var(--accent-dark);
 }
 
 body .post-actions {
