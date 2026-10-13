@@ -1,4 +1,4 @@
-﻿import { storageKeys, firebaseConfig, state } from "./state.js";
+﻿import { storageKeys, firebaseConfig, state, feedColumnIds } from "./state.js";
 import { elements } from "./elements.js";
 import { connectToFirebase } from "./firebase.js";
 import {
@@ -46,6 +46,7 @@ import {
 } from "./groups.js";
 import { setupDiscover } from "./discover.js";
 import { setupProfile } from "./profile.js";
+import { setupNotifications, openNotifications } from "./notifications.js";
 import { initials, getContrastColor } from "./utils.js";
 
 // Adres çubuğunda /index.html görünmesin: /masa/index.html -> /masa/
@@ -234,6 +235,7 @@ syncComposer();
 syncGroupFormCounts();
 setupDiscover();
 setupProfile();
+setupNotifications();
 autoGrowComposer();
 syncComposerActiveState();
 
@@ -276,6 +278,15 @@ const openGroupsFromNavigation = () => {
 	closeMobileMenu();
 };
 bind(elements.groupsButton, "click", openGroupsFromNavigation);
+// Masalar kolonu kapanınca sekme "Masalarım"a döner; yeniden açınca Oluştur'da kalmaz.
+window.addEventListener("feed-columns:updated", () => {
+	if (!state.openFeedColumns.includes(feedColumnIds.groups)) setGroupsTab("mine");
+});
+bind(elements.notificationsButton, "click", () => {
+	openNotifications();
+	closeMobileMenu();
+});
+window.addEventListener("groups:open", openGroupsFromNavigation);
 window.addEventListener("group-feed:open", (event) => {
 	openGroupFeedColumn(event.detail?.groupId);
 	closeMobileMenu();

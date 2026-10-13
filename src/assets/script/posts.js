@@ -5,6 +5,7 @@ import { initials, formatTime, createRichTextFragment, getContrastColor, safeCol
 import { ref, push, set, update, remove, onValue, off, serverTimestamp, increment, query, orderByKey, limitToLast, endAt, get, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 import { closeProfileColumn, openAuth, syncComposer } from "./ui.js";
 import { canViewGroup, closeGroupSettingsPanel, getGroupName } from "./groups.js";
+import { notify, likeNotificationKey } from "./notifications.js";
 
 const POSTS_PAGE_SIZE = 15;
 let oldestLoadedKey = null;
@@ -26,6 +27,7 @@ const auxiliaryColumns = [
 	{ id: feedColumnIds.groups, element: document.querySelector("#groupsView"), title: "Masalar" },
 	{ id: feedColumnIds.account, element: document.querySelector("#settingsPanel"), title: "Hesap" },
 	{ id: feedColumnIds.auth, element: document.querySelector("#authPanel"), title: "Giriş" },
+	{ id: feedColumnIds.notifications, element: document.querySelector("#notificationsView"), title: "Bildirimler" },
 ];
 
 // Herkese açık gönderiler + üyesi olunan masaların gönderileri tek haritada birleşir.
@@ -874,6 +876,10 @@ export function createPostElement(post, options) {
 	const article = document.createElement("article");
 	article.className = "post";
 
+	// ---- Üst satır: avatar + yazar/meta + (kendi gönderisiyse) sil ----
+	const head = document.createElement("header");
+	head.className = "post-head";
+
 	const avatar = document.createElement("div");
 	avatar.className = "avatar";
 	avatar.style.background = author_.color;
@@ -881,9 +887,8 @@ export function createPostElement(post, options) {
 	avatar.textContent = initials(author_.name);
 	makeProfileLink(avatar, post.authorId);
 
-	const body = document.createElement("div");
-	const header = document.createElement("div");
-	header.className = "post-header";
+	const who = document.createElement("div");
+	who.className = "post-who";
 
 	const author = document.createElement("span");
 	author.className = "post-author";
@@ -893,25 +898,45 @@ export function createPostElement(post, options) {
 	const meta = document.createElement("div");
 	meta.className = "post-meta";
 
-	if (post.groupId) {
-		const groupBadge = document.createElement("span");
-		groupBadge.className = "post-group-badge";
-		groupBadge.textContent = getGroupName(post.groupId);
-
-		meta.append(groupBadge);
-	}
-
 	const time = document.createElement("time");
 	time.className = "post-time";
 	time.textContent = formatTime(post.createdAt);
-
+	if (post.createdAt) time.dateTime = new Date(post.createdAt).toISOString();
 	meta.append(time);
 
-	header.append(author, meta);
+	if (post.groupId) {
+		const groupBadge = document.createElement("span");
+		groupBadge.className = "post-group-badge";
+		const groupIcon = document.createElement("span");
+		groupIcon.setAttribute("data-lucide", "grid-2x2");
+		groupBadge.append(groupIcon, getGroupName(post.groupId));
+		meta.append(groupBadge);
+	}
+
+	who.append(author, meta);
+	head.append(avatar, who);
+
+	if (state.authUser && post.authorId === state.authUser.uid) {
+		const deleteButton = document.createElement("button");
+		deleteButton.className = "post-delete";
+		deleteButton.type = "button";
+		deleteButton.title = "Gönderiyi sil";
+		deleteButton.setAttribute("aria-label", "Gönderiyi sil");
+		const deleteIcon = document.createElement("span");
+		deleteIcon.setAttribute("data-lucide", "trash-2");
+		deleteButton.append(deleteIcon);
+		deleteButton.addEventListener("click", () => deletePost(post));
+		head.append(deleteButton);
+	}
+
+	// ---- İçerik: metin tam genişlikte, görsel/anket altında ----
+	const body = document.createElement("div");
+	body.className = "post-content";
 
 	const text = document.createElement("p");
 	text.className = "post-text";
 	text.append(createRichTextFragment(post.text || ""));
+	body.append(text);
 
 	const mediaEl = post.media?.dataUrl
 		? createMediaElement(post.media)
@@ -919,18 +944,27 @@ export function createPostElement(post, options) {
 			? createLazyMediaElement(post)
 			: null;
 	const pollEl = post.poll ? createPollElement(post) : null;
+	if (mediaEl) body.append(mediaEl);
+	if (pollEl) body.append(pollEl);
 
-	const actions = document.createElement("div");
+	// ---- Eylem çubuğu ----
+	const actions = document.createElement("footer");
 	actions.className = "post-actions";
 
 	const likes = post.likes || {};
 	const liked = Boolean(state.authUser && likes[state.authUser.uid]);
+	const likeCount = Object.keys(likes).length;
 	const likeButton = document.createElement("button");
 	likeButton.className = `action-button${liked ? " liked" : ""}`;
 	likeButton.type = "button";
+	likeButton.setAttribute("aria-pressed", String(liked));
+	likeButton.setAttribute("aria-label", liked ? "Beğenmekten vazgeç" : "Beğen");
 	const likeIcon = document.createElement("span");
 	likeIcon.setAttribute("data-lucide", "heart");
-	likeButton.append(likeIcon, ` ${Object.keys(likes).length}`);
+	const likeLabel = document.createElement("span");
+	likeLabel.className = "action-count";
+	likeLabel.textContent = likeCount ? String(likeCount) : "";
+	likeButton.append(likeIcon, likeLabel);
 	likeButton.addEventListener("click", () => {
 		if (!state.authUser) {
 			openAuth();
@@ -938,48 +972,32 @@ export function createPostElement(post, options) {
 		}
 		toggleLike(post.id, liked);
 	});
-
-	const commentCount = getCommentCount(post);
-	const commentButton = document.createElement("button");
-	commentButton.className = "action-button";
-	commentButton.type = "button";
-	const commentIcon = document.createElement("span");
-	commentIcon.setAttribute("data-lucide", commentsOpen ? "x" : "message-circle");
-	if (commentsOpen) {
-		commentButton.setAttribute("aria-label", "Yorumları kapat");
-		commentButton.title = "Yorumları kapat";
-	}
-	commentButton.append(commentIcon, ...(commentsOpen ? [] : [` ${commentCount}`]));
-	commentButton.addEventListener("click", () => {
-		if (!state.authUser) {
-			openAuth();
-			return;
-		}
-		openComments(post.id, article.closest(".feed-column__posts, #postList, #groupDetailPostList, [data-profile-field='posts']"));
-	});
+	actions.append(likeButton);
 
 	if (!post.__fromDiscover) {
-		actions.append(likeButton, commentButton);
-	} else {
-		actions.append(likeButton);
+		const commentCount = getCommentCount(post);
+		const commentButton = document.createElement("button");
+		commentButton.className = `action-button${commentsOpen ? " active" : ""}`;
+		commentButton.type = "button";
+		const commentIcon = document.createElement("span");
+		commentIcon.setAttribute("data-lucide", commentsOpen ? "x" : "message-circle");
+		commentButton.setAttribute("aria-label", commentsOpen ? "Yorumları kapat" : "Yorumlar");
+		commentButton.title = commentsOpen ? "Yorumları kapat" : "Yorumlar";
+		const commentLabel = document.createElement("span");
+		commentLabel.className = "action-count";
+		commentLabel.textContent = !commentsOpen && commentCount ? String(commentCount) : "";
+		commentButton.append(commentIcon, commentLabel);
+		commentButton.addEventListener("click", () => {
+			if (!state.authUser) {
+				openAuth();
+				return;
+			}
+			openComments(post.id, article.closest(".feed-column__posts, #postList, #groupDetailPostList, [data-profile-field='posts']"));
+		});
+		actions.append(commentButton);
 	}
 
-	if (state.authUser && post.authorId === state.authUser.uid) {
-		const deleteButton = document.createElement("button");
-		deleteButton.className = "action-button";
-		deleteButton.type = "button";
-		const deleteIcon = document.createElement("span");
-		deleteIcon.setAttribute("data-lucide", "trash-2");
-		deleteButton.append(deleteIcon);
-		deleteButton.addEventListener("click", () => deletePost(post));
-		actions.append(deleteButton);
-	}
-
-	body.append(header, text);
-	if (mediaEl) body.append(mediaEl);
-	if (pollEl) body.append(pollEl);
-	body.append(actions);
-	article.append(avatar, body);
+	article.append(head, body, actions);
 	return article;
 }
 
@@ -1028,6 +1046,8 @@ function createPollElement(post) {
 
 	const optionEntries = Object.entries(post.poll?.options || {}).sort((a, b) => Number(a[0]) - Number(b[0]));
 	const { counts, total: totalVotes, mine: myVoteKey } = getPollVotes(post);
+	const topCount = Math.max(0, ...Object.values(counts));
+	wrap.classList.toggle("post-poll--voted", myVoteKey !== undefined);
 
 	optionEntries.forEach(([key, option]) => {
 		const count = counts[key] || 0;
@@ -1036,7 +1056,17 @@ function createPollElement(post) {
 
 		const button = document.createElement("button");
 		button.type = "button";
-		button.className = `post-poll-option${voted ? " voted" : ""}`;
+		button.className = `post-poll-option${voted ? " voted" : ""}${myVoteKey !== undefined && count === topCount && count > 0 ? " leading" : ""}`;
+		button.setAttribute("aria-pressed", String(voted));
+
+		const mark = document.createElement("span");
+		mark.className = "post-poll-option-mark";
+		mark.setAttribute("aria-hidden", "true");
+		if (voted) {
+			const check = document.createElement("span");
+			check.setAttribute("data-lucide", "check");
+			mark.append(check);
+		}
 
 		const fill = document.createElement("span");
 		fill.className = "post-poll-option-fill";
@@ -1055,7 +1085,7 @@ function createPollElement(post) {
 			label.append(percentText);
 		}
 
-		button.append(fill, label);
+		button.append(fill, mark, label);
 		button.addEventListener("click", () => {
 			if (!state.authUser) {
 				openAuth();
@@ -1069,7 +1099,7 @@ function createPollElement(post) {
 
 	const meta = document.createElement("div");
 	meta.className = "post-poll-meta";
-	meta.textContent = `${totalVotes} oy`;
+	meta.textContent = `${totalVotes} oy${myVoteKey === undefined ? " · oy vermek için bir seçeneğe dokun" : ""}`;
 	wrap.append(meta);
 
 	return wrap;
@@ -1371,9 +1401,12 @@ export function toggleLike(postId, liked) {
 		return remove(likeRef);
 	}
 
+	const authorId = state.posts[postId]?.authorId;
+	const snippet = String(state.posts[postId]?.text || "").slice(0, 100);
+	const groupId = state.posts[postId]?.groupId || "";
 	return update(ref(state.db, `${postPath(postId)}/likes`), {
 		[state.authUser.uid]: true,
-	});
+	}).then(() => notify(authorId, { type: "like", postId, groupId, snippet }, likeNotificationKey(postId)));
 }
 
 export async function createPost(text, { groupId = "", media, pollOptions } = {}) {
@@ -1457,6 +1490,12 @@ export async function createComment(postId, text) {
 		text: text.slice(0, 180),
 		authorId: state.authUser.uid,
 		createdAt: serverTimestamp(),
+	});
+	notify(state.posts[postId]?.authorId, {
+		type: "comment",
+		postId,
+		groupId: state.posts[postId]?.groupId || "",
+		snippet: text,
 	});
 	// Sayaç gönderide tutulur; akış yorumları indirmeden sayıyı gösterebilir.
 	await set(ref(state.db, `${postPath(postId)}/commentCount`), increment(1)).catch((error) => {

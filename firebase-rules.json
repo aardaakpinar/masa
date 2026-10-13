@@ -265,6 +265,39 @@
 				}
 			}
 		},
+		"notifications": {
+			"$uid": {
+				".read": "auth != null && auth.token.email_verified === true && root.child('users').child(auth.uid).child('isDisabled').val() !== true && auth.uid === $uid",
+				"$nid": {
+					".write": "auth != null && auth.token.email_verified === true && root.child('users').child(auth.uid).child('isDisabled').val() !== true && (auth.uid === $uid || (!data.exists() && newData.exists() && $uid !== auth.uid && newData.child('actorId').val() === auth.uid && newData.child('read').val() === false))",
+					".validate": "!newData.exists() || newData.hasChildren(['type', 'actorId', 'createdAt', 'read'])",
+					"type": {
+						".validate": "newData.isString() && (newData.val() === 'like' || newData.val() === 'comment' || newData.val() === 'join_request' || newData.val() === 'join_approved')"
+					},
+					"actorId": {
+						".validate": "newData.isString() && newData.val().length <= 128"
+					},
+					"postId": {
+						".validate": "newData.isString() && newData.val().length <= 128"
+					},
+					"groupId": {
+						".validate": "newData.isString() && newData.val().length <= 128"
+					},
+					"snippet": {
+						".validate": "newData.isString() && newData.val().length <= 120"
+					},
+					"createdAt": {
+						".validate": "newData.isNumber() && (data.exists() ? newData.val() === data.val() : newData.val() <= now + 60000)"
+					},
+					"read": {
+						".validate": "newData.isBoolean()"
+					},
+					"$other": {
+						".validate": false
+					}
+				}
+			}
+		},
 		"post_media": {
 			"$postId": {
 				".read": true,

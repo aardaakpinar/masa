@@ -1,7 +1,7 @@
 /* ==========================================================================
    MASA tasarım token'ları — yazı tipi, boyut, ağırlık ve ölçüler için TEK kaynak.
    Başka hiçbir yerde px ile font-size / sayı ile font-weight yazılmaz.
-   Renkler tema dosyasında (threads.css) tanımlı: --text, --text-soft, --accent-dark, ...
+   Renkler styles.css içinde tanımlı: --text, --text-soft, --accent-dark, ...
    ========================================================================== */
 :root {
 	/* Yazı tipleri */

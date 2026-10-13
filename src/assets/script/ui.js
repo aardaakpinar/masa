@@ -272,6 +272,10 @@ function syncNavigationState() {
     "active",
     state.openFeedColumns.includes(feedColumnIds.groups),
   );
+  elements.notificationsButton?.classList.toggle(
+    "active",
+    state.openFeedColumns.includes(feedColumnIds.notifications),
+  );
   elements.authButton?.classList.toggle(
     "active",
     state.openFeedColumns.includes(feedColumnIds.account) ||
@@ -311,6 +315,10 @@ export function openFeed() {
     window.dispatchEvent(new Event("feed-columns:updated"));
   }
   setMainView("feed");
+}
+
+export function openFeedColumnById(id) {
+  openFeedColumn(id);
 }
 
 export function openSearch() {

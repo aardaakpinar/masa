@@ -33,6 +33,7 @@ import {
 import { renderPosts, fetchOwnPostsWithPaths } from "./posts.js";
 import { subscribeToUsers, stopUsersSubscription } from "./users.js";
 import { renderGroups, subscribeToGroups, stopGroupSubscription } from "./groups.js";
+import { startNotifications, stopNotifications } from "./notifications.js";
 import {
 	syncAuthUi,
 	syncComposer,
@@ -91,6 +92,7 @@ async function anonymizeUserContent(uid, anonymousProfile) {
 function enterVerifyStep(user) {
 	stopUsersSubscription();
 	stopGroupSubscription();
+	stopNotifications();
 	state.groups = {};
 	state.authUser = null;
 	state.pendingUser = user;
@@ -120,9 +122,11 @@ async function activateUser(user) {
 		subscribeToUsers();
 		// /groups yalnızca doğrulanmış, giriş yapmış kullanıcıya açık: oturum açılınca dinlenir.
 		subscribeToGroups();
+		startNotifications();
 	} catch (error) {
 		subscribeToUsers();
 		subscribeToGroups();
+		startNotifications();
 		state.profile = {
 			name: cleanName(
 				user.displayName || user.email?.split("@")[0] || "User",
@@ -145,6 +149,7 @@ export function subscribeToAuth() {
 		} else {
 			stopUsersSubscription();
 			stopGroupSubscription();
+			stopNotifications();
 			state.groups = {};
 			state.authUser = null;
 			state.pendingUser = null;

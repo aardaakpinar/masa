@@ -15,6 +15,7 @@ export const feedColumnIds = {
   groups: "$groups",
   account: "$account",
   auth: "$auth",
+  notifications: "$notifications",
 };
 
 const profileColumnPrefix = "$profile:";
@@ -55,6 +56,7 @@ export const state = {
   groupRequests: {},
   groupRequestRefs: {},
   myJoinRequests: {},
+  notifications: {},
   myJoinRequestRefs: {},
   groups: {},
   groupsRef: null,

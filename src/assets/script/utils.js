@@ -44,6 +44,19 @@ export function formatTime(timestamp) {
   }).format(new Date(timestamp));
 }
 
+export function timeAgo(timestamp) {
+  if (!timestamp) return "şimdi";
+  const diff = Math.max(0, Date.now() - timestamp);
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return "şimdi";
+  if (min < 60) return `${min} dk`;
+  const hour = Math.floor(min / 60);
+  if (hour < 24) return `${hour} sa`;
+  const day = Math.floor(hour / 24);
+  if (day < 7) return `${day} g`;
+  return new Intl.DateTimeFormat("tr-TR", { day: "numeric", month: "short" }).format(new Date(timestamp));
+}
+
 export function sanitizeEmail(email) {
   return email.trim().toLowerCase();
 }

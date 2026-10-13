@@ -8,7 +8,7 @@ import { trLower, extractHashtags, initials, getContrastColor, safeColor } from 
 
 let queryText = "";
 
-const TRENDING_LIMIT = 8;
+const TRENDING_LIMIT = 6;
 const TRENDING_SCAN_LIMIT = 150;
 
 const PREFIXES = ["@", "-", "#"];
@@ -119,53 +119,85 @@ function getGroups() {
 		.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 }
 
-function renderGroupResults(groupQuery) {
-	const q = trLower(groupQuery.trim());
-	const groups = getGroups().filter((group) => {
-		if (!q) return true;
-		const source = trLower(`${group.name || ""} ${group.description || ""}`);
-		return source.includes(q);
-	});
-
-	if (!groups.length) {
-		const empty = document.createElement("div");
-		empty.className = "empty-state";
-		empty.textContent = q ? `“${groupQuery.trim()}” için masa bulunamadı.` : "Henüz masa yok.";
-		setResultsTitle("");
-		elements.searchResults.replaceChildren(empty);
-		return;
+function createSection(title, children, { count, action } = {}) {
+	const section = document.createElement("section");
+	section.className = "search-block";
+	const head = document.createElement("div");
+	head.className = "search-block__head";
+	const h = document.createElement("h3");
+	h.className = "search-block__title";
+	h.textContent = title;
+	if (count) {
+		const badge = document.createElement("span");
+		badge.className = "search-block__count";
+		badge.textContent = count;
+		h.append(badge);
 	}
-
-	setResultsTitle(q ? `${groups.length} masa` : "Tüm masalar");
-	elements.searchResults.replaceChildren(
-		...groups.map((group) => createGroupCard(group, { compact: true })),
-	);
-
-	if (window.lucide) {
-		window.lucide.createIcons();
+	head.append(h);
+	if (action) {
+		const button = document.createElement("button");
+		button.type = "button";
+		button.className = "search-block__action";
+		button.textContent = action.label;
+		button.addEventListener("click", action.onClick);
+		head.append(button);
 	}
+	section.append(head, ...children);
+	return section;
 }
 
-// Bir gönderinin (post) ya da yorumun ilgili sorguyla eşleşip eşleşmediğini
-// doğrudan post-text (ve yorum metni) içeriğine bakarak kontrol eder.
-function matchesQuery(item, q, qWithoutHash, qWithoutAt) {
-	const { text } = item;
-	const authorName = resolveAuthor(item).name;
-	if (q.startsWith("@")) {
-		return trLower(authorName || "").includes(qWithoutAt);
+function createEmpty(text) {
+	const empty = document.createElement("div");
+	empty.className = "empty-state";
+	empty.textContent = text;
+	return empty;
+}
+
+function allTagCounts(posts) {
+	const counts = new Map();
+	posts.forEach((post) => {
+		extractHashtags(post.text || "").forEach((tag) => counts.set(tag, (counts.get(tag) || 0) + 1));
+	});
+	return counts;
+}
+
+function createTagRow(tag, count, rank) {
+	const row = document.createElement("button");
+	row.type = "button";
+	row.className = "tag-row";
+	if (rank) {
+		const r = document.createElement("span");
+		r.className = "tag-row__rank";
+		r.textContent = String(rank);
+		row.append(r);
 	}
+	const name = document.createElement("span");
+	name.className = "tag-row__name";
+	name.textContent = tag;
+	const meta = document.createElement("span");
+	meta.className = "tag-row__meta";
+	meta.textContent = `${count} gönderi`;
+	row.append(name, meta);
+	row.addEventListener("click", () => applyQuery(tag, { focus: false }));
+	return row;
+}
 
-	const body = trLower(text || "");
-	const authorSource = trLower(authorName || "");
-
-	if (q.startsWith("#")) {
-		// Match hashtag tokens only; searching raw text here also matches unrelated words.
-		const tags = extractHashtags(text || "");
-		const tagQuery = trLower(qWithoutHash.trim());
-		return tags.some((tag) => tag.slice(1).startsWith(tagQuery));
+function postMatches(post, q, kind) {
+	const authorName = trLower(resolveAuthor(post).name || "");
+	if (kind === "#") {
+		const tagQuery = trLower(q);
+		return extractHashtags(post.text || "").some((tag) => trLower(tag).slice(1).startsWith(tagQuery));
 	}
+	return trLower(post.text || "").includes(q) || authorName.includes(q);
+}
 
-	return body.includes(q) || authorSource.includes(q);
+function postElements(items) {
+	return items.map((post) => createPostElement({ ...post, __fromDiscover: true }));
+}
+
+function finish(nodes) {
+	elements.searchResults.replaceChildren(...nodes);
+	window.lucide?.createIcons();
 }
 
 export function renderDiscover() {
@@ -173,87 +205,91 @@ export function renderDiscover() {
 
 	const rawQuery = queryText.trim();
 	syncSearchUi();
+	setResultsTitle("");
 
-	if (rawQuery.startsWith("-")) {
-		renderGroupResults(rawQuery.slice(1));
-		return;
-	}
-
-	// "@" / Kişiler sekmesi: yalnızca kişiler (profil araması).
-	if (rawQuery.startsWith("@")) {
-		const term = rawQuery.slice(1);
-		const people = searchPeople(term, 40);
-		if (!people.length) {
-			const empty = document.createElement("div");
-			empty.className = "empty-state";
-			empty.textContent = term.trim() ? `“${term.trim()}” adında kişi bulunamadı.` : "Henüz kişi yok.";
-			setResultsTitle("");
-			elements.searchResults.replaceChildren(empty);
-			return;
-		}
-		setResultsTitle(term.trim() ? `${people.length} kişi` : "Tüm kişiler");
-		elements.searchResults.replaceChildren(createPeopleSection(people));
-		return;
-	}
-
+	const kind = PREFIXES.includes(rawQuery[0]) ? rawQuery[0] : "";
+	const term = kind ? rawQuery.slice(1).trim() : rawQuery;
+	const q = trLower(term);
 	const posts = getPosts();
-	const q = trLower(rawQuery);
-	const qWithoutHash = q.startsWith("#") ? q.slice(1) : q;
-	const qWithoutAt = q.startsWith("@") ? q.slice(1) : q;
 
-	let results = [];
+	// ---- Boş sorgu: keşfet ----
+	if (!q) {
+		if (kind === "@") {
+			const people = searchPeople("", 40);
+			return finish([createSection("Kişiler", people.length ? [createPeopleSection(people)] : [createEmpty("Henüz kişi yok.")], { count: people.length || "" })]);
+		}
+		if (kind === "-") {
+			const groups = getGroups();
+			return finish([
+				createSection("Masalar", groups.length ? groups.map((group) => createGroupCard(group, { compact: true })) : [createEmpty("Henüz masa yok.")], { count: groups.length || "" }),
+			]);
+		}
+		if (kind === "#") return finish([]);
+		const nodes = [];
+		const people = searchPeople("", 4);
+		if (people.length) {
+			nodes.push(createSection("Önerilen kişiler", [createPeopleSection(people)], { action: { label: "Tümü", onClick: () => applyQuery("@", { focus: false }) } }));
+		}
+		const recent = posts.slice(0, 5);
+		if (recent.length) nodes.push(createSection("Son paylaşımlar", postElements(recent)));
+		return finish(nodes);
+	}
 
-	if (q) {
-		posts.forEach((post) => {
-			if (matchesQuery(post, q, qWithoutHash, qWithoutAt)) {
-				results.push({
-					...post,
-					__fromDiscover: true,
-				});
-			}
+	// ---- Önekli aramalar ----
+	if (kind === "@") {
+		const people = searchPeople(term, 40);
+		return finish([
+			createSection("Kişiler", people.length ? [createPeopleSection(people)] : [createEmpty(`“${term}” adında kişi bulunamadı.`)], { count: people.length || "" }),
+		]);
+	}
+	if (kind === "-") {
+		const groups = getGroups().filter((group) => trLower(`${group.name || ""} ${group.description || ""}`).includes(q));
+		return finish([
+			createSection("Masalar", groups.length ? groups.map((group) => createGroupCard(group, { compact: true })) : [createEmpty(`“${term}” için masa bulunamadı.`)], { count: groups.length || "" }),
+		]);
+	}
 
-			Object.values(post.comments || {}).forEach((comment) => {
-				if (matchesQuery(comment, q, qWithoutHash, qWithoutAt)) {
-					results.push({
-						...comment,
-						id: `${post.id}-${comment.createdAt}`,
-						createdAt: comment.createdAt,
-						likes: comment.likes || {},
-						comments: {},
-						__fromDiscover: true,
-						__isComment: true,
-					});
-				}
-			});
-		});
-	} else {
-		results = posts.slice(0, 8).map((post) => ({
-			...post,
-			__fromDiscover: true,
+	const tagMatches = [...allTagCounts(posts).entries()]
+		.filter(([tag]) => trLower(tag).slice(1).startsWith(kind === "#" ? q : q.replace(/^#/, "")))
+		.sort((a, b) => b[1] - a[1]);
+
+	if (kind === "#") {
+		const tagPosts = posts.filter((post) => postMatches(post, q, "#"));
+		const nodes = [];
+		if (tagMatches.length > 1) {
+			nodes.push(createSection("Etiketler", tagMatches.slice(0, 6).map(([tag, count]) => createTagRow(tag, count))));
+		}
+		nodes.push(
+			createSection("Gönderiler", tagPosts.length ? postElements(tagPosts) : [createEmpty(`#${term} etiketiyle gönderi bulunamadı.`)], { count: tagPosts.length || "" }),
+		);
+		return finish(nodes);
+	}
+
+	// ---- Tümü: kişiler + masalar + etiketler + gönderiler ----
+	const people = searchPeople(term, 40);
+	const groups = getGroups().filter((group) => trLower(`${group.name || ""} ${group.description || ""}`).includes(q));
+	const found = posts.filter((post) => postMatches(post, q, ""));
+	const nodes = [];
+
+	if (people.length) {
+		nodes.push(createSection("Kişiler", [createPeopleSection(people.slice(0, 3))], {
+			count: people.length,
+			action: people.length > 3 ? { label: "Tümü", onClick: () => applyQuery("@" + term, { focus: false }) } : undefined,
 		}));
 	}
-
-	// Düz aramada (önek yok) eşleşen kişiler de en üstte gösterilir.
-	const people = q && !q.startsWith("#") ? searchPeople(rawQuery, 3) : [];
-
-	if (!results.length && !people.length) {
-		const empty = document.createElement("div");
-		empty.className = "empty-state";
-		empty.textContent = `“${rawQuery}” için sonuç bulunamadı.`;
-		setResultsTitle("");
-		elements.searchResults.replaceChildren(empty);
-		return;
+	if (groups.length) {
+		nodes.push(createSection("Masalar", groups.slice(0, 3).map((group) => createGroupCard(group, { compact: true })), {
+			count: groups.length,
+			action: groups.length > 3 ? { label: "Tümü", onClick: () => applyQuery("-" + term, { focus: false }) } : undefined,
+		}));
 	}
-
-	setResultsTitle(q ? (results.length ? `${results.length} sonuç` : "") : "Son paylaşımlar");
-	elements.searchResults.replaceChildren(
-		...(people.length ? [createPeopleSection(people, "Kişiler")] : []),
-		...results.map((item) => createPostElement(item)),
-	);
-
-	if (window.lucide) {
-		window.lucide.createIcons();
+	if (tagMatches.length) {
+		nodes.push(createSection("Etiketler", tagMatches.slice(0, 4).map(([tag, count]) => createTagRow(tag, count))));
 	}
+	if (found.length) nodes.push(createSection("Gönderiler", postElements(found), { count: found.length }));
+
+	if (!nodes.length) return finish([createEmpty(`“${term}” için sonuç bulunamadı.`)]);
+	return finish(nodes);
 }
 
 // Görüntülenebilir tüm gönderilerin metninden etiketleri toplayıp
@@ -275,36 +311,10 @@ export function getTrendingTags(limit = TRENDING_LIMIT) {
 		.map(([tag, count]) => ({ tag, count }));
 }
 
-function createTrendingCloud(trending) {
+function createTrendingList(trending) {
 	const wrap = document.createElement("div");
-	wrap.className = "tag-cloud";
-
-	const counts = trending.map(({ count }) => count);
-	const min = Math.min(...counts);
-	const max = Math.max(...counts);
-
-	trending.forEach(({ tag, count }) => {
-		const button = document.createElement("button");
-		button.type = "button";
-		button.className = "tag-cloud__item";
-		button.textContent = tag;
-		button.title = `${count} gönderi`;
-
-		// Kullanım sıklığına göre yazı boyutu (Blogger'daki etiket bulutu gibi).
-		const ratio = max === min ? 1 : (count - min) / (max - min);
-		const size = 12 + ratio * 10; // 12px – 22px
-		button.style.fontSize = `${size.toFixed(1)}px`;
-		button.style.fontWeight = ratio > 0.6 ? "800" : ratio > 0.3 ? "700" : "600";
-
-		button.addEventListener("click", () => {
-			window.dispatchEvent(
-				new CustomEvent("search:query", { detail: { query: tag } }),
-			);
-		});
-
-		wrap.append(button);
-	});
-
+	wrap.className = "tag-list";
+	trending.forEach(({ tag, count }, index) => wrap.append(createTagRow(tag, count, index + 1)));
 	return wrap;
 }
 
@@ -321,7 +331,7 @@ export function renderTrending() {
 			return;
 		}
 
-		target.replaceChildren(createTrendingCloud(trending));
+		target.replaceChildren(createTrendingList(trending));
 	});
 }
 

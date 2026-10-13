@@ -18,8 +18,6 @@
 		<title>MASA</title>
 		<link rel="stylesheet" href="assets/style/tokens.css" />
 		<link rel="stylesheet" href="assets/style/styles.css" />
-		<link rel="stylesheet" href="assets/style/threads.css" />
-		<link rel="stylesheet" href="assets/style/layout.css" />
 	</head>
 	<body>
 		<div class="app-shell">
@@ -113,12 +111,42 @@
 						<span data-lucide="grid-2x2"></span>
 						<span class="nav-item-label">Masalar</span>
 					</button>
+					<button class="nav-item button button--ghost" id="notificationsButton" type="button" aria-label="Bildirimler">
+						<span class="nav-item-icon">
+							<span data-lucide="bell"></span>
+							<span class="nav-badge" data-notification-badge hidden>0</span>
+						</span>
+						<span class="nav-item-label">Bildirimler</span>
+					</button>
 					<button class="nav-item button button--ghost" id="authButton" type="button" aria-label="Hesap">
 						<span data-lucide="user"></span>
 						<span class="nav-item-label">Hesap</span>
 					</button>
 				</nav>
 			</aside>
+
+			<main class="timeline hidden" id="notificationsView">
+				<header class="topbar">
+					<button class="button button--ghost mobile-menu-button" type="button" aria-label="Menüyü aç">
+						<span data-lucide="menu"></span>
+					</button>
+					<div>
+						<h1>Bildirimler</h1>
+						<img class="brand-image" src="assets/logo.svg" alt="MASA Logo" />
+					</div>
+				</header>
+				<div class="notification-toolbar">
+					<button class="button button--ghost notification-toolbar__button" id="notificationsReadAll" type="button">
+						<span data-lucide="check-check"></span>
+						<span>Tümünü okundu say</span>
+					</button>
+					<button class="button button--ghost notification-toolbar__button" id="notificationsClear" type="button">
+						<span data-lucide="trash-2"></span>
+						<span>Temizle</span>
+					</button>
+				</div>
+				<section class="notification-list" id="notificationsList" aria-live="polite"></section>
+			</main>
 
 			<main class="timeline hidden" id="groupsView">
 				<header class="topbar">
@@ -284,17 +312,31 @@
 					</div>
 				</header>
 
-				<section class="profile-header" id="profileHeader">
-					<div class="avatar profile-header__avatar" id="profileAvatar" data-profile-field="avatar">?</div>
-					<div class="profile-header__info">
-						<div class="profile-header__row">
-							<h2 id="profileName" data-profile-field="name">Profil</h2>
+				<section class="profile-banner" id="profileHeader">
+					<div class="profile-cover" data-profile-field="cover" aria-hidden="true"></div>
+					<div class="profile-banner__body">
+						<div class="profile-banner__top">
+							<div class="avatar profile-banner__avatar" id="profileAvatar" data-profile-field="avatar">?</div>
+							<button class="button button--secondary profile-edit" type="button" data-profile-field="edit" hidden>
+								<span data-lucide="settings-2"></span>
+								<span>Profili düzenle</span>
+							</button>
 						</div>
-						<span class="profile-header__meta" id="profileMeta" data-profile-field="meta"></span>
+						<h2 class="profile-banner__name" id="profileName" data-profile-field="name">Profil</h2>
+						<p class="profile-banner__meta" id="profileMeta" data-profile-field="meta"></p>
+						<dl class="profile-stats">
+							<div class="profile-stat"><dd data-profile-stat="posts">0</dd><dt>Gönderi</dt></div>
+							<div class="profile-stat"><dd data-profile-stat="likes">0</dd><dt>Beğeni</dt></div>
+							<div class="profile-stat"><dd data-profile-stat="groups">0</dd><dt>Masa</dt></div>
+						</dl>
 					</div>
 				</section>
 
-				<div class="search-section__title" id="profilePostsTitle" data-profile-field="posts-title">Gönderiler</div>
+				<div class="profile-tabs" role="tablist" aria-label="Profil içeriği">
+					<button class="profile-tab active" type="button" role="tab" aria-selected="true" data-profile-tab="posts">Gönderiler</button>
+					<button class="profile-tab" type="button" role="tab" aria-selected="false" data-profile-tab="media">Görseller</button>
+					<button class="profile-tab" type="button" role="tab" aria-selected="false" data-profile-tab="polls">Anketler</button>
+				</div>
 				<section class="feed-list" id="profilePostList" data-profile-field="posts" aria-live="polite"></section>
 			</main>
 
@@ -323,10 +365,10 @@
 						<button class="search-tab" type="button" role="tab" data-prefix="#">Etiketler</button>
 					</div>
 					<div class="search-section" id="searchTrendingSection">
-						<div class="search-section__title">Gündem</div>
+						<div class="search-block__title search-block__title--trend"><span data-lucide="trending-up"></span>Gündem</div>
 						<div id="searchTrendingList" class="trending-list trending-list--inline"></div>
 					</div>
-					<div class="search-section__title search-section__title--results" id="searchResultsTitle"></div>
+					<div class="search-section__title search-section__title--results" id="searchResultsTitle" hidden></div>
 					<div id="searchResults" class="search-list"></div>
 				</section>
 			</main>

@@ -3,8 +3,10 @@ import { resolveUserName } from "./users.js";
 import { elements } from "./elements.js";
 import { initials, cleanName, getContrastColor, friendlyErrorMessage, safeColor } from "./utils.js";
 import { openGroups } from "./ui.js";
+import { notify } from "./notifications.js";
 import { ref, push, set, get, onValue, off, query, orderByChild, limitToLast, serverTimestamp, update, remove } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 
+const groupsTabsElement = document.querySelector("#groupsTabs");
 let groupFilter = "mine";
 let isSubmittingGroup = false;
 let isSubmittingGroupEdit = false;
@@ -413,7 +415,8 @@ export function setGroupsTab(filter = "mine") {
 	groupFilter = filter === "create" ? "create" : "mine";
 	const isCreate = groupFilter === "create";
 
-	document.querySelectorAll("#groupsTabs .search-tab").forEach((button) => {
+	// Kolon kapalıyken DOM'dan ayrıldığı için document yerine saklı referans kullanılır.
+	groupsTabsElement?.querySelectorAll(".search-tab").forEach((button) => {
 		const active = button.dataset.filter === groupFilter;
 		button.classList.toggle("active", active);
 		button.setAttribute("aria-selected", String(active));
@@ -430,7 +433,7 @@ export function setGroupsTab(filter = "mine") {
 	}
 }
 
-document.querySelector("#groupsTabs")?.addEventListener("click", (event) => {
+groupsTabsElement?.addEventListener("click", (event) => {
 	const tab = event.target.closest(".search-tab");
 	if (tab) setGroupsTab(tab.dataset.filter);
 });
@@ -809,6 +812,7 @@ export async function requestToJoin(groupId) {
 		});
 		state.myJoinRequests[groupId] = true;
 		renderGroups();
+		notify(state.groups?.[groupId]?.ownerId, { type: "join_request", groupId, snippet: state.groups?.[groupId]?.name || "" });
 	} catch (error) {
 		console.error("Katılma isteği gönderilemedi:", error);
 		if (elements.groupError) {
@@ -833,6 +837,7 @@ export async function approveJoinRequest(groupId, uid) {
 		[`groups/${groupId}/members/${uid}`]: { role: "member", joinedAt: serverTimestamp() },
 		[`group_requests/${groupId}/${uid}`]: null,
 	});
+	notify(uid, { type: "join_approved", groupId, snippet: group.name || "" });
 }
 
 export async function rejectJoinRequest(groupId, uid) {
