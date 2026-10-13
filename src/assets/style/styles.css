@@ -2144,7 +2144,6 @@ h4,
 	.post {
 		margin-right: 0;
 		margin-left: 0;
-		border: 1px solid var(--line);
 	}
 
 	.post {
@@ -2366,7 +2365,6 @@ h4,
 .feed-list > .post,
 .post {
 	padding: 14px 18px 11px;
-	border-bottom: 1px solid var(--line);
 	border-radius: 0;
 	box-shadow: none;
 }
@@ -3684,10 +3682,7 @@ body .feed-column__heading {
 	flex-direction: column;
 	align-items: stretch;
 	gap: 10px;
-	margin: 10px 12px 0;
 	padding: 14px 16px 6px;
-	border: 1px solid var(--line);
-	border-radius: var(--r-lg);
 	background: var(--bg);
 	transition:
 		border-color 120ms ease,
@@ -4347,10 +4342,7 @@ body .feed-column__heading {
 
 body .feed-column__posts .post,
 body .feed-column-page .post {
-	margin: 10px 12px 0;
 	padding: 14px 16px 6px;
-	border: 1px solid var(--line);
-	border-radius: var(--r-lg);
 }
 
 body .feed-column__posts .post:last-child,
@@ -4550,8 +4542,6 @@ body .group-card:last-child {
 body .groups-form-card {
 	margin: 12px;
 	padding: 16px;
-	border: 1px solid var(--line);
-	border-radius: var(--r-lg);
 	background: var(--bg);
 }
 
@@ -4609,14 +4599,11 @@ body .groups-form-card {
 body .settings-panel {
 	display: grid;
 	gap: 12px;
-	padding: 12px;
 }
 
 body .settings-section.section--group {
 	margin: 0;
 	padding: 16px;
-	border: 1px solid var(--line);
-	border-radius: var(--r-lg);
 	background: var(--bg);
 }
 
@@ -4631,10 +4618,6 @@ body .settings-section.section--group {
 
 .settings-section .profile-avatar {
 	border-radius: var(--r-xl);
-}
-
-.settings-section:has(#deleteAccountButton) {
-	border-color: color-mix(in srgb, var(--like) 35%, var(--line));
 }
 
 .post-poll {
