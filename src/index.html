@@ -55,6 +55,8 @@
 							</div>
 						</section>
 
+						<p class="error-text" id="feedError" hidden></p>
+
 						<section class="composer" data-group-id="" aria-label="Akış için gönderi oluştur">
 							<textarea id="postText" data-composer-field="text" maxlength="280" placeholder="Masada neler oluyor?" rows="1"></textarea>
 							<div class="composer-media-preview hidden" id="composerMediaPreview" data-composer-field="media-preview">
@@ -85,7 +87,6 @@
 							</div>
 						</section>
 
-						<p class="error-text" id="feedError" hidden></p>
 						<section class="feed-list feed-column__posts" id="postList" aria-live="polite">
 							<div class="empty-state" id="postsLoading">Yükleniyor…</div>
 						</section>
@@ -325,9 +326,18 @@
 						<h2 class="profile-banner__name" id="profileName" data-profile-field="name">Profil</h2>
 						<p class="profile-banner__meta" id="profileMeta" data-profile-field="meta"></p>
 						<dl class="profile-stats">
-							<div class="profile-stat"><dd data-profile-stat="posts">0</dd><dt>Gönderi</dt></div>
-							<div class="profile-stat"><dd data-profile-stat="likes">0</dd><dt>Beğeni</dt></div>
-							<div class="profile-stat"><dd data-profile-stat="groups">0</dd><dt>Masa</dt></div>
+							<div class="profile-stat">
+								<dd data-profile-stat="posts">0</dd>
+								<dt>Gönderi</dt>
+							</div>
+							<div class="profile-stat">
+								<dd data-profile-stat="likes">0</dd>
+								<dt>Beğeni</dt>
+							</div>
+							<div class="profile-stat">
+								<dd data-profile-stat="groups">0</dd>
+								<dt>Masa</dt>
+							</div>
 						</dl>
 					</div>
 				</section>
