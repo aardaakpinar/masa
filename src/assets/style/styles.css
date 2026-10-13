@@ -4839,13 +4839,6 @@ body .search-box {
 	border: 0;
 }
 
-body .search-box__icon {
-	left: 32px;
-	top: 50%;
-	margin-top: -2px;
-	transform: translateY(-50%);
-}
-
 body .search-box__clear {
 	right: 24px;
 }
