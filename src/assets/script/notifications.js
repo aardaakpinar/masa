@@ -238,11 +238,9 @@ export function renderNotifications() {
 	if (!items.length) {
 		const empty = document.createElement("div");
 		empty.className = "empty-state notification-empty";
-		const icon = document.createElement("span");
-		icon.setAttribute("data-lucide", "bell");
 		const text = document.createElement("p");
 		text.textContent = "Henüz bildirim yok. Beğeniler, yorumlar ve masa istekleri burada görünür.";
-		empty.append(icon, text);
+		empty.append(text);
 		list.replaceChildren(empty);
 	} else {
 		list.replaceChildren(...items.map(createItem));
