@@ -34,6 +34,7 @@ export const elements = {
 	groupsView: document.querySelector("#groupsView"),
 	groupDetail: document.querySelector("#groupDetail"),
 	groupDetailMembersList: document.querySelector("#groupDetailMembersList"),
+	groupDetailExtras: document.querySelector("#groupDetailExtras"),
 	groupDetailRequestsHeading: document.querySelector("#groupDetailRequestsHeading"),
 	groupDetailRequestsList: document.querySelector("#groupDetailRequestsList"),
 	groupJoinModeSelect: document.querySelector("#groupJoinModeSelect"),

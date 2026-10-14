@@ -426,9 +426,7 @@ export function setGroupsTab(filter = "mine") {
 	const formCard = elements.createGroupButton?.closest(".groups-form-card");
 	if (formCard) formCard.hidden = !isCreate;
 
-	if (isCreate) {
-		elements.groupNameInput?.focus();
-	} else {
+	if (!isCreate) {
 		renderGroups();
 	}
 }
@@ -579,6 +577,10 @@ export function closeGroupSettingsPanel() {
 		elements.groupDetailSettingsPanel.append(elements.groupDetailEditForm);
 		delete elements.groupDetailEditForm.dataset.openGroupId;
 	}
+	// İstek ve üye listeleri de formla birlikte kolondan geri alınır.
+	if (elements.groupDetailExtras && elements.groupDetailSettingsPanel) {
+		elements.groupDetailSettingsPanel.append(elements.groupDetailExtras);
+	}
 	document.querySelectorAll(".feed-column__settings").forEach((slot) => {
 		slot.hidden = true;
 		slot.closest(".feed-column")?.classList.remove("feed-column--settings-open");
@@ -599,6 +601,10 @@ export function toggleColumnGroupSettings(groupId, slot) {
 	openGroupSettingsPanel();
 	elements.groupDetailEditForm.dataset.openGroupId = groupId;
 	slot.append(elements.groupDetailEditForm);
+	// Katılma istekleri ve üyeler: kolonda da sahibi onaylayıp çıkarabilsin.
+	if (elements.groupDetailExtras) slot.append(elements.groupDetailExtras);
+	renderGroupRequests();
+	renderGroupDetailMembers();
 	slot.hidden = false;
 	slot.closest(".feed-column")?.classList.add("feed-column--settings-open");
 }

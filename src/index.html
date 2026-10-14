@@ -55,8 +55,6 @@
 							</div>
 						</section>
 
-						<p class="error-text" id="feedError" hidden></p>
-
 						<section class="composer" data-group-id="" aria-label="Akış için gönderi oluştur">
 							<textarea id="postText" data-composer-field="text" maxlength="280" placeholder="Masada neler oluyor?" rows="1"></textarea>
 							<div class="composer-media-preview hidden" id="composerMediaPreview" data-composer-field="media-preview">
@@ -87,6 +85,7 @@
 							</div>
 						</section>
 
+						<p class="error-text" id="feedError" hidden></p>
 						<section class="feed-list feed-column__posts" id="postList" aria-live="polite">
 							<div class="empty-state" id="postsLoading">Yükleniyor…</div>
 						</section>
@@ -271,11 +270,13 @@
 						<p class="error-text" id="groupDetailEditError" hidden></p>
 					</section>
 
-					<div class="group-list-heading hidden" id="groupDetailRequestsHeading" style="padding: 0 18px">Katılma istekleri</div>
-					<section class="feed-list hidden" id="groupDetailRequestsList" aria-live="polite"></section>
+					<div id="groupDetailExtras">
+						<div class="group-list-heading hidden" id="groupDetailRequestsHeading" style="padding: 0 18px">Katılma istekleri</div>
+						<section class="feed-list hidden" id="groupDetailRequestsList" aria-live="polite"></section>
 
-					<div class="group-list-heading" style="padding: 0 18px">Üyeler</div>
-					<section class="feed-list" id="groupDetailMembersList" aria-live="polite"></section>
+						<div class="group-list-heading" style="padding: 0 18px">Üyeler</div>
+						<section class="feed-list" id="groupDetailMembersList" aria-live="polite"></section>
+					</div>
 				</section>
 
 				<p class="error-text" id="groupDetailError" hidden></p>
@@ -356,6 +357,7 @@
 						</button>
 					</div>
 					<div class="search-tabs" id="searchTabs" role="tablist" aria-label="Arama türü">
+						<button class="search-tab active" type="button" role="tab" data-prefix="">Tümü</button>
 						<button class="search-tab" type="button" role="tab" data-prefix="@">Kişiler</button>
 						<button class="search-tab" type="button" role="tab" data-prefix="-">Masalar</button>
 						<button class="search-tab" type="button" role="tab" data-prefix="#">Etiketler</button>
