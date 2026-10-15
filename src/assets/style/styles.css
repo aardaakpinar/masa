@@ -179,6 +179,10 @@ img {
 	gap: 14px;
 }
 
+.auth-gate.is-visible {
+	display: flex;
+}
+
 .auth-pending {
 	display: inline-flex;
 	align-items: center;
@@ -186,6 +190,7 @@ img {
 	color: var(--text-soft);
 	font-size: var(--fs-sm);
 	font-weight: var(--fw-semibold);
+	flex-shrink: 0;
 }
 
 .auth-pending[hidden] {
@@ -193,16 +198,30 @@ img {
 }
 
 .auth-pending-spinner {
+	display: inline-block;
+	box-sizing: border-box;
 	width: 18px;
 	height: 18px;
+	flex: 0 0 18px;
 	border: 2px solid var(--line);
+	border-top-color: var(--accent);
 	border-radius: 50%;
 	animation: auth-pending-spin 700ms linear infinite;
+	will-change: transform;
 }
 
 @keyframes auth-pending-spin {
+	from {
+		transform: rotate(0deg);
+	}
 	to {
 		transform: rotate(360deg);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.auth-pending-spinner {
+		animation-duration: 1.5s;
 	}
 }
 
