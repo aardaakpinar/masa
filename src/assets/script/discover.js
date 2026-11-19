@@ -1,8 +1,8 @@
 import { elements } from "./elements.js";
-import { resolveAuthor } from "./users.js";
+import { resolveAuthor, canViewGroup } from "./shared/store/selectors.js";
 import { state } from "./state.js";
 import { createPostElement } from "./posts.js";
-import { createGroupCard, canViewGroup } from "./groups.js";
+import { createGroupCard } from "./groups.js";
 import { openSearch } from "./ui.js";
 import { trLower, extractHashtags, initials, getContrastColor, safeColor } from "./utils.js";
 

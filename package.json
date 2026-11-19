@@ -3,12 +3,13 @@
 	"version": "1.0.0",
 	"description": "MASA, Haberleşme, Eğlence ve Paylaşım Topluluğudur. hadi sende bir sandalye çek ve aramıza otur!",
 	"main": "env.js",
+	"type": "module",
 	"scripts": {
 		"dev": "vite",
 		"host": "vite --host",
 		"build": "vite build",
 		"preview": "vite preview",
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"test": "node --test tests/*.test.js"
 	},
 	"repository": {
 		"type": "git",

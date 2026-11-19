@@ -1,6 +1,7 @@
-﻿import { storageKeys, firebaseConfig, state, feedColumnIds } from "./state.js";
+﻿import { state, feedColumnIds } from "./state.js";
 import { elements } from "./elements.js";
-import { connectToFirebase } from "./firebase.js";
+import { startApp } from "./app/bootstrap.js";
+import { registerAction } from "./app/events.js";
 import {
 	submitAuth,
 	saveSettingsAvatar,
@@ -241,16 +242,16 @@ syncComposerActiveState();
 
 // Yapılandırma yalnızca build sırasındaki ortam değişkenlerinden gelir.
 // (localStorage aynı origin'deki başka sitelerle paylaşıldığı için kullanılmaz.)
-connectToFirebase(JSON.stringify(firebaseConfig, null, 2));
+// SDK init + canlı abonelikler bootstrap içinde kurulur.
+startApp();
 
-elements.mobileMenuButtons.forEach((button) => {
-	bind(button, "click", () => {
-		if (document.body.classList.contains("mobile-drawer-open")) {
-			closeMobileMenu();
-		} else {
-			openMobileMenu();
-		}
-	});
+// Statik gezinme düğmeleri tek bir delegation dinleyicisiyle yönetilir (app/events.js).
+registerAction("menu-toggle", () => {
+	if (document.body.classList.contains("mobile-drawer-open")) {
+		closeMobileMenu();
+	} else {
+		openMobileMenu();
+	}
 });
 elements.closeSettingsButtons.forEach((button) => {
 	bind(button, "click", () => {
@@ -258,12 +259,12 @@ elements.closeSettingsButtons.forEach((button) => {
 	});
 });
 
-bind(elements.authButton, "click", () => {
+registerAction("nav-auth", () => {
 	openAuth();
 	closeMobileMenu();
 });
 window.addEventListener("account:open", openAuth);
-bind(elements.searchButton, "click", () => {
+registerAction("nav-search", () => {
 	openSearch();
 	closeMobileMenu();
 });
@@ -277,12 +278,12 @@ const openGroupsFromNavigation = () => {
 	openGroups();
 	closeMobileMenu();
 };
-bind(elements.groupsButton, "click", openGroupsFromNavigation);
+registerAction("nav-groups", openGroupsFromNavigation);
 // Masalar kolonu kapanınca sekme "Masalarım"a döner; yeniden açınca Oluştur'da kalmaz.
 window.addEventListener("feed-columns:updated", () => {
 	if (!state.openFeedColumns.includes(feedColumnIds.groups)) setGroupsTab("mine");
 });
-bind(elements.notificationsButton, "click", () => {
+registerAction("nav-notifications", () => {
 	openNotifications();
 	closeMobileMenu();
 });
@@ -368,7 +369,7 @@ bind(elements.settingsAvatarInput, "input", (event) => {
 		avatar.style.color = getContrastColor(event.target.value);
 	}
 });
-bind(elements.feedButton, "click", () => {
+registerAction("nav-feed", () => {
 	closeComments();
 	openFeed();
 	closeMobileMenu();

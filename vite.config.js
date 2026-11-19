@@ -75,7 +75,7 @@ export default defineConfig({
     minify: "terser",
     rollupOptions: {
       input: {
-        main: resolve(__dirname, "src/index.html"),
+        main: resolve(process.cwd(), "src/index.html"),
       },
     },
   },

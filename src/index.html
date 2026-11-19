@@ -99,26 +99,26 @@
 					<span class="brand-text">MASA</span>
 				</div>
 				<nav class="nav-list right-panel-nav">
-					<button class="nav-item button button--ghost" id="feedButton" type="button" aria-label="Akış">
+					<button class="nav-item button button--ghost" id="feedButton" data-action="nav-feed" type="button" aria-label="Akış">
 						<span data-lucide="home"></span>
 						<span class="nav-item-label">Akış</span>
 					</button>
-					<button class="nav-item button button--ghost" id="searchButton" type="button" aria-label="Ara">
+					<button class="nav-item button button--ghost" id="searchButton" data-action="nav-search" type="button" aria-label="Ara">
 						<span data-lucide="search"></span>
 						<span class="nav-item-label">Ara</span>
 					</button>
-					<button class="nav-item button button--ghost" id="groupsButton" type="button" aria-label="Masalar">
+					<button class="nav-item button button--ghost" id="groupsButton" data-action="nav-groups" type="button" aria-label="Masalar">
 						<span data-lucide="grid-2x2"></span>
 						<span class="nav-item-label">Masalar</span>
 					</button>
-					<button class="nav-item button button--ghost" id="notificationsButton" type="button" aria-label="Bildirimler">
+					<button class="nav-item button button--ghost" id="notificationsButton" data-action="nav-notifications" type="button" aria-label="Bildirimler">
 						<span class="nav-item-icon">
 							<span data-lucide="bell"></span>
 							<span class="nav-badge" data-notification-badge hidden>0</span>
 						</span>
 						<span class="nav-item-label">Bildirimler</span>
 					</button>
-					<button class="nav-item button button--ghost" id="authButton" type="button" aria-label="Hesap">
+					<button class="nav-item button button--ghost" id="authButton" data-action="nav-auth" type="button" aria-label="Hesap">
 						<span data-lucide="user"></span>
 						<span class="nav-item-label">Hesap</span>
 					</button>
@@ -127,7 +127,7 @@
 
 			<main class="timeline hidden" id="notificationsView">
 				<header class="topbar">
-					<button class="button button--ghost mobile-menu-button" type="button" aria-label="Menüyü aç">
+					<button class="button button--ghost mobile-menu-button" data-action="menu-toggle" type="button" aria-label="Menüyü aç">
 						<span data-lucide="menu"></span>
 					</button>
 					<div>
@@ -150,7 +150,7 @@
 
 			<main class="timeline hidden" id="groupsView">
 				<header class="topbar">
-					<button class="button button--ghost mobile-menu-button" type="button" aria-label="Menüyü aç">
+					<button class="button button--ghost mobile-menu-button" data-action="menu-toggle" type="button" aria-label="Menüyü aç">
 						<span data-lucide="menu"></span>
 					</button>
 					<div>
@@ -208,7 +208,7 @@
 
 			<main class="timeline hidden" id="groupDetail">
 				<header class="topbar">
-					<button class="button button--ghost mobile-menu-button" type="button" aria-label="Menüyü aç">
+					<button class="button button--ghost mobile-menu-button" data-action="menu-toggle" type="button" aria-label="Menüyü aç">
 						<span data-lucide="menu"></span>
 					</button>
 					<button class="icon-button button button--ghost" id="groupDetailBack" type="button" aria-label="Masalara dön">
@@ -288,7 +288,7 @@
 
 			<main class="timeline hidden" id="profileView">
 				<header class="topbar">
-					<button class="button button--ghost mobile-menu-button" type="button" aria-label="Menüyü aç">
+					<button class="button button--ghost mobile-menu-button" data-action="menu-toggle" type="button" aria-label="Menüyü aç">
 						<span data-lucide="menu"></span>
 					</button>
 					<button class="icon-button button button--ghost" id="profileBack" type="button" aria-label="Geri dön">
@@ -339,7 +339,7 @@
 
 			<main class="timeline hidden" id="search">
 				<header class="topbar">
-					<button class="button button--ghost mobile-menu-button" type="button" aria-label="Menüyü aç">
+					<button class="button button--ghost mobile-menu-button" data-action="menu-toggle" type="button" aria-label="Menüyü aç">
 						<span data-lucide="menu"></span>
 					</button>
 					<div>
@@ -373,7 +373,7 @@
 
 			<main class="timeline hidden" id="authPanel">
 				<header class="topbar">
-					<button class="button button--ghost mobile-menu-button" type="button" aria-label="Menüyü aç">
+					<button class="button button--ghost mobile-menu-button" data-action="menu-toggle" type="button" aria-label="Menüyü aç">
 						<span data-lucide="menu"></span>
 					</button>
 					<div>
@@ -434,7 +434,7 @@
 
 			<main class="timeline hidden" id="settingsPanel">
 				<header class="topbar">
-					<button class="button button--ghost mobile-menu-button" type="button" aria-label="Menüyü aç">
+					<button class="button button--ghost mobile-menu-button" data-action="menu-toggle" type="button" aria-label="Menüyü aç">
 						<span data-lucide="menu"></span>
 					</button>
 					<div>

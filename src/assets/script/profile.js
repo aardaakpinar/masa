@@ -1,6 +1,7 @@
 import { state } from "./state.js";
 import { elements } from "./elements.js";
-import { initials, getContrastColor, safeColor } from "./utils.js";
+import { initials, getContrastColor } from "./utils.js";
+import { selectProfileData, selectProfilePosts } from "./shared/store/selectors.js";
 import {
   openSettings,
   openAuth,
@@ -11,32 +12,19 @@ import {
   subscribeProfilePosts,
   stopProfilePosts,
 } from "./posts.js";
-import { canViewGroup } from "./groups.js";
 
 const monthYear = new Intl.DateTimeFormat("tr-TR", {
   month: "long",
   year: "numeric",
 });
 
-// Bir kullanıcının görüntülenecek profili (kendi profilim canlı state.profile'dan gelir).
+// Profil verisi ve gönderileri artık tek kaynak olan shared selectors'dan gelir.
 export function getProfileData(uid) {
-  const isMe = Boolean(state.authUser && state.authUser.uid === uid);
-  const live = isMe ? { ...state.users?.[uid], ...state.profile } : state.users?.[uid];
-  if (!live || live.isDisabled) return null;
-  return {
-    uid,
-    isMe,
-    name: live.name || "Anonim",
-    color: safeColor(live.color),
-    createdAt: live.createdAt || null,
-  };
+  return selectProfileData(uid);
 }
 
 function profilePosts(uid) {
-  return Object.entries(state.posts || {})
-    .map(([id, post]) => ({ id, ...post }))
-    .filter((post) => post.authorId === uid && canViewGroup(post.groupId))
-    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  return selectProfilePosts(uid);
 }
 
 export function openProfile(uid) {

@@ -1,3 +1,5 @@
+import { createStore, getState } from "./shared/store/store.js";
+
 export const storageKeys = {
   config: "masa.firebaseConfig",
   rememberMe: "masa.rememberMe",
@@ -33,7 +35,8 @@ export function profileUidFromColumnId(columnId) {
   }
 }
 
-export const state = {
+// Store mekaniği shared/store içinde; başlangıç değerleri burada kalır.
+export const store = createStore({
   app: null,
   auth: null,
   db: null,
@@ -62,4 +65,9 @@ export const state = {
   groupsRef: null,
   users: {},
   activeGroupId: null,
-};
+});
+
+// Mevcut feature'lar `state.foo = value` yazmaya devam ediyor. Bu nesne store'un
+// canlı Proxy'sidir; atamalar yakalanıp abonelere iletilir. Yeni kod `dispatch`
+// kullanmalı.
+export const state = getState();
